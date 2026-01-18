@@ -1,0 +1,355 @@
+@import "./styles/fonts.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+  @layer base {
+    :root {
+      /* NEUTRAL BASE - No theme-specific defaults */
+      /* Base color tokens - will be overridden by each theme */
+      --background: 0 0% 8%;
+      --foreground: 0 0% 92%;
+
+      --card: 0 0% 12%;
+      --card-foreground: 0 0% 92%;
+
+      --popover: 0 0% 10%;
+      --popover-foreground: 0 0% 92%;
+
+      --primary: 0 0% 60%;
+      --primary-foreground: 0 0% 8%;
+      --primary-hover: 0 0% 55%;
+
+      --secondary: 0 0% 15%;
+      --secondary-foreground: 0 0% 92%;
+
+      --muted: 0 0% 30%;
+      --muted-foreground: 0 0% 70%;
+
+      --accent: 0 0% 50%;
+      --accent-foreground: 0 0% 8%;
+
+      --destructive: 0 62% 50%;
+      --destructive-foreground: 0 0% 92%;
+
+      --border: 0 0% 20%;
+      --input: 0 0% 18%;
+      --ring: 0 0% 60%;
+
+      --radius: 0.75rem;
+      --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+
+      /* Status colors - neutral defaults */
+      --success: 142 76% 42%;
+      --success-foreground: 0 0% 100%;
+      --warning: 38 92% 55%;
+      --warning-foreground: 0 0% 8%;
+
+      /* Neutral gradients - will be overridden by themes */
+      --gradient-primary: linear-gradient(135deg, hsl(0 0% 60%), hsl(0 0% 50%));
+      --gradient-hero: linear-gradient(135deg, hsl(0 0% 60% / 0.1), hsl(0 0% 50% / 0.1));
+      --gradient-card: linear-gradient(135deg, hsl(0 0% 12%), hsl(0 0% 10%));
+      --gradient-card-subtle: linear-gradient(135deg, hsl(0 0% 10%), hsl(0 0% 8%));
+      --gradient-destructive: linear-gradient(135deg, hsl(0 62% 50%), hsl(0 62% 45%));
+
+      /* Glass effect colors - neutral */
+      --glass-surface: 0 0% 12%;
+      --glass-border: 0 0% 25%;
+      --shadow-color: 0 0% 5%;
+      --glass-bg: 0 0% 12%;
+      --glass-shadow: 0 0% 5%;
+      --glass-subtle: hsl(0 0% 12% / 0.8);
+      --glass-intense: hsl(0 0% 16% / 0.9);
+      --glass-dark: hsl(0 0% 8% / 0.95);
+
+      /* Shadows - neutral */
+      --shadow-soft: 0 4px 6px -1px hsl(0 0% 5% / 0.3);
+      --shadow-medium: 0 10px 25px -3px hsl(0 0% 5% / 0.4);
+      --shadow-glow: 0 0 20px hsl(0 0% 60% / 0.15);
+      --shadow-glow-intense: 0 0 30px hsl(0 0% 60% / 0.25);
+
+      /* Real-time status colors */
+      --live-connected: 142 76% 42%;
+      --live-connecting: 38 92% 55%;
+      --live-disconnected: 0 84% 65%;
+      --live-glow: 142 76% 42% / 0.3;
+
+      /* Legacy glass styles */
+      --glass-outline: 1px solid hsl(0 0% 25% / 0.3);
+      --glass-shadow-effect: 0 8px 32px hsl(0 0% 5% / 0.3);
+      --glass-blur-amount: 12px;
+
+      --container-background: hsl(var(--background));
+      --container-border: 1px solid hsl(var(--border) / 0.35);
+      --container-shadow: 0 30px 80px hsl(var(--glass-shadow) / 0.35);
+      --container-overlay: radial-gradient(circle at 20% 20%, hsla(var(--primary) / 0.2), transparent 50%);
+
+      --card-background: hsl(var(--card) / 0.95);
+      --card-border: 1px solid hsl(var(--border) / 0.35);
+      --card-shadow: 0 20px 60px hsl(var(--glass-shadow) / 0.35);
+      --card-highlight: linear-gradient(120deg, hsla(var(--primary) / 0.15), transparent);
+
+      --buttons-primary-background: linear-gradient(120deg, hsl(var(--primary)), hsl(var(--accent)));
+      --buttons-primary-color: hsl(var(--primary-foreground));
+      --buttons-primary-hover-background: linear-gradient(120deg, hsl(var(--primary) / 0.9), hsl(var(--accent)));
+      --buttons-primary-border: none;
+      --buttons-primary-shadow: 0 15px 30px hsla(var(--primary) / 0.35);
+      --buttons-primary-glow: 0 0 45px hsla(var(--primary) / 0.45);
+      --buttons-primary-text-shadow: none;
+
+      --buttons-secondary-background: hsl(var(--secondary));
+      --buttons-secondary-color: hsl(var(--secondary-foreground));
+      --buttons-secondary-hover-background: hsl(var(--secondary) / 0.9);
+      --buttons-secondary-border: 1px solid hsl(var(--border) / 0.5);
+      --buttons-secondary-shadow: inset 0 1px 0 hsla(var(--foreground) / 0.2);
+
+      --buttons-ghost-background: transparent;
+      --buttons-ghost-color: hsl(var(--primary));
+      --buttons-ghost-hover-background: hsla(var(--primary) / 0.12);
+      --buttons-ghost-border: 1px solid transparent;
+      --buttons-ghost-text-shadow: none;
+
+      --chip-background: hsla(var(--accent) / 0.2);
+      --chip-color: hsl(var(--accent-foreground));
+      --chip-border: 1px solid hsla(var(--accent) / 0.4);
+      --chip-shadow: none;
+      --chip-text-shadow: none;
+
+      --decor-grid: linear-gradient(90deg, hsla(var(--border) / 0.15) 1px, transparent 1px),
+        linear-gradient(0deg, hsla(var(--border) / 0.15) 1px, transparent 1px);
+      --decor-glow: 0 0 60px hsla(var(--primary) / 0.45);
+      --decor-accent: hsla(var(--accent) / 0.4);
+
+      /* Smooth color transitions */
+      transition: background-color 0.5s ease, color 0.5s ease;
+    }
+
+    /* Dark mode override - for non-Moodbloom pages */
+    .dark {
+      /* Dark glassmorphic theme - grey tones */
+      --background: 0 0% 8%;
+      --foreground: 0 0% 92%;
+
+      --card: 0 0% 12%;
+      --card-foreground: 0 0% 92%;
+
+      --popover: 0 0% 10%;
+      --popover-foreground: 0 0% 92%;
+
+      /* Grey primary */
+      --primary: 0 0% 60%;
+      --primary-foreground: 0 0% 8%;
+      --primary-hover: 0 0% 55%;
+
+      /* Darker glass surface */
+      --secondary: 0 0% 15%;
+      --secondary-foreground: 0 0% 92%;
+
+      /* Muted grey */
+      --muted: 0 0% 30%;
+      --muted-foreground: 0 0% 70%;
+
+      /* Accent grey */
+      --accent: 0 0% 50%;
+      --accent-foreground: 0 0% 8%;
+
+      --destructive: 0 62% 50%;
+      --destructive-foreground: 0 0% 92%;
+
+      --border: 0 0% 20%;
+      --input: 0 0% 18%;
+      --ring: 0 0% 60%;
+
+      /* Dark glass effects */
+        --glass-surface: 215 12% 12%;
+        --glass-border: 210 10% 35%;
+        --shadow-color: 222 84% 5%;
+      --glass-bg: 0 0% 12%;
+      --glass-shadow: 0 0% 5%;
+      --glass-subtle: hsl(215 25% 12% / 0.8);
+      --glass-intense: hsl(215 25% 16% / 0.9);
+      --glass-dark: hsl(215 28% 8% / 0.95);
+    }
+  
+  *,
+  *::before,
+  *::after {
+    transition-property: background-color, border-color, color, fill, stroke;
+    transition-duration: 0.5s;
+    transition-timing-function: ease;
+  }
+}
+
+  @layer components {
+    .glass {
+      background: var(--glass-surface, hsl(var(--glass-bg) / 0.4));
+      backdrop-filter: blur(var(--glass-blur-amount, 12px));
+      border: var(--glass-outline, 1px solid hsl(var(--glass-border) / 0.1));
+      box-shadow: var(--glass-shadow-effect, 0 8px 32px hsl(var(--glass-shadow) / 0.3));
+    }
+
+    /* Moodbloom glassmorphism surface that preserves contrast */
+    .glass-panel {
+      background-color: hsl(var(--glass-surface) / 0.55) !important;
+      border: 1px solid hsl(var(--glass-border) / 0.8) !important;
+      backdrop-filter: saturate(140%) blur(18px) !important;
+      -webkit-backdrop-filter: saturate(140%) blur(18px) !important;
+      box-shadow:
+        0 20px 40px -24px hsl(var(--shadow-color) / 0.25),
+        0 6px 16px -10px hsl(var(--shadow-color) / 0.18) !important;
+    }
+
+    .theme-shell {
+      position: relative;
+      overflow: hidden;
+      background: var(--container-background, hsl(var(--background)));
+      border: var(--container-border, 1px solid transparent);
+      box-shadow: var(--container-shadow, none);
+    }
+
+    .theme-shell::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: var(--container-overlay, transparent);
+      pointer-events: none;
+    }
+
+    .theme-card {
+      position: relative;
+      background: var(--card-background, hsl(var(--card)));
+      border: var(--card-border, 1px solid transparent);
+      box-shadow: var(--card-shadow, none);
+      overflow: hidden;
+    }
+
+    .theme-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: var(--card-highlight, transparent);
+      opacity: 0.9;
+      pointer-events: none;
+    }
+
+    .theme-chip {
+      background: var(--chip-background, hsla(var(--accent) / 0.2));
+      color: var(--chip-color, hsl(var(--accent-foreground)));
+      border: var(--chip-border, 1px solid transparent);
+      box-shadow: var(--chip-shadow, none);
+      text-shadow: var(--chip-text-shadow, none);
+    }
+
+    .btn-theme-primary {
+      background: var(--buttons-primary-background, hsl(var(--primary)));
+      color: var(--buttons-primary-color, hsl(var(--primary-foreground)));
+      border: var(--buttons-primary-border, none);
+      box-shadow: var(--buttons-primary-shadow, none);
+      text-shadow: var(--buttons-primary-text-shadow, none);
+      transition: transform 0.3s ease;
+    }
+
+    .btn-theme-primary:hover {
+      background: var(--buttons-primary-hover-background, var(--buttons-primary-background));
+      color: var(--buttons-primary-hover-color, var(--buttons-primary-color));
+      box-shadow: var(--buttons-primary-glow, var(--buttons-primary-shadow));
+    }
+
+    .btn-theme-secondary {
+      background: var(--buttons-secondary-background, hsl(var(--secondary)));
+      color: var(--buttons-secondary-color, hsl(var(--secondary-foreground)));
+      border: var(--buttons-secondary-border, 1px solid transparent);
+      box-shadow: var(--buttons-secondary-shadow, none);
+    }
+
+    .btn-theme-secondary:hover {
+      background: var(--buttons-secondary-hover-background, var(--buttons-secondary-background));
+    }
+
+    .btn-theme-ghost {
+      background: var(--buttons-ghost-background, transparent);
+      color: var(--buttons-ghost-color, hsl(var(--primary)));
+      border: var(--buttons-ghost-border, 1px solid transparent);
+      text-shadow: var(--buttons-ghost-text-shadow, none);
+    }
+
+    .btn-theme-ghost:hover {
+      background: var(--buttons-ghost-hover-background, transparent);
+    }
+  }
+
+  @layer utilities {
+    .text-gradient {
+      background: var(--theme-gradient, linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent))));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .shadow-glow {
+      box-shadow: var(--decor-glow, 0 0 30px hsl(var(--primary) / 0.3));
+    }
+
+    .grid-overlay {
+      background-image: var(--decor-grid, none);
+      background-size: 48px 48px;
+      opacity: 0.2;
+    }
+
+    /* Mobile-optimized spacing utilities */
+    @media (max-width: 767px) {
+      .mobile-px-tight {
+        padding-left: 0.75rem;  /* 12px */
+        padding-right: 0.75rem; /* 12px */
+      }
+      
+      .mobile-px-minimal {
+        padding-left: 0.5rem;   /* 8px */
+        padding-right: 0.5rem;  /* 8px */
+      }
+      
+      .mobile-p-tight {
+        padding: 0.75rem;       /* 12px all around */
+      }
+      
+      .mobile-p-minimal {
+        padding: 0.5rem;        /* 8px all around */
+      }
+    }
+  }
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+    body {
+      @apply bg-background text-foreground;
+      font-family: var(--font-sans);
+    }
+
+  /* Expressive styling from admin - ensures consistent visual language */
+  .ad-expressive {
+    /* Expressive styles are applied via design system CSS imports */
+    /* This ensures components match admin styling when theme is active */
+  }
+
+  /* Prevent layout shifts when swapping components */
+  /* Ensure design system components maintain same dimensions as portfolio components */
+  .ad-expressive [data-ads="card"],
+  .ad-expressive .ad-card {
+    /* Maintain minimum dimensions to prevent shifts */
+    min-height: inherit;
+  }
+
+  /* Navigation size preservation */
+  nav {
+    /* Ensure navigation maintains height regardless of component swap */
+    min-height: 4rem; /* py-4 = 1rem top + 1rem bottom + content */
+  }
+}
