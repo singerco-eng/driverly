@@ -94,7 +94,7 @@ export function LicensePhotoUpload({
           type="file"
           accept="image/*"
           capture="environment"
-          className="sr-only"
+          style={{ display: 'none' }}
           onChange={(event) => {
             const file = event.target.files?.[0];
             if (file) void handleUpload(file);
