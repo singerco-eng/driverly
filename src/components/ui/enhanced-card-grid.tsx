@@ -85,14 +85,14 @@ function EnhancedCardGridInner<T extends { id: string }>({
 }) {
   // Use realtime data if available, otherwise use provided data
   const displayData = realtimeData || data;
-  const isLoading = loading || (realtimeStatus === null && !data.length);
   
-  // Show skeleton loading
-  if (isLoading) {
+  // Show skeleton loading - only based on explicit loading prop
+  // Don't treat disabled realtime (realtimeStatus === null) as loading
+  if (loading) {
     return <CardGridSkeleton count={skeletonCount} className={className} />;
   }
   
-  // Show empty state
+  // Show empty state when no data
   if (!displayData.length && emptyState) {
     return <div className={className}>{emptyState}</div>;
   }

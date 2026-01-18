@@ -20,6 +20,7 @@ import VehicleDetailPage from '@/pages/admin/VehicleDetail';
 import AdminSettings from '@/pages/admin/Settings';
 import ApplicationsPage from '@/pages/admin/Applications';
 import ApplicationReviewPage from '@/pages/admin/ApplicationReview';
+import CredentialTypes from '@/pages/admin/CredentialTypes';
 import ApplicationPage from '@/pages/apply/[companySlug]';
 import ApplicationStatus from '@/pages/driver/ApplicationStatus';
 
@@ -96,6 +97,7 @@ function App() {
                 <Route path="applications" element={<ApplicationsPage />} />
                 <Route path="applications/:id" element={<ApplicationReviewPage />} />
                 <Route path="settings" element={<AdminSettings />} />
+              <Route path="settings/credentials" element={<CredentialTypes />} />
               </Route>
 
               {/* Driver routes */}

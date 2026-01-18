@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useApplicationDraft, useSubmitApplication } from '@/hooks/useApplications';
+import { useDriverByUserId } from '@/hooks/useDrivers';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { ApplicationProgress, ApplicationStep } from '@/components/features/apply/ApplicationProgress';
 import { ApplicationAutoSave } from '@/components/features/apply/ApplicationAutoSave';
@@ -59,25 +60,47 @@ function buildErrorMap(issues: { path: (string | number)[]; message: string }[],
 export function ApplicationWizard({ company }: ApplicationWizardProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<ApplicationFormData>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { data: draft } = useApplicationDraft(company.id);
+  const { data: existingDriver } = useDriverByUserId(user?.id);
   const submitApplication = useSubmitApplication();
+
+  // Redirect if user already has a valid application (not rejected with reapply allowed)
+  useEffect(() => {
+    if (!existingDriver) return;
+    
+    const status = existingDriver.application_status;
+    // Allow reapplication only if rejected and can_reapply_at has passed
+    const canReapply = 
+      status === 'rejected' && 
+      existingDriver.can_reapply_at && 
+      new Date(existingDriver.can_reapply_at) <= new Date();
+    
+    // If they have any active application status (not withdrawn, not eligible to reapply), redirect
+    if (status && status !== 'withdrawn' && !canReapply) {
+      navigate('/driver/application-status', { replace: true });
+    }
+  }, [existingDriver, navigate]);
 
   const steps = useMemo(
     () => (formData.employmentType === '1099' ? STEPS_1099 : STEPS_W2),
     [formData.employmentType]
   );
 
+  // Only load draft on initial mount to avoid overwriting local changes
+  const [draftLoaded, setDraftLoaded] = useState(false);
   useEffect(() => {
-    if (draft?.form_data) {
+    if (draft?.form_data && !draftLoaded) {
       setFormData(draft.form_data as ApplicationFormData);
       if (draft.current_step) {
         setCurrentStep(draft.current_step);
       }
+      setDraftLoaded(true);
     }
-  }, [draft]);
+  }, [draft, draftLoaded]);
 
   useEffect(() => {
     if (currentStep > steps.length) {
@@ -231,16 +254,27 @@ export function ApplicationWizard({ company }: ApplicationWizardProps) {
       return;
     }
 
-    await submitApplication.mutateAsync({
-      companyId: company.id,
-      personalInfo: formData.personalInfo,
-      employmentType: formData.employmentType,
-      license: formData.license,
-      vehicle: formData.vehicle,
-      experienceNotes: formData.experienceNotes,
-      referralSource: formData.referralSource,
-      eulaVersion: formData.eulaVersion || 'v1',
-    });
+    try {
+      await submitApplication.mutateAsync({
+        companyId: company.id,
+        personalInfo: formData.personalInfo,
+        employmentType: formData.employmentType,
+        license: formData.license,
+        vehicle: formData.vehicle,
+        experienceNotes: formData.experienceNotes,
+        referralSource: formData.referralSource,
+        eulaVersion: formData.eulaVersion || 'v1',
+      });
+
+      // Redirect to application status page after successful submission
+      navigate('/driver/application-status');
+    } catch (error) {
+      // If application already exists, redirect to status page
+      if (error instanceof Error && error.message.includes('already exists')) {
+        navigate('/driver/application-status', { replace: true });
+      }
+      // Other errors are handled by the mutation's onError callback
+    }
   };
 
   const currentStepId = steps[currentStep - 1]?.id ?? 1;
@@ -298,7 +332,18 @@ export function ApplicationWizard({ company }: ApplicationWizardProps) {
                 userId={user.id}
                 onChange={updateFormData}
                 onFieldBlur={() => void saveDraft()}
-                onPhotoSaved={() => void saveDraft()}
+                onPhotoSaved={(field, newPath) => {
+                  // Build updated form data with the new photo path to avoid stale closure
+                  const updatedLicense = {
+                    ...(formData.license || {}),
+                    [field]: newPath,
+                  };
+                  const updatedFormData = {
+                    ...formData,
+                    license: updatedLicense,
+                  };
+                  void saveDraft({ formData: updatedFormData });
+                }}
               />
             ) : (
               <div className="text-sm text-muted-foreground">

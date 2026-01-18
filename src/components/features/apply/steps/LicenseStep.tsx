@@ -9,7 +9,7 @@ interface LicenseStepProps {
   userId: string;
   onChange: (data: Partial<ApplicationFormData>) => void;
   onFieldBlur?: () => void;
-  onPhotoSaved?: () => void;
+  onPhotoSaved?: (field: 'frontUrl' | 'backUrl', newPath: string) => void;
 }
 
 export function LicenseStep({
@@ -81,7 +81,7 @@ export function LicenseStep({
           userId={userId}
           side="front"
           onChange={(path) => updateLicense('frontUrl', path)}
-          onSaved={onPhotoSaved}
+          onSaved={(newPath) => onPhotoSaved?.('frontUrl', newPath)}
         />
         <LicensePhotoUpload
           label="Back of License"
@@ -89,7 +89,7 @@ export function LicenseStep({
           userId={userId}
           side="back"
           onChange={(path) => updateLicense('backUrl', path)}
-          onSaved={onPhotoSaved}
+          onSaved={(newPath) => onPhotoSaved?.('backUrl', newPath)}
         />
       </div>
     </div>

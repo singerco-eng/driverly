@@ -736,15 +736,157 @@ ON CONFLICT DO NOTHING;
 UPDATE credential_type_templates SET expiration_interval_days = 365 WHERE name = 'Vehicle Inspection';
 
 -- =============================================================================
+-- MIGRATION 012: Broker Management
+-- =============================================================================
+
+-- 1. EXTEND BROKERS TABLE
+ALTER TABLE brokers
+  ADD COLUMN IF NOT EXISTS logo_url TEXT,
+  ADD COLUMN IF NOT EXISTS address_line1 TEXT,
+  ADD COLUMN IF NOT EXISTS address_line2 TEXT,
+  ADD COLUMN IF NOT EXISTS city TEXT,
+  ADD COLUMN IF NOT EXISTS state TEXT,
+  ADD COLUMN IF NOT EXISTS zip_code TEXT,
+  ADD COLUMN IF NOT EXISTS website TEXT,
+  ADD COLUMN IF NOT EXISTS contract_number TEXT,
+  ADD COLUMN IF NOT EXISTS notes TEXT,
+  ADD COLUMN IF NOT EXISTS service_states TEXT[] NOT NULL DEFAULT '{}',
+  ADD COLUMN IF NOT EXISTS accepted_vehicle_types TEXT[] NOT NULL DEFAULT ARRAY['sedan', 'wheelchair_van', 'stretcher_van', 'suv', 'minivan'],
+  ADD COLUMN IF NOT EXISTS accepted_employment_types TEXT[] NOT NULL DEFAULT ARRAY['w2', '1099'],
+  ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'active',
+  ADD COLUMN IF NOT EXISTS created_by UUID REFERENCES users(id);
+
+ALTER TABLE brokers DROP CONSTRAINT IF EXISTS brokers_status_check;
+ALTER TABLE brokers ADD CONSTRAINT brokers_status_check CHECK (status IN ('active', 'inactive'));
+
+CREATE INDEX IF NOT EXISTS idx_brokers_status ON brokers(company_id, status);
+
+-- 2. DRIVER-BROKER ASSIGNMENTS TABLE
+CREATE TABLE IF NOT EXISTS driver_broker_assignments (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  driver_id UUID NOT NULL REFERENCES drivers(id) ON DELETE CASCADE,
+  broker_id UUID NOT NULL REFERENCES brokers(id) ON DELETE CASCADE,
+  company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'assigned', 'removed')),
+  requested_by TEXT NOT NULL CHECK (requested_by IN ('admin', 'driver')),
+  requested_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  approved_by UUID REFERENCES users(id),
+  approved_at TIMESTAMPTZ,
+  removed_by UUID REFERENCES users(id),
+  removed_at TIMESTAMPTZ,
+  removal_reason TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(driver_id, broker_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_driver_broker_driver ON driver_broker_assignments(driver_id);
+CREATE INDEX IF NOT EXISTS idx_driver_broker_broker ON driver_broker_assignments(broker_id);
+CREATE INDEX IF NOT EXISTS idx_driver_broker_company ON driver_broker_assignments(company_id);
+CREATE INDEX IF NOT EXISTS idx_driver_broker_status ON driver_broker_assignments(status);
+
+ALTER TABLE driver_broker_assignments ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Super admins full access to broker assignments" ON driver_broker_assignments;
+CREATE POLICY "Super admins full access to broker assignments"
+  ON driver_broker_assignments FOR ALL TO authenticated
+  USING ((auth.jwt() -> 'app_metadata' ->> 'role') = 'super_admin')
+  WITH CHECK ((auth.jwt() -> 'app_metadata' ->> 'role') = 'super_admin');
+
+DROP POLICY IF EXISTS "Admins can manage broker assignments" ON driver_broker_assignments;
+CREATE POLICY "Admins can manage broker assignments"
+  ON driver_broker_assignments FOR ALL TO authenticated
+  USING (
+    company_id = (auth.jwt() -> 'app_metadata' ->> 'company_id')::uuid
+    AND (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
+  )
+  WITH CHECK (
+    company_id = (auth.jwt() -> 'app_metadata' ->> 'company_id')::uuid
+    AND (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
+  );
+
+DROP POLICY IF EXISTS "Company staff can view broker assignments" ON driver_broker_assignments;
+CREATE POLICY "Company staff can view broker assignments"
+  ON driver_broker_assignments FOR SELECT TO authenticated
+  USING (
+    company_id = (auth.jwt() -> 'app_metadata' ->> 'company_id')::uuid
+    AND (auth.jwt() -> 'app_metadata' ->> 'role') IN ('admin', 'coordinator')
+  );
+
+DROP POLICY IF EXISTS "Drivers can view own broker assignments" ON driver_broker_assignments;
+CREATE POLICY "Drivers can view own broker assignments"
+  ON driver_broker_assignments FOR SELECT TO authenticated
+  USING (driver_id IN (SELECT id FROM drivers WHERE user_id = auth.uid()));
+
+DROP POLICY IF EXISTS "Drivers can request broker assignment" ON driver_broker_assignments;
+CREATE POLICY "Drivers can request broker assignment"
+  ON driver_broker_assignments FOR INSERT TO authenticated
+  WITH CHECK (
+    driver_id IN (SELECT id FROM drivers WHERE user_id = auth.uid())
+    AND requested_by = 'driver'
+    AND status = 'pending'
+  );
+
+-- 3. BROKER RATES TABLE
+CREATE TABLE IF NOT EXISTS broker_rates (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  broker_id UUID NOT NULL REFERENCES brokers(id) ON DELETE CASCADE,
+  company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+  vehicle_type TEXT NOT NULL CHECK (vehicle_type IN ('sedan', 'suv', 'minivan', 'wheelchair_van', 'stretcher_van')),
+  base_rate DECIMAL(10,2) NOT NULL,
+  per_mile_rate DECIMAL(10,4) NOT NULL,
+  effective_from DATE NOT NULL DEFAULT CURRENT_DATE,
+  effective_to DATE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  created_by UUID REFERENCES users(id),
+  UNIQUE(broker_id, vehicle_type, effective_from)
+);
+
+CREATE INDEX IF NOT EXISTS idx_broker_rates_broker ON broker_rates(broker_id);
+CREATE INDEX IF NOT EXISTS idx_broker_rates_company ON broker_rates(company_id);
+
+ALTER TABLE broker_rates ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Super admins full access to broker rates" ON broker_rates;
+CREATE POLICY "Super admins full access to broker rates"
+  ON broker_rates FOR ALL TO authenticated
+  USING ((auth.jwt() -> 'app_metadata' ->> 'role') = 'super_admin')
+  WITH CHECK ((auth.jwt() -> 'app_metadata' ->> 'role') = 'super_admin');
+
+DROP POLICY IF EXISTS "Admins can manage broker rates" ON broker_rates;
+CREATE POLICY "Admins can manage broker rates"
+  ON broker_rates FOR ALL TO authenticated
+  USING (
+    company_id = (auth.jwt() -> 'app_metadata' ->> 'company_id')::uuid
+    AND (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
+  )
+  WITH CHECK (
+    company_id = (auth.jwt() -> 'app_metadata' ->> 'company_id')::uuid
+    AND (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
+  );
+
+DROP POLICY IF EXISTS "Company members can view broker rates" ON broker_rates;
+CREATE POLICY "Company members can view broker rates"
+  ON broker_rates FOR SELECT TO authenticated
+  USING (company_id = (auth.jwt() -> 'app_metadata' ->> 'company_id')::uuid);
+
+-- 4. TRIGGERS
+DROP TRIGGER IF EXISTS update_broker_rates_updated_at ON broker_rates;
+CREATE TRIGGER update_broker_rates_updated_at
+  BEFORE UPDATE ON broker_rates FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- =============================================================================
 -- VERIFICATION
 -- =============================================================================
 
-SELECT 'Migrations 007-011 applied successfully!' as status;
+SELECT 'Migrations 007-012 applied successfully!' as status;
 
 -- Verify tables exist
 SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = 'application_drafts') as application_drafts_exists;
 SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = 'credential_types') as credential_types_exists;
 SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = 'driver_credentials') as driver_credentials_exists;
+SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = 'driver_broker_assignments') as driver_broker_assignments_exists;
+SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = 'broker_rates') as broker_rates_exists;
 
 -- Verify bucket exists
 SELECT id, name, public FROM storage.buckets WHERE id = 'credential-documents';
@@ -756,4 +898,4 @@ SELECT tgname FROM pg_trigger WHERE tgname = 'on_auth_user_created';
 SELECT COUNT(*) as template_count FROM credential_type_templates;
 
 -- Verify key policies
-SELECT policyname FROM pg_policies WHERE tablename IN ('application_drafts', 'credential_types', 'driver_credentials') ORDER BY tablename, policyname;
+SELECT policyname FROM pg_policies WHERE tablename IN ('driver_broker_assignments', 'broker_rates') ORDER BY tablename, policyname;

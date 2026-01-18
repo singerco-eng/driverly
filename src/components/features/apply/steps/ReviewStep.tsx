@@ -52,7 +52,7 @@ export function ReviewStep({ data, errors, onChange }: ReviewStepProps) {
         <Checkbox
           id="eulaAccepted"
           checked={data.eulaAccepted === true}
-          onCheckedChange={(checked) => onChange({ eulaAccepted: checked === true })}
+          onCheckedChange={(checked) => onChange({ eulaAccepted: checked === true, eulaVersion: 'v1' })}
         />
         <Label htmlFor="eulaAccepted" className="leading-5">
           I agree to the Driverly Terms of Service and Privacy Policy.

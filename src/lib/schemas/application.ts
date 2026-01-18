@@ -42,8 +42,9 @@ export const licenseSchema = z.object({
   number: z.string().min(5, 'Invalid license number'),
   state: z.string().length(2, 'Use 2-letter state code'),
   expiration: z.string().refine((date) => new Date(date) > new Date(), 'License must not be expired'),
-  frontUrl: z.string().url('Front photo is required'),
-  backUrl: z.string().url('Back photo is required'),
+  // These are storage paths, not URLs - just validate they exist
+  frontUrl: z.string().min(1, 'Front photo is required'),
+  backUrl: z.string().min(1, 'Back photo is required'),
 });
 
 export const vehicleSchema = z

@@ -38,7 +38,7 @@ const navItems = [
   { path: '/admin/drivers', label: 'Drivers', icon: Users },
   { path: '/admin/applications', label: 'Applications', icon: FileText },
   { path: '/admin/vehicles', label: 'Vehicles', icon: Car },
-  { path: '/admin/settings', label: 'Settings', icon: Settings },
+  { path: '/admin/settings/credentials', label: 'Credentials', icon: FileText },
 ];
 
 export default function AdminLayout() {

@@ -66,9 +66,9 @@ export async function getApplicationDraft(companyId: string, userId: string) {
     .select('*')
     .eq('user_id', userId)
     .eq('company_id', companyId)
-    .single();
+    .maybeSingle();
 
-  if (error && error.code !== 'PGRST116') throw error;
+  if (error) throw error;
   return data;
 }
 
@@ -109,11 +109,32 @@ export async function deleteApplicationDraft(companyId: string, userId: string) 
 }
 
 export async function submitApplication(payload: ApplicationSubmission) {
-  const { data, error } = await supabase.functions.invoke('submit-application', {
-    body: payload,
+  // Get the current session for auth header
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData?.session?.access_token;
+  
+  if (!token) {
+    throw new Error('Not authenticated');
+  }
+
+  // Use raw fetch for better error handling
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const response = await fetch(`${supabaseUrl}/functions/v1/submit-application`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
   });
 
-  if (error) throw error;
+  const data = await response.json();
+
+  if (!response.ok) {
+    // Extract the error message from the response body
+    throw new Error(data?.error || `Request failed with status ${response.status}`);
+  }
+
   return data;
 }
 

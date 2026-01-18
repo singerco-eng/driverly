@@ -15,19 +15,19 @@ export interface NotificationToastProps {
 const variantConfig = {
   default: {
     icon: Info,
-    className: "border-border/20 bg-glass-intense backdrop-blur-md text-white shadow-[0_8px_32px_hsl(218_95%_58%_/_0.3),0_4px_16px_hsl(259_94%_56%_/_0.2)]",
+    className: "border-border/20 bg-glass-intense backdrop-blur-md text-white shadow-glow-subtle",
   },
   success: {
     icon: CheckCircle,
-    className: "border-border/20 bg-glass-intense backdrop-blur-md text-white shadow-[0_8px_32px_hsl(218_95%_58%_/_0.3),0_4px_16px_hsl(259_94%_56%_/_0.2)]",
+    className: "border-border/20 bg-glass-intense backdrop-blur-md text-white shadow-glow-subtle",
   },
   warning: {
     icon: AlertCircle,
-    className: "border-border/20 bg-glass-intense backdrop-blur-md text-white shadow-[0_8px_32px_hsl(218_95%_58%_/_0.3),0_4px_16px_hsl(259_94%_56%_/_0.2)]",
+    className: "border-border/20 bg-glass-intense backdrop-blur-md text-white shadow-glow-subtle",
   },
   destructive: {
     icon: X,
-    className: "border-border/20 bg-glass-intense backdrop-blur-md text-white shadow-[0_8px_32px_hsl(218_95%_58%_/_0.3),0_4px_16px_hsl(259_94%_56%_/_0.2)]",
+    className: "border-border/20 bg-glass-intense backdrop-blur-md text-white shadow-glow-subtle",
   },
 }
 

@@ -70,8 +70,9 @@ All colors MUST be HSL.
       /* Shadows - neutral */
       --shadow-soft: 0 4px 6px -1px hsl(0 0% 5% / 0.3);
       --shadow-medium: 0 10px 25px -3px hsl(0 0% 5% / 0.4);
-      --shadow-glow: 0 0 20px hsl(0 0% 60% / 0.15);
-      --shadow-glow-intense: 0 0 30px hsl(0 0% 60% / 0.25);
+      --shadow-glow-subtle: 0 0 8px hsl(0 0% 60% / 0.04);
+      --shadow-glow: 0 0 15px hsl(0 0% 60% / 0.08);
+      --shadow-glow-intense: 0 0 20px hsl(0 0% 60% / 0.12);
 
       /* Real-time status colors */
       --live-connected: 142 76% 42%;
@@ -291,8 +292,12 @@ All colors MUST be HSL.
       background-clip: text;
     }
 
+    .shadow-glow-subtle {
+      box-shadow: var(--shadow-glow-subtle, 0 0 8px hsl(var(--primary) / 0.04));
+    }
+
     .shadow-glow {
-      box-shadow: var(--decor-glow, 0 0 30px hsl(var(--primary) / 0.3));
+      box-shadow: var(--decor-glow, 0 0 15px hsl(var(--primary) / 0.1));
     }
 
     .grid-overlay {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,24 +12,33 @@ interface VehicleStepProps {
   onFieldBlur?: () => void;
 }
 
-export function VehicleStep({ data, errors, onChange, onFieldBlur }: VehicleStepProps) {
-  const [skipVehicle, setSkipVehicle] = useState(!data.vehicle);
-  const vehicle = data.vehicle || {
-    type: 'sedan',
-    make: '',
-    model: '',
-    year: new Date().getFullYear(),
-    licensePlate: '',
-    color: '',
-  };
+// Default vehicle object - stable reference outside component
+const DEFAULT_VEHICLE = {
+  type: 'sedan' as const,
+  make: '',
+  model: '',
+  year: new Date().getFullYear(),
+  licensePlate: '',
+  color: '',
+};
 
+export function VehicleStep({ data, errors, onChange, onFieldBlur }: VehicleStepProps) {
+  // Default to showing the vehicle form (skip = false)
+  const [skipVehicle, setSkipVehicle] = useState(false);
+  
+  // Use existing data or fallback to defaults for display
+  const vehicle = useMemo(() => data.vehicle || DEFAULT_VEHICLE, [data.vehicle]);
+
+  // Only run when skipVehicle changes - handle toggling
   useEffect(() => {
     if (skipVehicle) {
       onChange({ vehicle: undefined });
     } else if (!data.vehicle) {
-      onChange({ vehicle });
+      // Only set default if there's no existing vehicle
+      onChange({ vehicle: DEFAULT_VEHICLE });
     }
-  }, [data.vehicle, onChange, skipVehicle, vehicle]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [skipVehicle]);
 
   const updateVehicle = (field: keyof typeof vehicle, value: string | number) => {
     onChange({ vehicle: { ...vehicle, [field]: value } });
