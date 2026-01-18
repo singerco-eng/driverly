@@ -379,6 +379,27 @@ BEGIN
 END $$;
 
 -- =============================================================================
+-- MIGRATION 008b: Authenticated users can view active companies (for application)
+-- =============================================================================
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE policyname = 'Authenticated users can view active companies' 
+    AND tablename = 'companies'
+  ) THEN
+    CREATE POLICY "Authenticated users can view active companies"
+      ON companies FOR SELECT
+      TO authenticated
+      USING (status = 'active');
+    RAISE NOTICE 'Created policy: Authenticated users can view active companies';
+  ELSE
+    RAISE NOTICE 'Policy already exists: Authenticated users can view active companies';
+  END IF;
+END $$;
+
+-- =============================================================================
 -- MIGRATION 010: Auto-Create User Profile on Signup
 -- =============================================================================
 
