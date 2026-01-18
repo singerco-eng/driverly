@@ -190,9 +190,13 @@ export function applyThemeTokens(tokens: ThemeTokens) {
   root.style.setProperty('--glass-intense', `hsl(${tokens.muted} / 0.9)`);
   root.style.setProperty('--glass-dark', `hsl(${tokens.background} / 0.95)`);
 
-  root.style.setProperty('--shadow-glow-subtle', `0 0 8px hsl(${tokens.primary} / 0.04)`);
-  root.style.setProperty('--shadow-glow', `0 0 15px hsl(${tokens.primary} / 0.08)`);
-  root.style.setProperty('--shadow-glow-intense', `0 0 20px hsl(${tokens.primary} / 0.12)`);
+  root.style.setProperty('--shadow-glow-subtle', `0 0 6px hsl(${tokens.primary} / 0.03)`);
+  root.style.setProperty('--shadow-glow', `0 0 10px hsl(${tokens.primary} / 0.05)`);
+  root.style.setProperty('--shadow-glow-intense', `0 0 15px hsl(${tokens.primary} / 0.08)`);
+
+  // Sidebar colors - use primary for active state
+  root.style.setProperty('--sidebar-accent', tokens.primary);
+  root.style.setProperty('--sidebar-accent-foreground', tokens.primaryForeground);
 }
 
 function adjustLightness(hsl: string, amount: number): string {

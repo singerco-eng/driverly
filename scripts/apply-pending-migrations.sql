@@ -876,10 +876,91 @@ CREATE TRIGGER update_broker_rates_updated_at
   BEFORE UPDATE ON broker_rates FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- =============================================================================
+-- MIGRATION 013: Vehicle Assignment Extensions
+-- =============================================================================
+
+-- 1. EXTEND DRIVER_VEHICLE_ASSIGNMENTS TABLE
+ALTER TABLE driver_vehicle_assignments
+  ADD COLUMN IF NOT EXISTS starts_at TIMESTAMPTZ DEFAULT NOW(),
+  ADD COLUMN IF NOT EXISTS ends_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS assigned_by UUID REFERENCES users(id),
+  ADD COLUMN IF NOT EXISTS ended_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS ended_by UUID REFERENCES users(id),
+  ADD COLUMN IF NOT EXISTS end_reason TEXT;
+
+-- Update assignment_type check constraint to include 'borrowed'
+ALTER TABLE driver_vehicle_assignments DROP CONSTRAINT IF EXISTS driver_vehicle_assignments_assignment_type_check;
+ALTER TABLE driver_vehicle_assignments ADD CONSTRAINT driver_vehicle_assignments_assignment_type_check 
+  CHECK (assignment_type IN ('owned', 'assigned', 'borrowed'));
+
+-- Migrate 'shared' to 'borrowed' if any exist
+UPDATE driver_vehicle_assignments SET assignment_type = 'borrowed' WHERE assignment_type = 'shared';
+
+CREATE INDEX IF NOT EXISTS idx_driver_vehicle_assignments_active 
+  ON driver_vehicle_assignments(vehicle_id) WHERE ended_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_driver_vehicle_assignments_primary 
+  ON driver_vehicle_assignments(driver_id) WHERE is_primary = true AND ended_at IS NULL;
+
+-- 2. VEHICLE ASSIGNMENT HISTORY TABLE
+CREATE TABLE IF NOT EXISTS vehicle_assignment_history (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  vehicle_id UUID NOT NULL REFERENCES vehicles(id) ON DELETE CASCADE,
+  driver_id UUID NOT NULL REFERENCES drivers(id) ON DELETE CASCADE,
+  company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+  assignment_type TEXT NOT NULL,
+  is_primary BOOLEAN NOT NULL DEFAULT false,
+  action TEXT NOT NULL CHECK (action IN ('assigned', 'unassigned', 'transferred', 'primary_changed', 'extended', 'ended_early')),
+  started_at TIMESTAMPTZ,
+  ended_at TIMESTAMPTZ,
+  performed_by UUID REFERENCES users(id),
+  reason TEXT,
+  notes TEXT,
+  assignment_id UUID REFERENCES driver_vehicle_assignments(id) ON DELETE SET NULL,
+  transferred_to_driver_id UUID REFERENCES drivers(id),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_assignment_history_vehicle ON vehicle_assignment_history(vehicle_id);
+CREATE INDEX IF NOT EXISTS idx_assignment_history_driver ON vehicle_assignment_history(driver_id);
+CREATE INDEX IF NOT EXISTS idx_assignment_history_company ON vehicle_assignment_history(company_id);
+CREATE INDEX IF NOT EXISTS idx_assignment_history_created ON vehicle_assignment_history(created_at DESC);
+
+-- 3. RLS FOR VEHICLE ASSIGNMENT HISTORY
+ALTER TABLE vehicle_assignment_history ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Super admins full access to assignment history" ON vehicle_assignment_history;
+CREATE POLICY "Super admins full access to assignment history"
+  ON vehicle_assignment_history FOR ALL TO authenticated
+  USING ((auth.jwt() -> 'app_metadata' ->> 'role') = 'super_admin')
+  WITH CHECK ((auth.jwt() -> 'app_metadata' ->> 'role') = 'super_admin');
+
+DROP POLICY IF EXISTS "Admins can view company assignment history" ON vehicle_assignment_history;
+CREATE POLICY "Admins can view company assignment history"
+  ON vehicle_assignment_history FOR SELECT TO authenticated
+  USING (
+    company_id = (auth.jwt() -> 'app_metadata' ->> 'company_id')::uuid
+    AND (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
+  );
+
+DROP POLICY IF EXISTS "Admins can insert company assignment history" ON vehicle_assignment_history;
+CREATE POLICY "Admins can insert company assignment history"
+  ON vehicle_assignment_history FOR INSERT TO authenticated
+  WITH CHECK (
+    company_id = (auth.jwt() -> 'app_metadata' ->> 'company_id')::uuid
+    AND (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
+  );
+
+DROP POLICY IF EXISTS "Drivers can view own assignment history" ON vehicle_assignment_history;
+CREATE POLICY "Drivers can view own assignment history"
+  ON vehicle_assignment_history FOR SELECT TO authenticated
+  USING (driver_id IN (SELECT id FROM drivers WHERE user_id = auth.uid()));
+
+-- =============================================================================
 -- VERIFICATION
 -- =============================================================================
 
-SELECT 'Migrations 007-012 applied successfully!' as status;
+SELECT 'Migrations 007-013 applied successfully!' as status;
 
 -- Verify tables exist
 SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = 'application_drafts') as application_drafts_exists;
@@ -887,6 +968,7 @@ SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = 'creden
 SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = 'driver_credentials') as driver_credentials_exists;
 SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = 'driver_broker_assignments') as driver_broker_assignments_exists;
 SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = 'broker_rates') as broker_rates_exists;
+SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = 'vehicle_assignment_history') as vehicle_assignment_history_exists;
 
 -- Verify bucket exists
 SELECT id, name, public FROM storage.buckets WHERE id = 'credential-documents';
@@ -898,4 +980,4 @@ SELECT tgname FROM pg_trigger WHERE tgname = 'on_auth_user_created';
 SELECT COUNT(*) as template_count FROM credential_type_templates;
 
 -- Verify key policies
-SELECT policyname FROM pg_policies WHERE tablename IN ('driver_broker_assignments', 'broker_rates') ORDER BY tablename, policyname;
+SELECT policyname FROM pg_policies WHERE tablename = 'vehicle_assignment_history' ORDER BY policyname;

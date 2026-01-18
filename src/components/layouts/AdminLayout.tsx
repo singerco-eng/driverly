@@ -10,6 +10,7 @@ import {
   LogOut,
   ChevronsUpDown,
   FileText,
+  Building2,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -38,6 +39,7 @@ const navItems = [
   { path: '/admin/drivers', label: 'Drivers', icon: Users },
   { path: '/admin/applications', label: 'Applications', icon: FileText },
   { path: '/admin/vehicles', label: 'Vehicles', icon: Car },
+  { path: '/admin/brokers', label: 'Brokers', icon: Building2 },
   { path: '/admin/settings/credentials', label: 'Credentials', icon: FileText },
 ];
 
