@@ -441,13 +441,310 @@ WHERE NOT EXISTS (
 ON CONFLICT (id) DO NOTHING;
 
 -- =============================================================================
+-- MIGRATION 011: Credential Types
+-- =============================================================================
+
+-- 1. BROKERS TABLE (minimal, prerequisite for broker-scoped credentials)
+CREATE TABLE IF NOT EXISTS brokers (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+  name VARCHAR(255) NOT NULL,
+  code VARCHAR(50),
+  contact_name VARCHAR(255),
+  contact_email VARCHAR(255),
+  contact_phone VARCHAR(50),
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(company_id, name)
+);
+
+CREATE INDEX IF NOT EXISTS idx_brokers_company_id ON brokers(company_id);
+CREATE INDEX IF NOT EXISTS idx_brokers_active ON brokers(company_id, is_active);
+
+ALTER TABLE brokers ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Super admins full access to brokers" ON brokers;
+CREATE POLICY "Super admins full access to brokers"
+  ON brokers FOR ALL TO authenticated
+  USING ((auth.jwt() -> 'app_metadata' ->> 'role') = 'super_admin')
+  WITH CHECK ((auth.jwt() -> 'app_metadata' ->> 'role') = 'super_admin');
+
+DROP POLICY IF EXISTS "Admins can manage company brokers" ON brokers;
+CREATE POLICY "Admins can manage company brokers"
+  ON brokers FOR ALL TO authenticated
+  USING (
+    company_id = (auth.jwt() -> 'app_metadata' ->> 'company_id')::uuid
+    AND (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
+  )
+  WITH CHECK (
+    company_id = (auth.jwt() -> 'app_metadata' ->> 'company_id')::uuid
+    AND (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
+  );
+
+DROP POLICY IF EXISTS "Company members can view brokers" ON brokers;
+CREATE POLICY "Company members can view brokers"
+  ON brokers FOR SELECT TO authenticated
+  USING (company_id = (auth.jwt() -> 'app_metadata' ->> 'company_id')::uuid);
+
+-- 2. CREDENTIAL TYPES TABLE
+CREATE TABLE IF NOT EXISTS credential_types (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  description TEXT,
+  category TEXT NOT NULL CHECK (category IN ('driver', 'vehicle')),
+  scope TEXT NOT NULL CHECK (scope IN ('global', 'broker')),
+  broker_id UUID REFERENCES brokers(id) ON DELETE CASCADE,
+  employment_type TEXT NOT NULL DEFAULT 'both' CHECK (employment_type IN ('both', 'w2_only', '1099_only')),
+  requirement TEXT NOT NULL DEFAULT 'required' CHECK (requirement IN ('required', 'optional', 'recommended')),
+  vehicle_types TEXT[],
+  submission_type TEXT NOT NULL CHECK (submission_type IN (
+    'document_upload', 'photo', 'signature', 'form', 'admin_verified', 'date_entry'
+  )),
+  form_schema JSONB,
+  signature_document_url TEXT,
+  expiration_type TEXT NOT NULL DEFAULT 'never' CHECK (expiration_type IN (
+    'never', 'fixed_interval', 'driver_specified'
+  )),
+  expiration_interval_days INTEGER,
+  expiration_warning_days INTEGER DEFAULT 30,
+  grace_period_days INTEGER DEFAULT 30,
+  display_order INTEGER DEFAULT 0,
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  is_seeded BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  created_by UUID REFERENCES users(id),
+  CONSTRAINT broker_required_for_broker_scope CHECK (scope = 'global' OR broker_id IS NOT NULL)
+);
+
+CREATE INDEX IF NOT EXISTS idx_credential_types_company ON credential_types(company_id);
+CREATE INDEX IF NOT EXISTS idx_credential_types_broker ON credential_types(broker_id);
+CREATE INDEX IF NOT EXISTS idx_credential_types_active ON credential_types(company_id, is_active);
+CREATE INDEX IF NOT EXISTS idx_credential_types_category ON credential_types(company_id, category);
+
+ALTER TABLE credential_types ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Super admins full access to credential_types" ON credential_types;
+CREATE POLICY "Super admins full access to credential_types"
+  ON credential_types FOR ALL TO authenticated
+  USING ((auth.jwt() -> 'app_metadata' ->> 'role') = 'super_admin')
+  WITH CHECK ((auth.jwt() -> 'app_metadata' ->> 'role') = 'super_admin');
+
+DROP POLICY IF EXISTS "Admins can manage company credential types" ON credential_types;
+CREATE POLICY "Admins can manage company credential types"
+  ON credential_types FOR ALL TO authenticated
+  USING (
+    company_id = (auth.jwt() -> 'app_metadata' ->> 'company_id')::uuid
+    AND (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
+  )
+  WITH CHECK (
+    company_id = (auth.jwt() -> 'app_metadata' ->> 'company_id')::uuid
+    AND (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
+  );
+
+DROP POLICY IF EXISTS "Company members can view credential types" ON credential_types;
+CREATE POLICY "Company members can view credential types"
+  ON credential_types FOR SELECT TO authenticated
+  USING (company_id = (auth.jwt() -> 'app_metadata' ->> 'company_id')::uuid);
+
+-- 3. DRIVER CREDENTIALS TABLE
+CREATE TABLE IF NOT EXISTS driver_credentials (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  driver_id UUID NOT NULL REFERENCES drivers(id) ON DELETE CASCADE,
+  credential_type_id UUID NOT NULL REFERENCES credential_types(id) ON DELETE CASCADE,
+  company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+  status TEXT NOT NULL DEFAULT 'not_submitted' CHECK (status IN (
+    'not_submitted', 'pending_review', 'approved', 'rejected', 'expired'
+  )),
+  document_url TEXT,
+  signature_data JSONB,
+  form_data JSONB,
+  entered_date DATE,
+  notes TEXT,
+  expires_at TIMESTAMPTZ,
+  reviewed_at TIMESTAMPTZ,
+  reviewed_by UUID REFERENCES users(id),
+  review_notes TEXT,
+  rejection_reason TEXT,
+  grace_period_ends TIMESTAMPTZ,
+  submitted_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(driver_id, credential_type_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_driver_credentials_driver ON driver_credentials(driver_id);
+CREATE INDEX IF NOT EXISTS idx_driver_credentials_type ON driver_credentials(credential_type_id);
+CREATE INDEX IF NOT EXISTS idx_driver_credentials_company ON driver_credentials(company_id);
+CREATE INDEX IF NOT EXISTS idx_driver_credentials_status ON driver_credentials(status);
+
+ALTER TABLE driver_credentials ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Super admins full access to driver_credentials" ON driver_credentials;
+CREATE POLICY "Super admins full access to driver_credentials"
+  ON driver_credentials FOR ALL TO authenticated
+  USING ((auth.jwt() -> 'app_metadata' ->> 'role') = 'super_admin')
+  WITH CHECK ((auth.jwt() -> 'app_metadata' ->> 'role') = 'super_admin');
+
+DROP POLICY IF EXISTS "Admins can manage company driver credentials" ON driver_credentials;
+CREATE POLICY "Admins can manage company driver credentials"
+  ON driver_credentials FOR ALL TO authenticated
+  USING (
+    company_id = (auth.jwt() -> 'app_metadata' ->> 'company_id')::uuid
+    AND (auth.jwt() -> 'app_metadata' ->> 'role') IN ('admin', 'coordinator')
+  )
+  WITH CHECK (
+    company_id = (auth.jwt() -> 'app_metadata' ->> 'company_id')::uuid
+    AND (auth.jwt() -> 'app_metadata' ->> 'role') IN ('admin', 'coordinator')
+  );
+
+DROP POLICY IF EXISTS "Drivers can view own credentials" ON driver_credentials;
+CREATE POLICY "Drivers can view own credentials"
+  ON driver_credentials FOR SELECT TO authenticated
+  USING (driver_id IN (SELECT id FROM drivers WHERE user_id = auth.uid()));
+
+DROP POLICY IF EXISTS "Drivers can submit own credentials" ON driver_credentials;
+CREATE POLICY "Drivers can submit own credentials"
+  ON driver_credentials FOR INSERT TO authenticated
+  WITH CHECK (driver_id IN (SELECT id FROM drivers WHERE user_id = auth.uid()));
+
+DROP POLICY IF EXISTS "Drivers can update own credentials" ON driver_credentials;
+CREATE POLICY "Drivers can update own credentials"
+  ON driver_credentials FOR UPDATE TO authenticated
+  USING (driver_id IN (SELECT id FROM drivers WHERE user_id = auth.uid()));
+
+-- 4. VEHICLE CREDENTIALS TABLE
+CREATE TABLE IF NOT EXISTS vehicle_credentials (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  vehicle_id UUID NOT NULL REFERENCES vehicles(id) ON DELETE CASCADE,
+  credential_type_id UUID NOT NULL REFERENCES credential_types(id) ON DELETE CASCADE,
+  company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+  status TEXT NOT NULL DEFAULT 'not_submitted' CHECK (status IN (
+    'not_submitted', 'pending_review', 'approved', 'rejected', 'expired'
+  )),
+  document_url TEXT,
+  signature_data JSONB,
+  form_data JSONB,
+  entered_date DATE,
+  notes TEXT,
+  expires_at TIMESTAMPTZ,
+  reviewed_at TIMESTAMPTZ,
+  reviewed_by UUID REFERENCES users(id),
+  review_notes TEXT,
+  rejection_reason TEXT,
+  grace_period_ends TIMESTAMPTZ,
+  submitted_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(vehicle_id, credential_type_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_vehicle_credentials_vehicle ON vehicle_credentials(vehicle_id);
+CREATE INDEX IF NOT EXISTS idx_vehicle_credentials_type ON vehicle_credentials(credential_type_id);
+CREATE INDEX IF NOT EXISTS idx_vehicle_credentials_company ON vehicle_credentials(company_id);
+CREATE INDEX IF NOT EXISTS idx_vehicle_credentials_status ON vehicle_credentials(status);
+
+ALTER TABLE vehicle_credentials ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Super admins full access to vehicle_credentials" ON vehicle_credentials;
+CREATE POLICY "Super admins full access to vehicle_credentials"
+  ON vehicle_credentials FOR ALL TO authenticated
+  USING ((auth.jwt() -> 'app_metadata' ->> 'role') = 'super_admin')
+  WITH CHECK ((auth.jwt() -> 'app_metadata' ->> 'role') = 'super_admin');
+
+DROP POLICY IF EXISTS "Admins can manage company vehicle credentials" ON vehicle_credentials;
+CREATE POLICY "Admins can manage company vehicle credentials"
+  ON vehicle_credentials FOR ALL TO authenticated
+  USING (
+    company_id = (auth.jwt() -> 'app_metadata' ->> 'company_id')::uuid
+    AND (auth.jwt() -> 'app_metadata' ->> 'role') IN ('admin', 'coordinator')
+  )
+  WITH CHECK (
+    company_id = (auth.jwt() -> 'app_metadata' ->> 'company_id')::uuid
+    AND (auth.jwt() -> 'app_metadata' ->> 'role') IN ('admin', 'coordinator')
+  );
+
+-- 5. CREDENTIAL TYPE TEMPLATES (Super Admin)
+CREATE TABLE IF NOT EXISTS credential_type_templates (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name TEXT NOT NULL,
+  description TEXT,
+  category TEXT NOT NULL CHECK (category IN ('driver', 'vehicle')),
+  submission_type TEXT NOT NULL CHECK (submission_type IN (
+    'document_upload', 'photo', 'signature', 'form', 'admin_verified', 'date_entry'
+  )),
+  employment_type TEXT NOT NULL DEFAULT 'both',
+  requirement TEXT NOT NULL DEFAULT 'required',
+  expiration_type TEXT NOT NULL DEFAULT 'never',
+  expiration_interval_days INTEGER,
+  expiration_warning_days INTEGER DEFAULT 30,
+  form_schema JSONB,
+  signature_document_url TEXT,
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  display_order INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE credential_type_templates ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Super Admins can manage templates" ON credential_type_templates;
+CREATE POLICY "Super Admins can manage templates"
+  ON credential_type_templates FOR ALL TO authenticated
+  USING ((auth.jwt() -> 'app_metadata' ->> 'role') = 'super_admin')
+  WITH CHECK ((auth.jwt() -> 'app_metadata' ->> 'role') = 'super_admin');
+
+DROP POLICY IF EXISTS "Everyone can view active templates" ON credential_type_templates;
+CREATE POLICY "Everyone can view active templates"
+  ON credential_type_templates FOR SELECT TO authenticated
+  USING (is_active = true);
+
+-- 6. UPDATED_AT TRIGGERS
+DROP TRIGGER IF EXISTS update_brokers_updated_at ON brokers;
+CREATE TRIGGER update_brokers_updated_at
+  BEFORE UPDATE ON brokers FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_credential_types_updated_at ON credential_types;
+CREATE TRIGGER update_credential_types_updated_at
+  BEFORE UPDATE ON credential_types FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_driver_credentials_updated_at ON driver_credentials;
+CREATE TRIGGER update_driver_credentials_updated_at
+  BEFORE UPDATE ON driver_credentials FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_vehicle_credentials_updated_at ON vehicle_credentials;
+CREATE TRIGGER update_vehicle_credentials_updated_at
+  BEFORE UPDATE ON vehicle_credentials FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_credential_type_templates_updated_at ON credential_type_templates;
+CREATE TRIGGER update_credential_type_templates_updated_at
+  BEFORE UPDATE ON credential_type_templates FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- 7. SEED DEFAULT TEMPLATES
+INSERT INTO credential_type_templates (name, description, category, submission_type, requirement, expiration_type, display_order)
+VALUES
+  ('Background Check', 'Upload your background check certificate from an approved provider.', 'driver', 'document_upload', 'required', 'never', 1),
+  ('Driver''s License', 'Upload photos of the front and back of your valid driver''s license.', 'driver', 'photo', 'required', 'driver_specified', 2),
+  ('Vehicle Insurance', 'Upload your current vehicle insurance card or declaration page.', 'vehicle', 'document_upload', 'required', 'driver_specified', 3),
+  ('Vehicle Registration', 'Upload your current vehicle registration.', 'vehicle', 'document_upload', 'required', 'driver_specified', 4),
+  ('W-9 Form', 'Complete and sign the W-9 tax form for 1099 contractors.', 'driver', 'signature', 'required', 'never', 5),
+  ('Vehicle Inspection', 'Upload your most recent vehicle inspection certificate.', 'vehicle', 'document_upload', 'required', 'fixed_interval', 6)
+ON CONFLICT DO NOTHING;
+
+UPDATE credential_type_templates SET expiration_interval_days = 365 WHERE name = 'Vehicle Inspection';
+
+-- =============================================================================
 -- VERIFICATION
 -- =============================================================================
 
-SELECT 'Migrations 007, 008, 009, and 010 applied successfully!' as status;
+SELECT 'Migrations 007-011 applied successfully!' as status;
 
 -- Verify tables exist
 SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = 'application_drafts') as application_drafts_exists;
+SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = 'credential_types') as credential_types_exists;
+SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = 'driver_credentials') as driver_credentials_exists;
 
 -- Verify bucket exists
 SELECT id, name, public FROM storage.buckets WHERE id = 'credential-documents';
@@ -455,5 +752,8 @@ SELECT id, name, public FROM storage.buckets WHERE id = 'credential-documents';
 -- Verify trigger exists
 SELECT tgname FROM pg_trigger WHERE tgname = 'on_auth_user_created';
 
+-- Verify templates seeded
+SELECT COUNT(*) as template_count FROM credential_type_templates;
+
 -- Verify key policies
-SELECT policyname FROM pg_policies WHERE tablename IN ('application_drafts', 'companies', 'drivers') ORDER BY tablename, policyname;
+SELECT policyname FROM pg_policies WHERE tablename IN ('application_drafts', 'credential_types', 'driver_credentials') ORDER BY tablename, policyname;
