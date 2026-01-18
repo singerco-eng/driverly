@@ -957,27 +957,196 @@ CREATE POLICY "Drivers can view own assignment history"
   USING (driver_id IN (SELECT id FROM drivers WHERE user_id = auth.uid()));
 
 -- =============================================================================
+-- MIGRATION 014: Driver Onboarding
+-- =============================================================================
+
+-- 1. EXTEND DRIVERS TABLE
+ALTER TABLE drivers
+  ADD COLUMN IF NOT EXISTS onboarding_completed_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS welcome_modal_dismissed BOOLEAN DEFAULT false,
+  ADD COLUMN IF NOT EXISTS has_payment_info BOOLEAN DEFAULT false,
+  ADD COLUMN IF NOT EXISTS has_availability BOOLEAN DEFAULT false,
+  ADD COLUMN IF NOT EXISTS status_reason TEXT,
+  ADD COLUMN IF NOT EXISTS status_changed_at TIMESTAMPTZ;
+
+CREATE INDEX IF NOT EXISTS idx_drivers_onboarding 
+  ON drivers(company_id) WHERE onboarding_completed_at IS NULL;
+
+-- 2. DRIVER ONBOARDING PROGRESS TABLE
+CREATE TABLE IF NOT EXISTS driver_onboarding_progress (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  driver_id UUID NOT NULL REFERENCES drivers(id) ON DELETE CASCADE,
+  company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+  item_key TEXT NOT NULL,
+  completed BOOLEAN NOT NULL DEFAULT false,
+  completed_at TIMESTAMPTZ,
+  skipped BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(driver_id, item_key)
+);
+
+CREATE INDEX IF NOT EXISTS idx_onboarding_driver ON driver_onboarding_progress(driver_id);
+
+DROP TRIGGER IF EXISTS update_driver_onboarding_progress_updated_at ON driver_onboarding_progress;
+CREATE TRIGGER update_driver_onboarding_progress_updated_at
+  BEFORE UPDATE ON driver_onboarding_progress FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+ALTER TABLE driver_onboarding_progress ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Super admins full access to onboarding progress" ON driver_onboarding_progress;
+CREATE POLICY "Super admins full access to onboarding progress"
+  ON driver_onboarding_progress FOR ALL TO authenticated
+  USING ((auth.jwt() -> 'app_metadata' ->> 'role') = 'super_admin')
+  WITH CHECK ((auth.jwt() -> 'app_metadata' ->> 'role') = 'super_admin');
+
+DROP POLICY IF EXISTS "Admins can view company onboarding progress" ON driver_onboarding_progress;
+CREATE POLICY "Admins can view company onboarding progress"
+  ON driver_onboarding_progress FOR SELECT TO authenticated
+  USING (company_id = (auth.jwt() -> 'app_metadata' ->> 'company_id')::uuid AND (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+
+DROP POLICY IF EXISTS "Drivers can manage own onboarding progress" ON driver_onboarding_progress;
+CREATE POLICY "Drivers can manage own onboarding progress"
+  ON driver_onboarding_progress FOR ALL TO authenticated
+  USING (driver_id IN (SELECT id FROM drivers WHERE user_id = auth.uid()))
+  WITH CHECK (driver_id IN (SELECT id FROM drivers WHERE user_id = auth.uid()));
+
+-- 3. DRIVER AVAILABILITY TABLE
+CREATE TABLE IF NOT EXISTS driver_availability (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  driver_id UUID NOT NULL REFERENCES drivers(id) ON DELETE CASCADE,
+  company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+  day_of_week INTEGER NOT NULL CHECK (day_of_week >= 0 AND day_of_week <= 6),
+  start_time TIME NOT NULL,
+  end_time TIME NOT NULL,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(driver_id, day_of_week)
+);
+
+CREATE INDEX IF NOT EXISTS idx_availability_driver ON driver_availability(driver_id);
+
+ALTER TABLE driver_availability ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Super admins full access to availability" ON driver_availability;
+CREATE POLICY "Super admins full access to availability"
+  ON driver_availability FOR ALL TO authenticated
+  USING ((auth.jwt() -> 'app_metadata' ->> 'role') = 'super_admin')
+  WITH CHECK ((auth.jwt() -> 'app_metadata' ->> 'role') = 'super_admin');
+
+DROP POLICY IF EXISTS "Admins can view company availability" ON driver_availability;
+CREATE POLICY "Admins can view company availability"
+  ON driver_availability FOR SELECT TO authenticated
+  USING (company_id = (auth.jwt() -> 'app_metadata' ->> 'company_id')::uuid AND (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+
+DROP POLICY IF EXISTS "Drivers can manage own availability" ON driver_availability;
+CREATE POLICY "Drivers can manage own availability"
+  ON driver_availability FOR ALL TO authenticated
+  USING (driver_id IN (SELECT id FROM drivers WHERE user_id = auth.uid()))
+  WITH CHECK (driver_id IN (SELECT id FROM drivers WHERE user_id = auth.uid()));
+
+-- 4. DRIVER PAYMENT INFO TABLE
+CREATE TABLE IF NOT EXISTS driver_payment_info (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  driver_id UUID NOT NULL REFERENCES drivers(id) ON DELETE CASCADE UNIQUE,
+  company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+  payment_method TEXT NOT NULL CHECK (payment_method IN ('direct_deposit', 'check', 'paycard')),
+  bank_name TEXT,
+  account_type TEXT CHECK (account_type IN ('checking', 'savings')),
+  routing_number_last4 CHAR(4),
+  account_number_last4 CHAR(4),
+  check_address_line1 TEXT,
+  check_address_line2 TEXT,
+  check_city TEXT,
+  check_state TEXT,
+  check_zip TEXT,
+  is_verified BOOLEAN DEFAULT false,
+  verified_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_payment_info_driver ON driver_payment_info(driver_id);
+
+ALTER TABLE driver_payment_info ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Super admins full access to payment info" ON driver_payment_info;
+CREATE POLICY "Super admins full access to payment info"
+  ON driver_payment_info FOR ALL TO authenticated
+  USING ((auth.jwt() -> 'app_metadata' ->> 'role') = 'super_admin')
+  WITH CHECK ((auth.jwt() -> 'app_metadata' ->> 'role') = 'super_admin');
+
+DROP POLICY IF EXISTS "Admins can view company payment info" ON driver_payment_info;
+CREATE POLICY "Admins can view company payment info"
+  ON driver_payment_info FOR SELECT TO authenticated
+  USING (company_id = (auth.jwt() -> 'app_metadata' ->> 'company_id')::uuid AND (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+
+DROP POLICY IF EXISTS "Drivers can manage own payment info" ON driver_payment_info;
+CREATE POLICY "Drivers can manage own payment info"
+  ON driver_payment_info FOR ALL TO authenticated
+  USING (driver_id IN (SELECT id FROM drivers WHERE user_id = auth.uid()))
+  WITH CHECK (driver_id IN (SELECT id FROM drivers WHERE user_id = auth.uid()));
+
+-- 5. AUTO-UPDATE TRIGGERS
+CREATE OR REPLACE FUNCTION update_driver_has_payment_info()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF TG_OP = 'INSERT' OR TG_OP = 'UPDATE' THEN
+    UPDATE drivers SET has_payment_info = true WHERE id = NEW.driver_id;
+    RETURN NEW;
+  ELSIF TG_OP = 'DELETE' THEN
+    UPDATE drivers SET has_payment_info = false WHERE id = OLD.driver_id;
+    RETURN OLD;
+  END IF;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS trigger_update_has_payment_info ON driver_payment_info;
+CREATE TRIGGER trigger_update_has_payment_info
+  AFTER INSERT OR UPDATE OR DELETE ON driver_payment_info
+  FOR EACH ROW EXECUTE FUNCTION update_driver_has_payment_info();
+
+CREATE OR REPLACE FUNCTION update_driver_has_availability()
+RETURNS TRIGGER AS $$
+DECLARE
+  availability_count INTEGER;
+BEGIN
+  IF TG_OP = 'INSERT' OR TG_OP = 'UPDATE' THEN
+    SELECT COUNT(*) INTO availability_count FROM driver_availability WHERE driver_id = NEW.driver_id AND is_active = true;
+    UPDATE drivers SET has_availability = (availability_count > 0) WHERE id = NEW.driver_id;
+    RETURN NEW;
+  ELSIF TG_OP = 'DELETE' THEN
+    SELECT COUNT(*) INTO availability_count FROM driver_availability WHERE driver_id = OLD.driver_id AND is_active = true;
+    UPDATE drivers SET has_availability = (availability_count > 0) WHERE id = OLD.driver_id;
+    RETURN OLD;
+  END IF;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS trigger_update_has_availability ON driver_availability;
+CREATE TRIGGER trigger_update_has_availability
+  AFTER INSERT OR UPDATE OR DELETE ON driver_availability
+  FOR EACH ROW EXECUTE FUNCTION update_driver_has_availability();
+
+-- =============================================================================
 -- VERIFICATION
 -- =============================================================================
 
-SELECT 'Migrations 007-013 applied successfully!' as status;
+SELECT 'Migrations 007-014 applied successfully!' as status;
 
 -- Verify tables exist
 SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = 'application_drafts') as application_drafts_exists;
 SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = 'credential_types') as credential_types_exists;
-SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = 'driver_credentials') as driver_credentials_exists;
 SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = 'driver_broker_assignments') as driver_broker_assignments_exists;
-SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = 'broker_rates') as broker_rates_exists;
 SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = 'vehicle_assignment_history') as vehicle_assignment_history_exists;
-
--- Verify bucket exists
-SELECT id, name, public FROM storage.buckets WHERE id = 'credential-documents';
+SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = 'driver_onboarding_progress') as driver_onboarding_progress_exists;
+SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = 'driver_availability') as driver_availability_exists;
+SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = 'driver_payment_info') as driver_payment_info_exists;
 
 -- Verify trigger exists
-SELECT tgname FROM pg_trigger WHERE tgname = 'on_auth_user_created';
-
--- Verify templates seeded
-SELECT COUNT(*) as template_count FROM credential_type_templates;
+SELECT tgname FROM pg_trigger WHERE tgname IN ('on_auth_user_created', 'trigger_update_has_payment_info', 'trigger_update_has_availability');
 
 -- Verify key policies
-SELECT policyname FROM pg_policies WHERE tablename = 'vehicle_assignment_history' ORDER BY policyname;
+SELECT policyname FROM pg_policies WHERE tablename IN ('driver_onboarding_progress', 'driver_availability', 'driver_payment_info') ORDER BY tablename, policyname;

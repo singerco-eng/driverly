@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { VehicleOverviewTab } from '@/components/features/admin/VehicleOverviewTab';
 import { VehicleDetailsTab } from '@/components/features/admin/VehicleDetailsTab';
+import { VehicleAssignmentsTab } from '@/components/features/admin/VehicleAssignmentsTab';
 import { EditVehicleModal } from '@/components/features/admin/EditVehicleModal';
 import { useAuth } from '@/contexts/AuthContext';
 import type { VehicleStatus } from '@/types/vehicle';
@@ -141,9 +142,7 @@ export default function VehicleDetailPage() {
           <TabsTrigger value="credentials" disabled>
             Credentials
           </TabsTrigger>
-          <TabsTrigger value="assignments" disabled>
-            Assignments
-          </TabsTrigger>
+          <TabsTrigger value="assignments">Assignments</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-6">
@@ -151,6 +150,9 @@ export default function VehicleDetailPage() {
         </TabsContent>
         <TabsContent value="details" className="mt-6">
           <VehicleDetailsTab vehicle={vehicle} />
+        </TabsContent>
+        <TabsContent value="assignments" className="mt-6">
+          <VehicleAssignmentsTab vehicle={vehicle} />
         </TabsContent>
       </Tabs>
 
