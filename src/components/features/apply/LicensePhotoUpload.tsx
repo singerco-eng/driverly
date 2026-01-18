@@ -83,12 +83,13 @@ export function LicensePhotoUpload({
     <Card className="p-4 space-y-3">
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium">{label}</span>
-        <label className="cursor-pointer">
+        <label className="cursor-pointer relative">
           <input
             type="file"
             accept="image/*"
             capture="environment"
-            className="hidden"
+            className="absolute w-px h-px opacity-0 overflow-hidden"
+            style={{ clip: 'rect(0, 0, 0, 0)' }}
             disabled={isUploading}
             onChange={(event) => {
               const file = event.target.files?.[0];
