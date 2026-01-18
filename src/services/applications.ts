@@ -83,12 +83,17 @@ export async function upsertApplicationDraft({
   formData: ApplicationFormData;
   currentStep: number;
 }) {
-  const { error } = await supabase.from('application_drafts').upsert({
-    user_id: userId,
-    company_id: companyId,
-    form_data: formData,
-    current_step: currentStep,
-  });
+  const { error } = await supabase.from('application_drafts').upsert(
+    {
+      user_id: userId,
+      company_id: companyId,
+      form_data: formData,
+      current_step: currentStep,
+    },
+    {
+      onConflict: 'user_id,company_id',
+    }
+  );
 
   if (error) throw error;
 }
