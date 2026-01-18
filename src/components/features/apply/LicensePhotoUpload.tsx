@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 
@@ -86,13 +85,13 @@ export function LicensePhotoUpload({
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium">{label}</span>
         <Button variant="outline" size="sm" disabled={isUploading} asChild>
-          <label>
+          <label className="cursor-pointer">
             {isUploading ? 'Uploading...' : 'Upload'}
-            <Input
+            <input
               type="file"
               accept="image/*"
               capture="environment"
-              className="hidden"
+              className="sr-only"
               onChange={(event) => {
                 const file = event.target.files?.[0];
                 if (file) void handleUpload(file);
