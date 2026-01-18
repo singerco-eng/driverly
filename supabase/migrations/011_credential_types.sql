@@ -350,7 +350,7 @@ CREATE POLICY "Drivers can view own vehicle credentials"
     OR vehicle_id IN (
       SELECT dva.vehicle_id FROM driver_vehicle_assignments dva
       JOIN drivers d ON dva.driver_id = d.id
-      WHERE d.user_id = auth.uid() AND dva.unassigned_at IS NULL
+      WHERE d.user_id = auth.uid()
     )
   );
 

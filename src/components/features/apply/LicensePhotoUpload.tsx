@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
@@ -23,6 +23,7 @@ export function LicensePhotoUpload({
   const { toast } = useToast();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
   const inputId = `license-upload-${side}`;
 
   useEffect(() => {
@@ -80,6 +81,18 @@ export function LicensePhotoUpload({
     }
   };
 
+  const openFilePicker = () => {
+    const input = inputRef.current;
+    if (!input || isUploading) return;
+
+    if (typeof input.showPicker === 'function') {
+      input.showPicker();
+      return;
+    }
+
+    input.click();
+  };
+
   return (
     <Card className="p-4 space-y-3">
       <div className="flex items-center justify-between">
@@ -90,18 +103,22 @@ export function LicensePhotoUpload({
             isUploading ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-accent hover:text-accent-foreground'
           }`}
           aria-disabled={isUploading}
+          onClick={(event) => {
+            event.preventDefault();
+            openFilePicker();
+          }}
         >
           <input
             id={inputId}
+            ref={inputRef}
             type="file"
             accept="image/*"
-            capture="environment"
             disabled={isUploading}
             onChange={(event) => {
               const file = event.target.files?.[0];
               if (file) void handleUpload(file);
             }}
-            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+            className="sr-only"
           />
           {isUploading ? 'Uploading...' : 'Upload'}
         </label>
