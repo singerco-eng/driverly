@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
@@ -23,6 +23,8 @@ export function LicensePhotoUpload({
   const { toast } = useToast();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const inputId = `license-upload-${side}`;
 
   useEffect(() => {
     let isMounted = true;
@@ -79,27 +81,41 @@ export function LicensePhotoUpload({
     }
   };
 
+  const handleButtonClick = () => {
+    inputRef.current?.click();
+  };
+
   return (
     <Card className="p-4 space-y-3">
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium">{label}</span>
-        <label className="cursor-pointer relative">
-          <input
-            type="file"
-            accept="image/*"
-            capture="environment"
-            className="absolute w-px h-px opacity-0 overflow-hidden"
-            style={{ clip: 'rect(0, 0, 0, 0)' }}
-            disabled={isUploading}
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              if (file) void handleUpload(file);
-            }}
-          />
-          <span className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium h-8 px-3 border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors">
-            {isUploading ? 'Uploading...' : 'Upload'}
-          </span>
-        </label>
+        {/* File input positioned off-screen but still clickable */}
+        <input
+          ref={inputRef}
+          id={inputId}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          disabled={isUploading}
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (file) void handleUpload(file);
+          }}
+          style={{
+            position: 'absolute',
+            left: '-9999px',
+            width: '1px',
+            height: '1px',
+          }}
+        />
+        <button
+          type="button"
+          onClick={handleButtonClick}
+          disabled={isUploading}
+          className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium h-8 px-3 border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors disabled:opacity-50"
+        >
+          {isUploading ? 'Uploading...' : 'Upload'}
+        </button>
       </div>
       {previewUrl ? (
         <img src={previewUrl} alt={`${side} license`} className="w-full rounded-md border" />
