@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -24,6 +24,7 @@ export function LicensePhotoUpload({
   const { toast } = useToast();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -80,24 +81,33 @@ export function LicensePhotoUpload({
     }
   };
 
+  const handleButtonClick = () => {
+    fileInputRef.current?.click();
+  };
+
   return (
     <Card className="p-4 space-y-3">
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium">{label}</span>
-        <Button variant="outline" size="sm" disabled={isUploading} asChild>
-          <label className="cursor-pointer">
-            {isUploading ? 'Uploading...' : 'Upload'}
-            <input
-              type="file"
-              accept="image/*"
-              capture="environment"
-              className="sr-only"
-              onChange={(event) => {
-                const file = event.target.files?.[0];
-                if (file) void handleUpload(file);
-              }}
-            />
-          </label>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="sr-only"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (file) void handleUpload(file);
+          }}
+        />
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={isUploading}
+          onClick={handleButtonClick}
+        >
+          {isUploading ? 'Uploading...' : 'Upload'}
         </Button>
       </div>
       {previewUrl ? (
