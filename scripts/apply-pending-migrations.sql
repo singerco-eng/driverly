@@ -1325,11 +1325,14 @@ BEGIN
       review_notes = NEW.review_notes,
       rejection_reason = NEW.rejection_reason,
       expires_at = NEW.expires_at
-    WHERE credential_id = NEW.id
-      AND credential_table = TG_TABLE_NAME
-      AND status = 'submitted'
-    ORDER BY submitted_at DESC
-    LIMIT 1;
+    WHERE id = (
+      SELECT id FROM credential_submission_history
+      WHERE credential_id = NEW.id
+        AND credential_table = TG_TABLE_NAME
+        AND status = 'submitted'
+      ORDER BY submitted_at DESC
+      LIMIT 1
+    );
   END IF;
   
   RETURN NEW;
