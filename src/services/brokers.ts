@@ -134,7 +134,7 @@ export async function getBrokerAssignments(brokerId: string): Promise<DriverBrok
         employment_type,
         status,
         state,
-        user:users(full_name, email)
+        user:users!drivers_user_id_fkey(full_name, email)
       )
     `,
     )

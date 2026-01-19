@@ -141,7 +141,7 @@ export default function AdminLayout() {
                 <DropdownMenuTrigger asChild>
                   <SidebarMenuButton
                     size="lg"
-                    className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                    className="hover:bg-transparent hover:text-sidebar-foreground data-[state=open]:bg-transparent data-[state=open]:text-sidebar-foreground"
                   >
                     <div
                       className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium shrink-0"

@@ -2,11 +2,14 @@ import { useMemo } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { ApplicationStatusCard } from '@/components/features/apply/ApplicationStatusCard';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDriverByUserId } from '@/hooks/useDrivers';
 import { useWithdrawApplication } from '@/hooks/useApplications';
 import { useCompany } from '@/hooks/useCompanies';
-import { Card } from '@/components/ui/card';
+import { cardVariants } from '@/lib/design-system';
+import { cn } from '@/lib/utils';
+import { ArrowRight, Clock } from 'lucide-react';
 
 export default function ApplicationStatus() {
   const navigate = useNavigate();
@@ -31,8 +34,20 @@ export default function ApplicationStatus() {
 
   if (isLoading) {
     return (
-      <div className="max-w-2xl mx-auto p-6">
-        <Card className="p-6 text-center text-muted-foreground">Loading status...</Card>
+      <div className="max-w-2xl mx-auto space-y-6">
+        {/* Page Header */}
+        <div className="flex flex-col gap-2">
+          <h1 className="text-2xl font-bold">Application Status</h1>
+          <p className="text-sm text-muted-foreground">
+            Track the progress of your driver application.
+          </p>
+        </div>
+        <Card className={cn(cardVariants({ variant: 'glass' }), 'p-6')}>
+          <div className="flex items-center gap-3 justify-center text-muted-foreground">
+            <Clock className="w-5 h-5 animate-pulse" />
+            Loading status...
+          </div>
+        </Card>
       </div>
     );
   }
@@ -48,18 +63,28 @@ export default function ApplicationStatus() {
     driver.application_status === 'pending' || driver.application_status === 'under_review';
 
   return (
-    <div className="max-w-2xl mx-auto p-6 space-y-4">
+    <div className="max-w-2xl mx-auto space-y-6">
+      {/* Page Header */}
+      <div className="flex flex-col gap-2">
+        <h1 className="text-2xl font-bold">Application Status</h1>
+        <p className="text-sm text-muted-foreground">
+          Track the progress of your driver application.
+        </p>
+      </div>
+
       <ApplicationStatusCard
         status={driver.application_status}
         description={description}
         extra={
           driver.application_status === 'rejected' ? (
-            <div className="text-sm text-muted-foreground space-y-1">
+            <div className="text-sm text-muted-foreground space-y-1 mt-3 p-3 bg-muted/30 rounded-lg">
               {driver.rejection_reason && <p>Reason: {driver.rejection_reason}</p>}
               {driver.can_reapply_at && (
                 <p>
                   You can re-apply on{' '}
-                  {new Date(driver.can_reapply_at).toLocaleDateString()}
+                  <span className="font-medium">
+                    {new Date(driver.can_reapply_at).toLocaleDateString()}
+                  </span>
                 </p>
               )}
             </div>
@@ -67,19 +92,24 @@ export default function ApplicationStatus() {
         }
       />
 
-      {driver.application_status === 'approved' && (
-        <Button onClick={() => navigate('/driver')}>Continue to Portal</Button>
-      )}
+      <div className="flex flex-col sm:flex-row gap-3">
+        {driver.application_status === 'approved' && (
+          <Button onClick={() => navigate('/driver')} className="gap-2">
+            Continue to Portal
+            <ArrowRight className="w-4 h-4" />
+          </Button>
+        )}
 
-      {canWithdraw && (
-        <Button
-          variant="outline"
-          onClick={() => withdrawMutation.mutate(driver.id)}
-          disabled={withdrawMutation.isPending}
-        >
-          {withdrawMutation.isPending ? 'Withdrawing...' : 'Withdraw Application'}
-        </Button>
-      )}
+        {canWithdraw && (
+          <Button
+            variant="outline"
+            onClick={() => withdrawMutation.mutate(driver.id)}
+            disabled={withdrawMutation.isPending}
+          >
+            {withdrawMutation.isPending ? 'Withdrawing...' : 'Withdraw Application'}
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

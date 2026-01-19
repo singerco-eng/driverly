@@ -25,6 +25,10 @@ import Brokers from '@/pages/admin/Brokers';
 import BrokerDetail from '@/pages/admin/BrokerDetail';
 import ApplicationPage from '@/pages/apply/[companySlug]';
 import ApplicationStatus from '@/pages/driver/ApplicationStatus';
+import DriverDashboard from '@/pages/driver/Dashboard';
+import DriverAvailability from '@/pages/driver/Availability';
+import PaymentSettings from '@/pages/driver/PaymentSettings';
+import DriverComingSoon from '@/pages/driver/ComingSoon';
 
 const queryClient = new QueryClient();
 
@@ -113,8 +117,47 @@ function App() {
                   </ProtectedRoute>
                 }
               >
-                <Route index element={<Navigate to="application-status" replace />} />
+                <Route index element={<DriverDashboard />} />
                 <Route path="application-status" element={<ApplicationStatus />} />
+                <Route
+                  path="profile"
+                  element={
+                    <DriverComingSoon
+                      title="Profile"
+                      description="Update your personal information and driver profile."
+                    />
+                  }
+                />
+                <Route
+                  path="vehicles"
+                  element={
+                    <DriverComingSoon
+                      title="Vehicles"
+                      description="Manage your vehicle details and documentation."
+                    />
+                  }
+                />
+                <Route
+                  path="credentials"
+                  element={
+                    <DriverComingSoon
+                      title="Credentials"
+                      description="Upload and manage required credentials."
+                    />
+                  }
+                />
+                <Route
+                  path="brokers"
+                  element={
+                    <DriverComingSoon
+                      title="Brokers"
+                      description="Request broker assignments to expand trip options."
+                    />
+                  }
+                />
+                <Route path="availability" element={<DriverAvailability />} />
+                <Route path="settings" element={<Navigate to="settings/payment" replace />} />
+                <Route path="settings/payment" element={<PaymentSettings />} />
               </Route>
 
               {/* Default redirect */}

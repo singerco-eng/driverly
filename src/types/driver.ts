@@ -55,9 +55,14 @@ export interface Driver {
   status: DriverStatus;
   status_changed_at: string | null;
   status_changed_by: string | null;
+  status_reason: string | null;
   suspension_reason: string | null;
   archived_at: string | null;
   archived_by: string | null;
+  onboarding_completed_at: string | null;
+  welcome_modal_dismissed: boolean;
+  has_payment_info: boolean;
+  has_availability: boolean;
 
   // Activity
   last_active_at: string | null;

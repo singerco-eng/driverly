@@ -17,15 +17,9 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Input } from '@/components/ui/input';
+import { FilterBar } from '@/components/ui/filter-bar';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
+  EnhancedTable,
   Table,
   TableBody,
   TableCell,
@@ -50,7 +44,6 @@ import {
   MapPin,
   XCircle,
   Trash2,
-  Search,
 } from 'lucide-react';
 import AssignDriversModal from '@/components/features/admin/AssignDriversModal';
 import type { AssignmentStatus, BrokerStatus, DriverBrokerAssignment, VehicleType } from '@/types/broker';
@@ -82,9 +75,9 @@ export default function BrokerDetail() {
 
   const { data: broker, isLoading, error } = useBroker(id || '');
   const { data: assignments, isLoading: assignmentsLoading } = useBrokerAssignments(id || undefined);
-  const { data: currentRates } = useCurrentBrokerRates(id || undefined);
+  const { data: currentRates, isLoading: ratesLoading } = useCurrentBrokerRates(id || undefined);
   const { data: rateHistory } = useBrokerRates(id || undefined);
-  const { data: credentialTypes } = useCredentialTypes(companyId ?? undefined);
+  const { data: credentialTypes, isLoading: credentialsLoading } = useCredentialTypes(companyId ?? undefined);
 
   const updateStatus = useUpdateBrokerStatus();
   const approveAssignment = useApproveAssignment();
@@ -117,6 +110,12 @@ export default function BrokerDetail() {
       return matchesSearch && matchesStatus;
     });
   }, [assignments, driverSearch, driverStatusFilter]);
+
+  // Clear all filters handler for Drivers tab
+  const handleClearDriverFilters = () => {
+    setDriverSearch('');
+    setDriverStatusFilter('all');
+  };
 
   const handleStatusChange = (status: BrokerStatus) => {
     if (!broker) return;
@@ -328,45 +327,43 @@ export default function BrokerDetail() {
         </TabsContent>
 
         <TabsContent value="drivers" className="mt-6 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h3 className="text-lg font-medium">Driver Assignments</h3>
-              <p className="text-sm text-muted-foreground">
-                {filteredAssignments.length} {filteredAssignments.length === 1 ? 'assignment' : 'assignments'}
-              </p>
-            </div>
-            <Button onClick={() => setAssignOpen(true)}>Assign Drivers</Button>
+          <div>
+            <h3 className="text-lg font-medium">Driver Assignments</h3>
+            <p className="text-sm text-muted-foreground">
+              {filteredAssignments.length} {filteredAssignments.length === 1 ? 'assignment' : 'assignments'}
+            </p>
           </div>
 
-          {/* Filters */}
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by name or email..."
-                value={driverSearch}
-                onChange={(e) => setDriverSearch(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            <Select
-              value={driverStatusFilter}
-              onValueChange={(v) => setDriverStatusFilter(v as AssignmentStatus | 'all')}
-            >
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="assigned">Assigned</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="removed">Removed</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {/* DS-compliant FilterBar */}
+          <FilterBar
+            searchValue={driverSearch}
+            onSearchChange={setDriverSearch}
+            searchPlaceholder="Search by name or email..."
+            searchLabel="Search"
+            filters={[
+              {
+                value: driverStatusFilter,
+                onValueChange: (v) => setDriverStatusFilter(v as AssignmentStatus | 'all'),
+                label: 'Status',
+                placeholder: 'All Status',
+                options: [
+                  { value: 'all', label: 'All Status' },
+                  { value: 'assigned', label: 'Assigned' },
+                  { value: 'pending', label: 'Pending' },
+                  { value: 'removed', label: 'Removed' },
+                ],
+              },
+            ]}
+            onClearAll={handleClearDriverFilters}
+            showClearAll
+          />
 
-          {/* Enhanced Table */}
-          <div className="rounded-lg border bg-card">
+          {/* DS-compliant EnhancedTable with loading state */}
+          <EnhancedTable
+            loading={assignmentsLoading}
+            skeletonRows={3}
+            skeletonColumns={5}
+          >
             <Table>
               <TableHeader>
                 <TableRow>
@@ -378,15 +375,7 @@ export default function BrokerDetail() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {assignmentsLoading ? (
-                  Array.from({ length: 3 }).map((_, i) => (
-                    <TableRow key={i}>
-                      <TableCell colSpan={5}>
-                        <Skeleton className="h-6 w-full" />
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : filteredAssignments.length === 0 ? (
+                {filteredAssignments.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="h-24 text-center">
                       <div className="flex flex-col items-center gap-2">
@@ -425,7 +414,7 @@ export default function BrokerDetail() {
                 )}
               </TableBody>
             </Table>
-          </div>
+          </EnhancedTable>
         </TabsContent>
 
         <TabsContent value="credentials" className="mt-6 space-y-4">
@@ -441,8 +430,13 @@ export default function BrokerDetail() {
             </Button>
           </div>
 
-          {brokerCredentials.length ? (
-            <div className="rounded-lg border bg-card">
+          {/* DS-compliant EnhancedTable with loading state */}
+          <EnhancedTable
+            loading={credentialsLoading}
+            skeletonRows={3}
+            skeletonColumns={3}
+          >
+            {brokerCredentials.length ? (
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -467,16 +461,16 @@ export default function BrokerDetail() {
                   ))}
                 </TableBody>
               </Table>
-            </div>
-          ) : (
-            <Card className="p-8 text-center">
-              <FileCheck className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
-              <h4 className="font-medium">No broker credentials</h4>
-              <p className="text-sm text-muted-foreground mt-1">
-                Create broker-scoped credential types to track requirements.
-              </p>
-            </Card>
-          )}
+            ) : (
+              <Card className="p-8 text-center">
+                <FileCheck className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
+                <h4 className="font-medium">No broker credentials</h4>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Create broker-scoped credential types to track requirements.
+                </p>
+              </Card>
+            )}
+          </EnhancedTable>
         </TabsContent>
 
         <TabsContent value="rates" className="mt-6 space-y-6">
@@ -487,8 +481,13 @@ export default function BrokerDetail() {
             </p>
           </div>
 
-          {currentRates?.length ? (
-            <div className="rounded-lg border bg-card">
+          {/* DS-compliant EnhancedTable with loading state */}
+          <EnhancedTable
+            loading={ratesLoading}
+            skeletonRows={3}
+            skeletonColumns={4}
+          >
+            {currentRates?.length ? (
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -513,21 +512,21 @@ export default function BrokerDetail() {
                   ))}
                 </TableBody>
               </Table>
-            </div>
-          ) : (
-            <Card className="p-8 text-center">
-              <Building2 className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
-              <h4 className="font-medium">No current rates</h4>
-              <p className="text-sm text-muted-foreground mt-1">
-                Add rates in the broker creation flow or update later.
-              </p>
-            </Card>
-          )}
+            ) : (
+              <Card className="p-8 text-center">
+                <Building2 className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
+                <h4 className="font-medium">No current rates</h4>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Add rates in the broker creation flow or update later.
+                </p>
+              </Card>
+            )}
+          </EnhancedTable>
 
           <div className="pt-4">
             <h4 className="text-md font-medium mb-3">Rate History</h4>
             {rateHistory?.length ? (
-              <div className="rounded-lg border bg-card">
+              <EnhancedTable>
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -556,7 +555,7 @@ export default function BrokerDetail() {
                     ))}
                   </TableBody>
                 </Table>
-              </div>
+              </EnhancedTable>
             ) : (
               <p className="text-sm text-muted-foreground">No rate history available.</p>
             )}
