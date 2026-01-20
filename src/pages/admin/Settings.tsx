@@ -1,7 +1,8 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Palette } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCompany } from '@/hooks/useCompanies';
+import { ThemeSelector } from '@/components/features/driver/ThemeSelector';
 
 export default function AdminSettings() {
   const { profile } = useAuth();
@@ -83,6 +84,19 @@ export default function AdminSettings() {
               <span className="font-medium capitalize">{company.status}</span>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Palette className="w-4 h-4 text-primary" />
+            Appearance
+          </CardTitle>
+          <CardDescription>Choose how the app looks to you.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ThemeSelector />
         </CardContent>
       </Card>
 

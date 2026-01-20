@@ -24,19 +24,19 @@ export function useVehicleAssignment(vehicleId: string | undefined) {
   });
 }
 
-export function useAvailableVehicles(companyId: string | undefined) {
+export function useAvailableVehicles(companyId: string | null | undefined) {
   return useQuery({
     queryKey: ['available-vehicles', companyId],
-    queryFn: () => assignmentService.getAvailableVehicles(companyId!),
-    enabled: !!companyId,
+    queryFn: () => assignmentService.getAvailableVehicles(companyId),
+    enabled: companyId !== undefined,
   });
 }
 
-export function useAvailableDrivers(companyId: string | undefined) {
+export function useAvailableDrivers(companyId: string | null | undefined) {
   return useQuery({
     queryKey: ['available-drivers', companyId],
-    queryFn: () => assignmentService.getAvailableDrivers(companyId!),
-    enabled: !!companyId,
+    queryFn: () => assignmentService.getAvailableDrivers(companyId),
+    enabled: companyId !== undefined,
   });
 }
 

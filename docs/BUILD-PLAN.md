@@ -1,7 +1,28 @@
 # Driverly Build Plan
 
 > **Created:** 2026-01-16  
-> **Status:** Ready to Execute
+> **Last Updated:** 2026-01-19  
+> **Status:** Phase 5 Complete - Core Platform Operational
+
+---
+
+## Current Implementation Status
+
+| Phase | Description | Status |
+|-------|-------------|--------|
+| Phase 0 | Project Setup | ✅ Complete |
+| Phase 1 | Database Foundation (17 migrations) | ✅ Complete |
+| Phase 2 | Authentication Layer | ✅ Complete |
+| Phase 3 | Super Admin MVP (SA-001, SA-002) | ✅ Complete |
+| Phase 4 | Admin Core (AD-001 to AD-007) | ✅ Complete |
+| Phase 5 | Driver Portal (DR-001, DR-004) | ✅ Complete |
+| Phase 6 | Admin Operational | ⚠️ Partial |
+
+### Remaining Work
+
+- **DR-002 Profile Management** - ✅ Complete (CODEX-TASK-010)
+- **DR-003 Driver Vehicle Management** - ✅ Complete (CODEX-TASK-011)
+- **AD-006 Credential Review** - CODEX-012-AD-006 ready (no migration needed)
 
 ---
 
@@ -296,16 +317,26 @@ All RLS policies from `02-DATABASE-SCHEMA.md`
 ## Build Order Priority
 
 ```
-1. Project Setup (0.x)           ← START HERE
-2. Database Migrations (1.x)
-3. Auth Layer (2.x)
-4. Super Admin MVP (3.x)         ← First testable milestone
-5. Admin Core (4.1-4.3)          ← Driver/Vehicle entities
-6. Driver Portal Basic (5.1-5.2) ← Can test full flow
-7. Credentials (4.5, 5.5, 6.2)   ← Core platform feature
-8. Brokers (4.6)
-9. Vehicle Assignment (6.1)
+1. Project Setup (0.x)           ✅ COMPLETE
+2. Database Migrations (1.x)     ✅ COMPLETE (15 migrations)
+3. Auth Layer (2.x)              ✅ COMPLETE
+4. Super Admin MVP (3.x)         ✅ COMPLETE (SA-001, SA-002)
+5. Admin Core (4.1-4.3)          ✅ COMPLETE (AD-001, AD-002, AD-003)
+6. Driver Portal Basic (5.1-5.2) ⚠️ PARTIAL (DR-001 done, DR-002/DR-003 placeholder)
+7. Credentials (4.5, 5.5, 6.2)   ⚠️ PARTIAL (AD-005, DR-004 done; AD-006 inline only)
+8. Brokers (4.6)                 ✅ COMPLETE (AD-007)
+9. Vehicle Assignment (6.1)      ✅ COMPLETE (AD-004)
 ```
+
+### What's Left
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| DR-002 Profile Management | 🚧 Placeholder | Route exists, shows "Coming Soon" |
+| DR-003 Driver Vehicle Management | 🚧 Placeholder | Route exists, shows "Coming Soon" |
+| AD-006 Credential Review Queue | ⚠️ Partial | Review happens inline in driver detail; no dedicated queue page |
+| Driver Brokers Page | 🚧 Placeholder | Request broker assignments |
+| **UX Consistency (CODEX-013)** | 🚧 Pending | Make Super Admin/Driver layouts consistent with Admin |
 
 ---
 

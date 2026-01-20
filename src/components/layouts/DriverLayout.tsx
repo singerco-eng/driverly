@@ -7,7 +7,7 @@ import {
   LayoutDashboard,
   User,
   Car,
-  FileCheck,
+  FileText,
   Calendar,
   Settings,
   LogOut,
@@ -41,9 +41,9 @@ const navItems = [
   { path: '/driver', label: 'Dashboard', icon: LayoutDashboard, exact: true },
   { path: '/driver/profile', label: 'Profile', icon: User },
   { path: '/driver/vehicles', label: 'Vehicles', icon: Car },
-  { path: '/driver/credentials', label: 'Credentials', icon: FileCheck },
+  { path: '/driver/credentials', label: 'Credentials', icon: FileText },
   { path: '/driver/availability', label: 'Availability', icon: Calendar },
-  { path: '/driver/brokers', label: 'Brokers', icon: Building2 },
+  { path: '/driver/brokers', label: 'My Trip Sources', icon: Building2 },
   { path: '/driver/settings', label: 'Settings', icon: Settings },
 ];
 

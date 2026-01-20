@@ -4,44 +4,26 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useCredentialTypes } from '@/hooks/useCredentialTypes';
 import { EnhancedDataView } from '@/components/ui/enhanced-data-view';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
   Plus,
   FileText,
-  Camera,
-  PenTool,
-  ClipboardList,
-  CheckCircle,
-  Calendar,
   Users,
   Car,
 } from 'lucide-react';
 import type { CredentialType, CredentialCategory, CredentialScope } from '@/types/credential';
-import CreateCredentialTypeModal from '@/components/features/admin/CreateCredentialTypeModal';
+import CreateCredentialTypeSimpleModal from '@/components/features/admin/CreateCredentialTypeSimpleModal';
+import { CredentialRequirementsDisplay } from '@/components/features/credentials/CredentialRequirementsDisplay';
 
-const submissionTypeIcons: Record<string, React.ElementType> = {
-  document_upload: FileText,
-  photo: Camera,
-  signature: PenTool,
-  form: ClipboardList,
-  admin_verified: CheckCircle,
-  date_entry: Calendar,
-};
-
-const submissionTypeLabels: Record<string, string> = {
-  document_upload: 'Document Upload',
-  photo: 'Photo',
-  signature: 'E-Signature',
-  form: 'Form',
-  admin_verified: 'Admin Verified',
-  date_entry: 'Date Entry',
-};
-
-const requirementColors: Record<string, string> = {
-  required: 'bg-red-500/20 text-red-400 border-red-500/30',
-  recommended: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-  optional: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
+/** Requirement config using native Badge variants per design system */
+const requirementConfig: Record<string, {
+  label: string;
+  badgeVariant: 'default' | 'secondary' | 'destructive' | 'outline';
+}> = {
+  required: { label: 'Required', badgeVariant: 'default' },
+  recommended: { label: 'Recommended', badgeVariant: 'secondary' },
+  optional: { label: 'Optional', badgeVariant: 'outline' },
 };
 
 interface CredentialFilters {
@@ -164,7 +146,7 @@ export default function CredentialTypes() {
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Category</TableHead>
-                  <TableHead>Type</TableHead>
+                  <TableHead>Requirements</TableHead>
                   <TableHead>Requirement</TableHead>
                   <TableHead>Expiration</TableHead>
                 </TableRow>
@@ -181,7 +163,6 @@ export default function CredentialTypes() {
                   </TableRow>
                 ) : (
                   dataWithId.map((ct) => {
-                    const Icon = submissionTypeIcons[ct.submission_type] || FileText;
                     return (
                       <TableRow
                         key={ct.id}
@@ -190,9 +171,6 @@ export default function CredentialTypes() {
                       >
                         <TableCell>
                           <div className="flex items-center gap-3">
-                            <div className="p-1.5 rounded-md bg-muted">
-                              <Icon className="w-4 h-4 text-muted-foreground" />
-                            </div>
                             <div>
                               <div className="font-medium">{ct.name}</div>
                               {!ct.is_active && (
@@ -212,11 +190,16 @@ export default function CredentialTypes() {
                           </div>
                         </TableCell>
                         <TableCell className="text-muted-foreground">
-                          {submissionTypeLabels[ct.submission_type]}
+                          <CredentialRequirementsDisplay
+                            credentialType={ct}
+                            showLabels={false}
+                            showStepCount={true}
+                            size="sm"
+                          />
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline" className={requirementColors[ct.requirement]}>
-                            {ct.requirement}
+                          <Badge variant={requirementConfig[ct.requirement]?.badgeVariant || 'outline'}>
+                            {requirementConfig[ct.requirement]?.label || ct.requirement}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-muted-foreground">
@@ -249,8 +232,7 @@ export default function CredentialTypes() {
             </Card>
           ),
           renderCard: (ct) => {
-            const Icon = submissionTypeIcons[ct.submission_type] || FileText;
-            const CategoryIcon = ct.category === 'driver' ? Users : Car;
+            const stepCount = ct.instruction_config?.steps?.length || 0;
 
             return (
               <Card
@@ -260,52 +242,44 @@ export default function CredentialTypes() {
                 }`}
                 onClick={() => navigate(`/admin/settings/credentials/${ct.id}`)}
               >
-                <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-muted">
-                        <Icon className="w-5 h-5 text-muted-foreground" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-base">{ct.name}</CardTitle>
-                        <div className="flex items-center gap-1.5 text-sm text-muted-foreground mt-0.5">
-                          <CategoryIcon className="w-3 h-3" />
-                          <span className="capitalize">{ct.category}</span>
-                        </div>
+                <CardContent className="p-4 space-y-3">
+                  {/* Header row */}
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <FileText className="w-5 h-5 text-muted-foreground shrink-0" />
+                      <div className="min-w-0">
+                        <p className="font-medium truncate">{ct.name}</p>
+                        <p className="text-xs text-muted-foreground capitalize">{ct.category}</p>
                       </div>
                     </div>
-                    <Badge variant="outline" className={requirementColors[ct.requirement]}>
-                      {ct.requirement}
+                    <Badge variant={requirementConfig[ct.requirement]?.badgeVariant || 'outline'}>
+                      {requirementConfig[ct.requirement]?.label || ct.requirement}
                     </Badge>
                   </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                    <Badge variant="secondary" className="text-xs">
-                      {submissionTypeLabels[ct.submission_type]}
-                    </Badge>
-                    <span>•</span>
+                  {/* Metadata row */}
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                    {stepCount > 0 && (
+                      <span>{stepCount} steps</span>
+                    )}
+                    {stepCount > 0 && (
+                      <span className="text-border">·</span>
+                    )}
                     <span>
                       {ct.expiration_type === 'never'
-                        ? 'Never Expires'
+                        ? 'Never expires'
                         : ct.expiration_type === 'fixed_interval'
-                          ? `Expires in ${ct.expiration_interval_days} days`
-                          : 'Driver Specifies Date'}
+                          ? `${ct.expiration_interval_days} day expiry`
+                          : 'Driver specifies'}
                     </span>
+                    <span className="text-border">·</span>
+                    <span className="capitalize">{ct.scope}</span>
                     {!ct.is_active && (
                       <>
-                        <span>•</span>
-                        <Badge variant="outline" className="text-xs">
-                          Inactive
-                        </Badge>
+                        <span className="text-border">·</span>
+                        <span className="text-destructive">Inactive</span>
                       </>
                     )}
                   </div>
-                  {ct.employment_type !== 'both' && (
-                    <div className="text-xs text-muted-foreground mt-2">
-                      {ct.employment_type === 'w2_only' ? 'W2 Only' : '1099 Only'}
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             );
@@ -315,7 +289,7 @@ export default function CredentialTypes() {
 
       {/* Create Modal */}
       {companyId && (
-        <CreateCredentialTypeModal
+        <CreateCredentialTypeSimpleModal
           companyId={companyId}
           open={showCreateModal}
           onOpenChange={setShowCreateModal}

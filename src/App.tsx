@@ -21,6 +21,10 @@ import AdminSettings from '@/pages/admin/Settings';
 import ApplicationsPage from '@/pages/admin/Applications';
 import ApplicationReviewPage from '@/pages/admin/ApplicationReview';
 import CredentialTypes from '@/pages/admin/CredentialTypes';
+import CredentialTypeEditor from '@/pages/admin/CredentialTypeEditor';
+import CredentialReview from '@/pages/admin/CredentialReview';
+import DriverCredentialDetail from '@/pages/admin/DriverCredentialDetail';
+import VehicleCredentialDetail from '@/pages/admin/VehicleCredentialDetail';
 import Brokers from '@/pages/admin/Brokers';
 import BrokerDetail from '@/pages/admin/BrokerDetail';
 import ApplicationPage from '@/pages/apply/[companySlug]';
@@ -29,6 +33,13 @@ import DriverDashboard from '@/pages/driver/Dashboard';
 import DriverAvailability from '@/pages/driver/Availability';
 import PaymentSettings from '@/pages/driver/PaymentSettings';
 import DriverComingSoon from '@/pages/driver/ComingSoon';
+import DriverProfile from '@/pages/driver/Profile';
+import AccountSettings from '@/pages/driver/AccountSettings';
+import DriverCredentials from '@/pages/driver/Credentials';
+import CredentialDetailPage from '@/pages/driver/CredentialDetail';
+import DriverVehicles from '@/pages/driver/Vehicles';
+import DriverVehicleDetail from '@/pages/driver/VehicleDetail';
+import DriverVehicleCredentialDetail from '@/pages/driver/VehicleCredentialDetail';
 
 const queryClient = new QueryClient();
 
@@ -49,42 +60,15 @@ function App() {
                 path="/super-admin"
                 element={
                   <ProtectedRoute allowedRoles={['super_admin']}>
-                    <SuperAdminLayout>
-                      <Navigate to="/super-admin/companies" replace />
-                    </SuperAdminLayout>
+                    <SuperAdminLayout />
                   </ProtectedRoute>
                 }
-              />
-              <Route
-                path="/super-admin/companies"
-                element={
-                  <ProtectedRoute allowedRoles={['super_admin']}>
-                    <SuperAdminLayout>
-                      <Companies />
-                    </SuperAdminLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/super-admin/companies/:id"
-                element={
-                  <ProtectedRoute allowedRoles={['super_admin']}>
-                    <SuperAdminLayout>
-                      <CompanyDetail />
-                    </SuperAdminLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/super-admin/settings"
-                element={
-                  <ProtectedRoute allowedRoles={['super_admin']}>
-                    <SuperAdminLayout>
-                      <Settings />
-                    </SuperAdminLayout>
-                  </ProtectedRoute>
-                }
-              />
+              >
+                <Route index element={<Navigate to="companies" replace />} />
+                <Route path="companies" element={<Companies />} />
+                <Route path="companies/:id" element={<CompanyDetail />} />
+                <Route path="settings" element={<Settings />} />
+              </Route>
 
               {/* Admin routes (admin + coordinator) */}
               <Route
@@ -98,12 +82,16 @@ function App() {
                 <Route index element={<AdminDashboard />} />
                 <Route path="drivers" element={<DriversPage />} />
                 <Route path="drivers/:id" element={<DriverDetailPage />} />
+                <Route path="drivers/:driverId/credentials/:credentialId" element={<DriverCredentialDetail />} />
                 <Route path="vehicles" element={<VehiclesPage />} />
                 <Route path="vehicles/:id" element={<VehicleDetailPage />} />
+                <Route path="vehicles/:vehicleId/credentials/:credentialId" element={<VehicleCredentialDetail />} />
                 <Route path="applications" element={<ApplicationsPage />} />
                 <Route path="applications/:id" element={<ApplicationReviewPage />} />
                 <Route path="settings" element={<AdminSettings />} />
                 <Route path="settings/credentials" element={<CredentialTypes />} />
+                <Route path="settings/credentials/:id" element={<CredentialTypeEditor />} />
+                <Route path="credentials" element={<CredentialReview />} />
                 <Route path="brokers" element={<Brokers />} />
                 <Route path="brokers/:id" element={<BrokerDetail />} />
               </Route>
@@ -119,33 +107,13 @@ function App() {
               >
                 <Route index element={<DriverDashboard />} />
                 <Route path="application-status" element={<ApplicationStatus />} />
-                <Route
-                  path="profile"
-                  element={
-                    <DriverComingSoon
-                      title="Profile"
-                      description="Update your personal information and driver profile."
-                    />
-                  }
-                />
-                <Route
-                  path="vehicles"
-                  element={
-                    <DriverComingSoon
-                      title="Vehicles"
-                      description="Manage your vehicle details and documentation."
-                    />
-                  }
-                />
-                <Route
-                  path="credentials"
-                  element={
-                    <DriverComingSoon
-                      title="Credentials"
-                      description="Upload and manage required credentials."
-                    />
-                  }
-                />
+                <Route path="profile" element={<DriverProfile />} />
+                <Route path="vehicles" element={<DriverVehicles />} />
+                <Route path="vehicles/:vehicleId" element={<DriverVehicleDetail />} />
+                <Route path="vehicles/:vehicleId/credentials/:credentialId" element={<DriverVehicleCredentialDetail />} />
+                <Route path="credentials" element={<DriverCredentials />} />
+                <Route path="credentials/:id" element={<CredentialDetailPage />} />
+                <Route path="credentials/broker/:brokerId" element={<DriverCredentials />} />
                 <Route
                   path="brokers"
                   element={
@@ -158,6 +126,7 @@ function App() {
                 <Route path="availability" element={<DriverAvailability />} />
                 <Route path="settings" element={<Navigate to="settings/payment" replace />} />
                 <Route path="settings/payment" element={<PaymentSettings />} />
+                <Route path="settings/account" element={<AccountSettings />} />
               </Route>
 
               {/* Default redirect */}

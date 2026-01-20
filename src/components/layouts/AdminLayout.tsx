@@ -11,6 +11,7 @@ import {
   ChevronsUpDown,
   FileText,
   Building2,
+  FileCheck2,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -34,14 +35,7 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar';
 
-const navItems = [
-  { path: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true },
-  { path: '/admin/drivers', label: 'Drivers', icon: Users },
-  { path: '/admin/applications', label: 'Applications', icon: FileText },
-  { path: '/admin/vehicles', label: 'Vehicles', icon: Car },
-  { path: '/admin/brokers', label: 'Brokers', icon: Building2 },
-  { path: '/admin/settings/credentials', label: 'Credentials', icon: FileText },
-];
+import { useReviewQueueStats } from '@/hooks/useCredentialReview';
 
 export default function AdminLayout() {
   const { user, profile, signOut } = useAuth();
@@ -51,6 +45,17 @@ export default function AdminLayout() {
   // Fetch company data for branding
   const companyId = profile?.company_id ?? '';
   const { data: company, isLoading: companyLoading } = useCompany(companyId);
+  const { data: reviewStats } = useReviewQueueStats(companyId || undefined);
+
+  const navItems = [
+    { path: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true },
+    { path: '/admin/drivers', label: 'Drivers', icon: Users },
+    { path: '/admin/applications', label: 'Applications', icon: FileText },
+    { path: '/admin/credentials', label: 'Credential Review', icon: FileCheck2, showBadge: true },
+    { path: '/admin/vehicles', label: 'Vehicles', icon: Car },
+    { path: '/admin/brokers', label: 'Trip Sources', icon: Building2 },
+    { path: '/admin/settings/credentials', label: 'Credential Types', icon: FileText },
+  ];
 
   const handleSignOut = async () => {
     await signOut();
@@ -123,7 +128,12 @@ export default function AdminLayout() {
                     >
                       <Link to={item.path}>
                         <item.icon className="w-4 h-4" />
-                        <span>{item.label}</span>
+                        <span className="flex-1">{item.label}</span>
+                        {item.showBadge && (reviewStats?.pendingReview || 0) > 0 && (
+                          <span className="ml-auto rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
+                            {reviewStats?.pendingReview}
+                          </span>
+                        )}
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

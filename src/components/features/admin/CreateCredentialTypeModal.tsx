@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectContent,
@@ -32,17 +33,10 @@ const credentialTypeSchema = z.object({
   category: z.enum(['driver', 'vehicle']),
   scope: z.enum(['global', 'broker']),
   broker_id: z.string().nullable(),
+  requires_driver_action: z.boolean(),
   employment_type: z.enum(['both', 'w2_only', '1099_only']),
   requirement: z.enum(['required', 'optional', 'recommended']),
   vehicle_types: z.array(z.string()),
-  submission_type: z.enum([
-    'document_upload',
-    'photo',
-    'signature',
-    'form',
-    'admin_verified',
-    'date_entry',
-  ]),
   form_schema: z.record(z.unknown()).nullable(),
   signature_document_url: z.string().nullable(),
   expiration_type: z.enum(['never', 'fixed_interval', 'driver_specified']),
@@ -75,10 +69,10 @@ export default function CreateCredentialTypeModal({
       category: 'driver',
       scope: 'global',
       broker_id: null,
+      requires_driver_action: true,
       employment_type: 'both',
       requirement: 'required',
       vehicle_types: [],
-      submission_type: 'document_upload',
       form_schema: null,
       signature_document_url: null,
       expiration_type: 'never',
@@ -211,65 +205,17 @@ export default function CreateCredentialTypeModal({
 
             {/* Submission Tab */}
             <TabsContent value="submission" className="space-y-4 mt-4">
-              <div className="space-y-2">
-                <Label>How should this credential be submitted? *</Label>
-                <RadioGroup
-                  value={form.watch('submission_type')}
-                  onValueChange={(v) => form.setValue('submission_type', v as any)}
-                  className="space-y-2"
-                >
-                  <div className="flex items-center space-x-2 p-3 border rounded-lg">
-                    <RadioGroupItem value="document_upload" id="sub-doc" />
-                    <div>
-                      <Label htmlFor="sub-doc" className="font-medium">
-                        Document Upload
-                      </Label>
-                      <p className="text-sm text-muted-foreground">Upload a PDF or image file</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2 p-3 border rounded-lg">
-                    <RadioGroupItem value="photo" id="sub-photo" />
-                    <div>
-                      <Label htmlFor="sub-photo" className="font-medium">
-                        Photo Capture
-                      </Label>
-                      <p className="text-sm text-muted-foreground">Take or upload a photo</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2 p-3 border rounded-lg">
-                    <RadioGroupItem value="signature" id="sub-sig" />
-                    <div>
-                      <Label htmlFor="sub-sig" className="font-medium">
-                        E-Signature
-                      </Label>
-                      <p className="text-sm text-muted-foreground">
-                        Sign a document electronically
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2 p-3 border rounded-lg">
-                    <RadioGroupItem value="date_entry" id="sub-date" />
-                    <div>
-                      <Label htmlFor="sub-date" className="font-medium">
-                        Date Entry
-                      </Label>
-                      <p className="text-sm text-muted-foreground">
-                        Enter a date (e.g., last drug test)
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2 p-3 border rounded-lg">
-                    <RadioGroupItem value="admin_verified" id="sub-admin" />
-                    <div>
-                      <Label htmlFor="sub-admin" className="font-medium">
-                        Admin Verified
-                      </Label>
-                      <p className="text-sm text-muted-foreground">
-                        Admin manually marks as complete
-                      </p>
-                    </div>
-                  </div>
-                </RadioGroup>
+              <div className="flex items-center justify-between gap-4 rounded-lg border p-4">
+                <div>
+                  <Label>Requires Driver Action</Label>
+                  <p className="text-sm text-muted-foreground">
+                    If disabled, this credential is managed entirely by admins.
+                  </p>
+                </div>
+                <Switch
+                  checked={form.watch('requires_driver_action')}
+                  onCheckedChange={(value) => form.setValue('requires_driver_action', value)}
+                />
               </div>
             </TabsContent>
 

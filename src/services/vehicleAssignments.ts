@@ -51,8 +51,8 @@ export async function getVehicleAssignment(
   return data as VehicleAssignment | null;
 }
 
-export async function getAvailableVehicles(companyId: string): Promise<any[]> {
-  const { data: vehicles, error } = await supabase
+export async function getAvailableVehicles(companyId?: string | null): Promise<any[]> {
+  let query = supabase
     .from('vehicles')
     .select(
       `
@@ -69,9 +69,14 @@ export async function getAvailableVehicles(companyId: string): Promise<any[]> {
       )
     `,
     )
-    .eq('company_id', companyId)
     .eq('status', 'active')
     .order('make');
+
+  if (companyId) {
+    query = query.eq('company_id', companyId);
+  }
+
+  const { data: vehicles, error } = await query;
 
   if (error) throw error;
 
@@ -84,8 +89,8 @@ export async function getAvailableVehicles(companyId: string): Promise<any[]> {
   );
 }
 
-export async function getAvailableDrivers(companyId: string): Promise<any[]> {
-  const { data, error } = await supabase
+export async function getAvailableDrivers(companyId?: string | null): Promise<any[]> {
+  let query = supabase
     .from('drivers')
     .select(
       `
@@ -100,9 +105,14 @@ export async function getAvailableDrivers(companyId: string): Promise<any[]> {
       )
     `,
     )
-    .eq('company_id', companyId)
     .in('status', ['active', 'inactive'])
     .order('created_at');
+
+  if (companyId) {
+    query = query.eq('company_id', companyId);
+  }
+
+  const { data, error } = await query;
 
   if (error) throw error;
 

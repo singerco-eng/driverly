@@ -1,4 +1,4 @@
-export type VehicleType = 'sedan' | 'van' | 'wheelchair_van' | 'stretcher_van';
+export type VehicleType = 'sedan' | 'suv' | 'minivan' | 'van' | 'wheelchair_van' | 'stretcher_van';
 export type VehicleOwnership = 'company' | 'driver';
 export type VehicleStatus = 'active' | 'inactive' | 'retired';
 

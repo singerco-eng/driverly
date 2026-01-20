@@ -4,6 +4,7 @@ import { useCompanyDetail } from '@/hooks/useCompanies';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   DropdownMenu,
@@ -31,8 +32,6 @@ import CompanyStatusModal from '@/components/features/super-admin/CompanyStatusM
 import CompanyInfoTab from '@/components/features/super-admin/CompanyInfoTab';
 import CompanyAdminsTab from '@/components/features/super-admin/CompanyAdminsTab';
 import CompanyInvitationsTab from '@/components/features/super-admin/CompanyInvitationsTab';
-import { cardVariants } from '@/lib/design-system';
-import { cn } from '@/lib/utils';
 
 // DS-compliant status badge variants
 const getStatusVariant = (status: CompanyStatus): 'default' | 'secondary' | 'destructive' | 'outline' => {
@@ -60,27 +59,27 @@ export default function CompanyDetail() {
 
   if (isLoading) {
     return (
-      <div className="p-6 lg:p-8 space-y-6">
+      <div className="p-6 space-y-6">
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 bg-muted rounded-xl animate-pulse" />
+          <Skeleton className="w-16 h-16 rounded-xl" />
           <div className="space-y-2">
-            <div className="h-8 w-48 bg-muted rounded animate-pulse" />
-            <div className="h-4 w-32 bg-muted rounded animate-pulse" />
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-4 w-32" />
           </div>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="h-24 bg-muted rounded-lg animate-pulse" />
+            <Skeleton key={i} className="h-24 rounded-lg" />
           ))}
         </div>
-        <div className="h-64 bg-muted rounded-lg animate-pulse" />
+        <Skeleton className="h-64 rounded-lg" />
       </div>
     );
   }
 
   if (error || !company) {
     return (
-      <div className="p-6 lg:p-8">
+      <div className="p-6">
         <div className="mb-6">
           <h1 className="text-3xl font-bold">Company Not Found</h1>
           <p className="text-muted-foreground">Error loading company details</p>
@@ -99,7 +98,7 @@ export default function CompanyDetail() {
   }
 
   return (
-    <div className="p-6 lg:p-8 space-y-6">
+    <div className="p-6 space-y-6">
       {/* Back link */}
       <Link
         to="/super-admin/companies"

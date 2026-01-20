@@ -4,7 +4,10 @@ import type {
   CredentialTypeFormData,
   CredentialTypeWithStats,
   Broker,
+  CreateCredentialTypeSimple,
 } from '@/types/credential';
+import type { CredentialTypeInstructions } from '@/types/instructionBuilder';
+import { getDefaultTemplate, getTemplateById } from '@/lib/instruction-templates';
 
 export async function getCredentialTypes(companyId: string): Promise<CredentialType[]> {
   const { data, error } = await supabase
@@ -71,19 +74,29 @@ export async function createCredentialType(
   formData: CredentialTypeFormData,
   userId: string,
 ): Promise<CredentialType> {
+  const submissionType = deriveSubmissionType(
+    formData.instruction_config ?? null,
+    formData.requires_driver_action,
+  );
+
   const { data, error } = await supabase
     .from('credential_types')
     .insert({
       company_id: companyId,
       name: formData.name,
       description: formData.description || null,
+      instruction_config: formData.instruction_config ?? null,
       category: formData.category,
       scope: formData.scope,
       broker_id: formData.scope === 'broker' ? formData.broker_id : null,
+      requires_driver_action: formData.requires_driver_action,
       employment_type: formData.employment_type,
       requirement: formData.requirement,
-      vehicle_types: formData.category === 'vehicle' ? formData.vehicle_types : null,
-      submission_type: formData.submission_type,
+      // Save NULL if no vehicle types selected (empty array means "apply to all")
+      vehicle_types: formData.category === 'vehicle' && formData.vehicle_types?.length 
+        ? formData.vehicle_types 
+        : null,
+      submission_type: submissionType,
       form_schema: formData.form_schema,
       signature_document_url: formData.signature_document_url,
       expiration_type: formData.expiration_type,
@@ -102,14 +115,87 @@ export async function createCredentialType(
   return data as CredentialType;
 }
 
+/**
+ * Create a new credential type with minimal info (simple modal)
+ * Returns the created credential type ID for redirect to editor
+ */
+export async function createCredentialTypeSimple(
+  companyId: string,
+  data: CreateCredentialTypeSimple,
+  createdBy: string,
+): Promise<string> {
+  const template = data.template_id ? getTemplateById(data.template_id) : getDefaultTemplate();
+  const instructionConfig = template?.config ?? null;
+  const requiresDriverAction = template?.id !== 'admin_verified';
+  const submissionType = deriveSubmissionType(instructionConfig, requiresDriverAction);
+
+  const { data: created, error } = await supabase
+    .from('credential_types')
+    .insert({
+      company_id: companyId,
+      name: data.name,
+      category: data.category,
+      scope: data.scope,
+      broker_id: data.scope === 'broker' ? data.broker_id : null,
+      instruction_config: instructionConfig,
+      requires_driver_action: requiresDriverAction,
+      // Defaults
+      submission_type: submissionType,
+      employment_type: 'both',
+      requirement: 'required',
+      expiration_type: 'never',
+      expiration_warning_days: 30,
+      grace_period_days: 30,
+      is_active: true,
+      created_by: createdBy,
+    })
+    .select('id')
+    .single();
+
+  if (error) throw error;
+  return created.id;
+}
+
+/**
+ * Update instruction config for a credential type
+ */
+export async function updateInstructionConfig(
+  credentialTypeId: string,
+  config: CredentialTypeInstructions,
+): Promise<void> {
+  const submissionType = deriveSubmissionType(config);
+
+  const { error } = await supabase
+    .from('credential_types')
+    .update({
+      instruction_config: config,
+      submission_type: submissionType,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', credentialTypeId);
+
+  if (error) throw error;
+}
+
 export async function updateCredentialType(
   id: string,
   formData: Partial<CredentialTypeFormData>,
 ): Promise<CredentialType> {
+  const updates = { ...formData };
+
+  if (updates.requires_driver_action === false) {
+    updates.submission_type = 'admin_verified';
+  } else if (updates.requires_driver_action === true && updates.instruction_config) {
+    updates.submission_type = deriveSubmissionType(
+      updates.instruction_config,
+      updates.requires_driver_action,
+    );
+  }
+
   const { data, error } = await supabase
     .from('credential_types')
     .update({
-      ...formData,
+      ...updates,
       updated_at: new Date().toISOString(),
     })
     .eq('id', id)
@@ -117,6 +203,29 @@ export async function updateCredentialType(
     .single();
 
   if (error) throw error;
+  return data as CredentialType;
+}
+
+/**
+ * Get a single credential type by ID with instruction config
+ */
+export async function getCredentialTypeById(id: string): Promise<CredentialType | null> {
+  const { data, error } = await supabase
+    .from('credential_types')
+    .select(
+      `
+      *,
+      broker:brokers(id, name)
+    `,
+    )
+    .eq('id', id)
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') return null;
+    throw error;
+  }
+
   return data as CredentialType;
 }
 
@@ -142,6 +251,15 @@ export async function reactivateCredentialType(id: string): Promise<CredentialTy
 
   if (error) throw error;
   return data as CredentialType;
+}
+
+export async function deleteCredentialType(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('credential_types')
+    .delete()
+    .eq('id', id);
+
+  if (error) throw error;
 }
 
 export async function updateCredentialTypeOrder(
@@ -171,4 +289,39 @@ export async function getBrokers(companyId: string): Promise<Broker[]> {
 
   if (error) throw error;
   return data as Broker[];
+}
+
+/**
+ * Derive legacy submission_type from instruction config blocks
+ * For backward compatibility with existing credential submission flow
+ */
+function deriveSubmissionType(
+  config: CredentialTypeInstructions | null,
+  requiresDriverAction = true,
+): CredentialType['submission_type'] {
+  if (!requiresDriverAction) return 'admin_verified';
+  if (!config || config.steps.length === 0) return null;
+
+  const allBlocks = config.steps.flatMap((step) => step.blocks);
+  const hasSignature = allBlocks.some((block) => block.type === 'signature_pad');
+  const hasFileUpload = allBlocks.some((block) => block.type === 'file_upload');
+  const hasFormField = allBlocks.some((block) => block.type === 'form_field');
+  const hasNonDateFormField = allBlocks.some(
+    (block) => block.type === 'form_field' && (block.content as { type?: string }).type !== 'date',
+  );
+  const hasDateField = allBlocks.some(
+    (block) => block.type === 'form_field' && (block.content as { type?: string }).type === 'date',
+  );
+  const hasQuiz = allBlocks.some((block) => block.type === 'quiz_question');
+  const hasAdminVerify = config.steps.some((step) => step.type === 'admin_verify');
+
+  if (hasAdminVerify && !hasSignature && !hasFileUpload && !hasFormField) {
+    return 'admin_verified';
+  }
+  if (hasSignature) return 'signature';
+  if (hasFileUpload) return 'document_upload';
+  if (hasNonDateFormField || hasQuiz) return 'form';
+  if (hasDateField) return 'date_entry';
+
+  return null;
 }

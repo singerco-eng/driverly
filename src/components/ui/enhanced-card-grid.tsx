@@ -108,9 +108,9 @@ function EnhancedCardGridInner<T extends { id: string }>({
       )}
       
       {/* Card grid */}
-      <div className={cn("grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6", className)}>
+      <div className={cn("grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-fr", className)}>
         {displayData.map((item, index) => (
-          <div key={item.id} className={cardClassName}>
+          <div key={item.id} className={cn("h-full", cardClassName)}>
             {renderCard(item, index)}
           </div>
         ))}

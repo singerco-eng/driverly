@@ -2,13 +2,16 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { EnhancedDataView } from '@/components/ui/enhanced-data-view';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Car, Plus } from 'lucide-react';
+import { Car, Circle, Eye, Plus } from 'lucide-react';
 import { useVehicles } from '@/hooks/useVehicles';
 import { useAuth } from '@/contexts/AuthContext';
-import type { VehicleFilters, VehicleOwnership, VehicleStatus, VehicleType } from '@/types/vehicle';
+import type { VehicleFilters, VehicleOwnership, VehicleStatus, VehicleType, VehicleWithAssignments } from '@/types/vehicle';
 import { CreateVehicleModal } from '@/components/features/admin/CreateVehicleModal';
+import { AdminVehicleCard, AdminVehicleCardAction } from '@/components/features/admin/VehicleCard';
+import { EditVehicleModal } from '@/components/features/admin/EditVehicleModal';
 
 const statusStyles: Record<VehicleStatus, string> = {
   active: 'bg-green-500/20 text-green-600 border-green-500/30',
@@ -21,7 +24,18 @@ export default function VehiclesPage() {
   const { isAdmin } = useAuth();
   const [filters, setFilters] = useState<VehicleFilters>({});
   const [createOpen, setCreateOpen] = useState(false);
+  const [editingVehicle, setEditingVehicle] = useState<VehicleWithAssignments | null>(null);
   const { data: vehicles, isLoading } = useVehicles(filters);
+
+  const handleCardAction = (action: AdminVehicleCardAction, vehicle: VehicleWithAssignments) => {
+    if (action === 'view') {
+      navigate(`/admin/vehicles/${vehicle.id}`);
+    } else if (action === 'edit') {
+      setEditingVehicle(vehicle);
+    } else if (action === 'assign') {
+      navigate(`/admin/vehicles/${vehicle.id}?tab=assignments`);
+    }
+  };
 
   const statusFilter = (filters.status ?? 'all') as VehicleStatus | 'all';
   const typeFilter = (filters.vehicleType ?? 'all') as VehicleType | 'all';
@@ -70,6 +84,8 @@ export default function VehiclesPage() {
             options: [
               { value: 'all', label: 'All Types' },
               { value: 'sedan', label: 'Sedan' },
+              { value: 'suv', label: 'SUV' },
+              { value: 'minivan', label: 'Minivan' },
               { value: 'van', label: 'Van' },
               { value: 'wheelchair_van', label: 'Wheelchair Van' },
               { value: 'stretcher_van', label: 'Stretcher Van' },
@@ -99,12 +115,13 @@ export default function VehiclesPage() {
                   <TableHead>Status</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Ownership</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {sortedVehicles.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="h-24 text-center">
+                    <TableCell colSpan={5} className="h-24 text-center">
                       <div className="flex flex-col items-center gap-2">
                         <Car className="w-8 h-8 text-muted-foreground" />
                         <p className="text-muted-foreground">No vehicles found</p>
@@ -113,28 +130,38 @@ export default function VehiclesPage() {
                   </TableRow>
                 ) : (
                   sortedVehicles.map((vehicle) => (
-                    <TableRow
-                      key={vehicle.id}
-                      className="cursor-pointer"
-                      onClick={() => navigate(`/admin/vehicles/${vehicle.id}`)}
-                    >
-                      <TableCell>
+                    <TableRow key={vehicle.id} className="cursor-pointer hover:bg-muted/50">
+                      <TableCell onClick={() => navigate(`/admin/vehicles/${vehicle.id}`)}>
                         <div className="font-medium">
-                          {vehicle.make} {vehicle.model} {vehicle.year}
+                          {vehicle.year} {vehicle.make} {vehicle.model}
                         </div>
                         <div className="text-sm text-muted-foreground">
                           {vehicle.license_plate}
+                          {vehicle.fleet_number && ` • Fleet #${vehicle.fleet_number}`}
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell onClick={() => navigate(`/admin/vehicles/${vehicle.id}`)}>
                         <Badge variant="outline" className={statusStyles[vehicle.status]}>
+                          <Circle className="h-2 w-2 mr-1" />
                           {vehicle.status}
                         </Badge>
                       </TableCell>
-                      <TableCell className="capitalize">
+                      <TableCell className="capitalize" onClick={() => navigate(`/admin/vehicles/${vehicle.id}`)}>
                         {vehicle.vehicle_type.replace('_', ' ')}
                       </TableCell>
-                      <TableCell className="capitalize">{vehicle.ownership}</TableCell>
+                      <TableCell onClick={() => navigate(`/admin/vehicles/${vehicle.id}`)}>
+                        <span className="capitalize">{vehicle.ownership}</span>
+                        {vehicle.owner?.user?.full_name && (
+                          <span className="text-muted-foreground text-sm ml-1">
+                            ({vehicle.owner.user.full_name})
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="sm" onClick={() => navigate(`/admin/vehicles/${vehicle.id}`)}>
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))
                 )}
@@ -154,47 +181,20 @@ export default function VehiclesPage() {
               </p>
             </Card>
           ),
-          renderCard: (vehicle, index) => {
-            const prev = sortedVehicles[index - 1];
-            const showGroupLabel = !prev || prev.ownership !== vehicle.ownership;
-            return (
-              <div key={vehicle.id} className="space-y-3">
-                {showGroupLabel && (
-                  <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                    {vehicle.ownership === 'company' ? 'Company-Owned' : 'Driver-Owned'}
-                  </div>
-                )}
-                <Card
-                  className="cursor-pointer hover:shadow-soft transition-all"
-                  onClick={() => navigate(`/admin/vehicles/${vehicle.id}`)}
-                >
-                  <CardHeader className="pb-2">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="text-base">
-                          {vehicle.make} {vehicle.model} {vehicle.year}
-                        </CardTitle>
-                        <p className="text-sm text-muted-foreground">{vehicle.license_plate}</p>
-                      </div>
-                      <Badge variant="outline" className={statusStyles[vehicle.status]}>
-                        {vehicle.status}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Badge variant="secondary" className="text-xs">
-                      {vehicle.vehicle_type.replace('_', ' ')}
-                    </Badge>
-                    <span className="capitalize">{vehicle.ownership} owned</span>
-                  </CardContent>
-                </Card>
-              </div>
-            );
-          },
+          renderCard: (vehicle) => (
+            <AdminVehicleCard key={vehicle.id} vehicle={vehicle} onAction={handleCardAction} />
+          ),
         }}
       />
 
       <CreateVehicleModal open={createOpen} onOpenChange={setCreateOpen} />
+      {editingVehicle && (
+        <EditVehicleModal
+          open={!!editingVehicle}
+          onOpenChange={() => setEditingVehicle(null)}
+          vehicle={editingVehicle}
+        />
+      )}
     </>
   );
 }

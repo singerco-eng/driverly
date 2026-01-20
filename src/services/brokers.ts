@@ -67,6 +67,7 @@ export async function createBroker(
       company_id: companyId,
       name: formData.name,
       code: formData.code || null,
+      source_type: formData.source_type,
       logo_url: formData.logo_url,
       contact_name: formData.contact_name || null,
       contact_email: formData.contact_email || null,
@@ -82,6 +83,8 @@ export async function createBroker(
       service_states: formData.service_states,
       accepted_vehicle_types: formData.accepted_vehicle_types,
       accepted_employment_types: formData.accepted_employment_types,
+      allow_driver_requests: formData.allow_driver_requests,
+      allow_driver_auto_signup: formData.allow_driver_auto_signup,
       created_by: userId,
     })
     .select()

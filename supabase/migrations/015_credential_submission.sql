@@ -268,7 +268,7 @@ BEGIN
     ct.category,
     ct.scope,
     ct.broker_id,
-    b.name AS broker_name,
+    b.name::TEXT AS broker_name,  -- Cast VARCHAR to TEXT
     ct.submission_type,
     ct.requirement,
     dc.id AS existing_credential_id,
@@ -328,7 +328,7 @@ BEGIN
     ct.name AS credential_type_name,
     ct.scope,
     ct.broker_id,
-    b.name AS broker_name,
+    b.name::TEXT AS broker_name,  -- Cast VARCHAR to TEXT
     ct.submission_type,
     ct.requirement,
     vc.id AS existing_credential_id,

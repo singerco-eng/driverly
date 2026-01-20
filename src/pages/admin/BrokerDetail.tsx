@@ -44,9 +44,16 @@ import {
   MapPin,
   XCircle,
   Trash2,
+  Pencil,
+  Lock,
+  UserPlus,
+  Zap,
 } from 'lucide-react';
 import AssignDriversModal from '@/components/features/admin/AssignDriversModal';
-import type { AssignmentStatus, BrokerStatus, DriverBrokerAssignment, VehicleType } from '@/types/broker';
+import BrokerFormModal from '@/components/features/admin/BrokerFormModal';
+import type { AssignmentStatus, BrokerStatus, DriverBrokerAssignment, VehicleType, BrokerAssignmentMode, TripSourceType } from '@/types/broker';
+import { getBrokerAssignmentMode, getAssignmentModeLabel, getSourceTypeLabel, SOURCE_TYPE_CONFIG } from '@/types/broker';
+import { Hospital, Shield, User, Briefcase } from 'lucide-react';
 
 const statusStyles: Record<BrokerStatus, string> = {
   active: 'bg-green-500/20 text-green-600 border-green-500/30',
@@ -57,6 +64,29 @@ const assignmentStatusStyles: Record<AssignmentStatus, string> = {
   assigned: 'bg-green-500/20 text-green-600 border-green-500/30',
   pending: 'bg-yellow-500/20 text-yellow-600 border-yellow-500/30',
   removed: 'bg-gray-500/20 text-gray-500 border-gray-500/30',
+};
+
+const assignmentModeConfig: Record<BrokerAssignmentMode, { icon: React.ReactNode; className: string }> = {
+  admin_only: {
+    icon: <Lock className="w-4 h-4" />,
+    className: 'text-muted-foreground',
+  },
+  driver_requests: {
+    icon: <UserPlus className="w-4 h-4" />,
+    className: 'text-blue-600',
+  },
+  driver_auto_signup: {
+    icon: <Zap className="w-4 h-4" />,
+    className: 'text-green-600',
+  },
+};
+
+const sourceTypeIcons: Record<TripSourceType, React.ReactNode> = {
+  state_broker: <Building2 className="w-4 h-4" />,
+  facility: <Hospital className="w-4 h-4" />,
+  insurance: <Shield className="w-4 h-4" />,
+  private: <User className="w-4 h-4" />,
+  corporate: <Briefcase className="w-4 h-4" />,
 };
 
 const vehicleTypeLabels: Record<VehicleType, string> = {
@@ -85,6 +115,7 @@ export default function BrokerDetail() {
   const removeAssignment = useRemoveDriverFromBroker();
 
   const [assignOpen, setAssignOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
 
   // Drivers tab filters
   const [driverSearch, setDriverSearch] = useState('');
@@ -135,9 +166,9 @@ export default function BrokerDetail() {
   if (error || !broker) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-lg font-semibold text-destructive">Broker not found</h2>
+        <h2 className="text-lg font-semibold text-destructive">Trip source not found</h2>
         <Button variant="outline" className="mt-4" onClick={() => navigate('/admin/brokers')}>
-          Back to Brokers
+          Back to Trip Sources
         </Button>
       </div>
     );
@@ -150,7 +181,7 @@ export default function BrokerDetail() {
         className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="w-4 h-4" />
-        Back to Brokers
+        Back to Trip Sources
       </Link>
 
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
@@ -169,12 +200,20 @@ export default function BrokerDetail() {
                 {broker.status}
               </Badge>
             </div>
-            <div className="text-muted-foreground">{broker.contact_email || '—'}</div>
+            <div className="flex items-center gap-2 text-muted-foreground">
+              {sourceTypeIcons[broker.source_type]}
+              <span>{getSourceTypeLabel(broker.source_type)}</span>
+              {broker.contact_email && <span>• {broker.contact_email}</span>}
+            </div>
             {broker.code && <Badge variant="secondary" className="mt-2">{broker.code}</Badge>}
           </div>
         </div>
 
         <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => setEditOpen(true)}>
+            <Pencil className="w-4 h-4 mr-2" />
+            Edit
+          </Button>
           <Button onClick={() => setAssignOpen(true)}>Assign Drivers</Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -270,6 +309,32 @@ export default function BrokerDetail() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Assignment Mode Card */}
+          {(() => {
+            const mode = getBrokerAssignmentMode(broker);
+            const config = assignmentModeConfig[mode];
+            return (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Driver Assignment Mode
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className={`flex items-center gap-2 ${config.className}`}>
+                    {config.icon}
+                    <span className="text-lg font-semibold">{getAssignmentModeLabel(mode)}</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    {mode === 'admin_only' && 'Only admins can assign drivers to this trip source.'}
+                    {mode === 'driver_requests' && 'Drivers can request to join. You will need to approve each request.'}
+                    {mode === 'driver_auto_signup' && 'Drivers can join instantly. They still need credentials to be eligible for trips.'}
+                  </p>
+                </CardContent>
+              </Card>
+            );
+          })()}
 
           <div className="grid gap-4 md:grid-cols-2">
             <Card>
@@ -420,9 +485,9 @@ export default function BrokerDetail() {
         <TabsContent value="credentials" className="mt-6 space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-medium">Broker Credentials</h3>
+              <h3 className="text-lg font-medium">Required Credentials</h3>
               <p className="text-sm text-muted-foreground">
-                Credentials required specifically for this broker.
+                Credentials required specifically for this trip source.
               </p>
             </div>
             <Button variant="outline" onClick={() => navigate('/admin/settings/credentials')}>
@@ -464,9 +529,9 @@ export default function BrokerDetail() {
             ) : (
               <Card className="p-8 text-center">
                 <FileCheck className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
-                <h4 className="font-medium">No broker credentials</h4>
+                <h4 className="font-medium">No credentials configured</h4>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Create broker-scoped credential types to track requirements.
+                  Create credential types scoped to this trip source.
                 </p>
               </Card>
             )}
@@ -477,7 +542,7 @@ export default function BrokerDetail() {
           <div>
             <h3 className="text-lg font-medium">Current Rates</h3>
             <p className="text-sm text-muted-foreground">
-              Effective rates currently in use for this broker.
+              Effective rates currently in use for this trip source.
             </p>
           </div>
 
@@ -564,6 +629,15 @@ export default function BrokerDetail() {
       </Tabs>
 
       <AssignDriversModal broker={broker} open={assignOpen} onOpenChange={setAssignOpen} />
+      
+      {profile?.company_id && (
+        <BrokerFormModal
+          companyId={profile.company_id}
+          open={editOpen}
+          onOpenChange={setEditOpen}
+          broker={broker}
+        />
+      )}
     </div>
   );
 }

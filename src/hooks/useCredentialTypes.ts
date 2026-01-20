@@ -1,7 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as credentialTypesService from '@/services/credentialTypes';
-import type { CredentialTypeFormData } from '@/types/credential';
+import type {
+  CredentialTypeEdits,
+  CredentialTypeFormData,
+  CreateCredentialTypeSimple,
+} from '@/types/credential';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import type { CredentialTypeInstructions } from '@/types/instructionBuilder';
 
 export function useCredentialTypes(companyId: string | undefined) {
   return useQuery({
@@ -40,15 +46,103 @@ export function useCreateCredentialType() {
   });
 }
 
-export function useUpdateCredentialType() {
+/**
+ * Hook to create credential type with simple modal
+ */
+export function useCreateCredentialTypeSimple() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<CredentialTypeFormData> }) =>
-      credentialTypesService.updateCredentialType(id, data),
-    onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ['credential-types', result.company_id] });
-      queryClient.invalidateQueries({ queryKey: ['credential-types', 'detail', result.id] });
+    mutationFn: async ({
+      companyId,
+      data,
+      createdBy,
+    }: {
+      companyId: string;
+      data: CreateCredentialTypeSimple;
+      createdBy: string;
+    }) => credentialTypesService.createCredentialTypeSimple(companyId, data, createdBy),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['credential-types'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Failed to create credential type',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+}
+
+/**
+ * Hook to get a single credential type by ID
+ */
+export function useCredentialTypeById(id: string | undefined) {
+  return useQuery({
+    queryKey: ['credential-type', id],
+    queryFn: () => credentialTypesService.getCredentialTypeById(id!),
+    enabled: !!id,
+  });
+}
+
+/**
+ * Hook to update instruction config
+ */
+export function useUpdateInstructionConfig() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({
+      credentialTypeId,
+      config,
+    }: {
+      credentialTypeId: string;
+      config: CredentialTypeInstructions;
+    }) => credentialTypesService.updateInstructionConfig(credentialTypeId, config),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['credential-type', variables.credentialTypeId] });
+      queryClient.invalidateQueries({ queryKey: ['credential-types'] });
+      toast({
+        title: 'Changes saved',
+        description: 'Credential type updated successfully.',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Failed to save changes',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+}
+
+export function useUpdateCredentialType() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (updates: { id: string } & CredentialTypeEdits) => {
+      const { id, ...fields } = updates;
+      return credentialTypesService.updateCredentialType(id, fields);
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['credential-type', variables.id] });
+      queryClient.invalidateQueries({ queryKey: ['credential-types'] });
+      toast({
+        title: 'Credential type updated',
+        description: 'Changes saved successfully.',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Failed to update credential type',
+        description: error.message,
+        variant: 'destructive',
+      });
     },
   });
 }
@@ -73,6 +167,17 @@ export function useReactivateCredentialType() {
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['credential-types', result.company_id] });
       queryClient.invalidateQueries({ queryKey: ['credential-types', 'detail', result.id] });
+    },
+  });
+}
+
+export function useDeleteCredentialType() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => credentialTypesService.deleteCredentialType(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['credential-types'] });
     },
   });
 }

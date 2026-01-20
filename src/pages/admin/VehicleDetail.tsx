@@ -23,6 +23,7 @@ import {
 import { VehicleOverviewTab } from '@/components/features/admin/VehicleOverviewTab';
 import { VehicleDetailsTab } from '@/components/features/admin/VehicleDetailsTab';
 import { VehicleAssignmentsTab } from '@/components/features/admin/VehicleAssignmentsTab';
+import { VehicleCredentialsTab } from '@/components/features/admin/VehicleCredentialsTab';
 import { EditVehicleModal } from '@/components/features/admin/EditVehicleModal';
 import { useAuth } from '@/contexts/AuthContext';
 import type { VehicleStatus } from '@/types/vehicle';
@@ -139,9 +140,7 @@ export default function VehicleDetailPage() {
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="details">Details</TabsTrigger>
-          <TabsTrigger value="credentials" disabled>
-            Credentials
-          </TabsTrigger>
+          <TabsTrigger value="credentials">Credentials</TabsTrigger>
           <TabsTrigger value="assignments">Assignments</TabsTrigger>
         </TabsList>
 
@@ -150,6 +149,9 @@ export default function VehicleDetailPage() {
         </TabsContent>
         <TabsContent value="details" className="mt-6">
           <VehicleDetailsTab vehicle={vehicle} />
+        </TabsContent>
+        <TabsContent value="credentials" className="mt-6">
+          <VehicleCredentialsTab companyId={vehicle.company_id} vehicleId={vehicle.id} />
         </TabsContent>
         <TabsContent value="assignments" className="mt-6">
           <VehicleAssignmentsTab vehicle={vehicle} />

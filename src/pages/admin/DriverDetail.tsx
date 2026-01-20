@@ -25,6 +25,7 @@ import {
 import { DriverOverviewTab } from '@/components/features/admin/DriverOverviewTab';
 import { DriverProfileTab } from '@/components/features/admin/DriverProfileTab';
 import { DriverVehiclesTab } from '@/components/features/admin/DriverVehiclesTab';
+import { DriverCredentialsTab } from '@/components/features/admin/DriverCredentialsTab';
 import { EditDriverModal } from '@/components/features/admin/EditDriverModal';
 import { SuspendDriverModal } from '@/components/features/admin/SuspendDriverModal';
 import { useAuth } from '@/contexts/AuthContext';
@@ -172,9 +173,7 @@ export default function DriverDetailPage() {
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="vehicles">Vehicles</TabsTrigger>
-          <TabsTrigger value="credentials" disabled>
-            Credentials
-          </TabsTrigger>
+          <TabsTrigger value="credentials">Credentials</TabsTrigger>
           <TabsTrigger value="availability" disabled>
             Availability
           </TabsTrigger>
@@ -190,6 +189,10 @@ export default function DriverDetailPage() {
 
         <TabsContent value="vehicles" className="mt-6">
           <DriverVehiclesTab driver={driver} />
+        </TabsContent>
+
+        <TabsContent value="credentials" className="mt-6">
+          <DriverCredentialsTab companyId={driver.company_id} driverId={driver.id} />
         </TabsContent>
       </Tabs>
 

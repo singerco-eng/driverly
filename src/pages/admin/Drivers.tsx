@@ -2,14 +2,16 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { EnhancedDataView } from '@/components/ui/enhanced-data-view';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Users, Plus } from 'lucide-react';
+import { Users, Plus, Circle, Eye } from 'lucide-react';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCompany } from '@/hooks/useCompanies';
 import { useToast } from '@/hooks/use-toast';
-import type { DriverFilters, DriverStatus, EmploymentType } from '@/types/driver';
+import type { DriverFilters, DriverStatus, EmploymentType, DriverWithUser } from '@/types/driver';
+import { AdminDriverCard, AdminDriverCardAction } from '@/components/features/admin/DriverCard';
 
 const statusStyles: Record<DriverStatus, string> = {
   active: 'bg-green-500/20 text-green-600 border-green-500/30',
@@ -25,6 +27,16 @@ export default function DriversPage() {
   const { toast } = useToast();
   const [filters, setFilters] = useState<DriverFilters>({});
   const { data: drivers, isLoading } = useDrivers(filters);
+
+  const handleCardAction = (action: AdminDriverCardAction, driver: DriverWithUser) => {
+    if (action === 'view') {
+      navigate(`/admin/drivers/${driver.id}`);
+    } else if (action === 'edit') {
+      navigate(`/admin/drivers/${driver.id}?tab=profile`);
+    } else if (action === 'vehicles') {
+      navigate(`/admin/drivers/${driver.id}?tab=vehicles`);
+    }
+  };
 
   const statusFilter = (filters.status ?? 'all') as DriverStatus | 'all';
   const employmentFilter = (filters.employmentType ?? 'all') as EmploymentType | 'all';
@@ -100,12 +112,13 @@ export default function DriversPage() {
                 <TableHead>Status</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Last Active</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {(drivers || []).length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="h-24 text-center">
+                  <TableCell colSpan={5} className="h-24 text-center">
                     <div className="flex flex-col items-center gap-2">
                       <Users className="w-8 h-8 text-muted-foreground" />
                       <p className="text-muted-foreground">No drivers found</p>
@@ -116,13 +129,23 @@ export default function DriversPage() {
                 (drivers || []).map((driver) => (
                   <TableRow
                     key={driver.id}
-                    className="cursor-pointer"
-                    onClick={() => navigate(`/admin/drivers/${driver.id}`)}
+                    className="cursor-pointer hover:bg-muted/50"
                   >
-                    <TableCell>
+                    <TableCell onClick={() => navigate(`/admin/drivers/${driver.id}`)}>
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                          <span className="text-primary text-sm">
+                        <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden">
+                          {driver.user.avatar_url ? (
+                            <img 
+                              src={driver.user.avatar_url} 
+                              alt={driver.user.full_name}
+                              className="h-full w-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                              }}
+                            />
+                          ) : null}
+                          <span className={`text-primary text-sm ${driver.user.avatar_url ? 'hidden' : ''}`}>
                             {driver.user.full_name.charAt(0).toUpperCase()}
                           </span>
                         </div>
@@ -134,18 +157,24 @@ export default function DriversPage() {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell onClick={() => navigate(`/admin/drivers/${driver.id}`)}>
                       <Badge variant="outline" className={statusStyles[driver.status]}>
+                        <Circle className="h-2 w-2 mr-1" />
                         {driver.status}
                       </Badge>
                     </TableCell>
-                    <TableCell>
+                    <TableCell onClick={() => navigate(`/admin/drivers/${driver.id}`)}>
                       <Badge variant="secondary">{driver.employment_type.toUpperCase()}</Badge>
                     </TableCell>
-                    <TableCell>
+                    <TableCell onClick={() => navigate(`/admin/drivers/${driver.id}`)}>
                       {driver.last_active_at
                         ? new Date(driver.last_active_at).toLocaleDateString()
                         : '—'}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="sm" onClick={() => navigate(`/admin/drivers/${driver.id}`)}>
+                        <Eye className="h-4 w-4" />
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))
@@ -167,40 +196,7 @@ export default function DriversPage() {
           </Card>
         ),
         renderCard: (driver) => (
-          <Card
-            key={driver.id}
-            className="cursor-pointer hover:shadow-soft transition-all"
-            onClick={() => navigate(`/admin/drivers/${driver.id}`)}
-          >
-            <CardHeader className="pb-2">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-                    <span className="text-primary font-medium">
-                      {driver.user.full_name.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                  <div>
-                    <CardTitle className="text-base">{driver.user.full_name}</CardTitle>
-                    <p className="text-sm text-muted-foreground">{driver.user.email}</p>
-                  </div>
-                </div>
-                <Badge variant="outline" className={statusStyles[driver.status]}>
-                  {driver.status}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Badge variant="secondary" className="text-xs">
-                  {driver.employment_type.toUpperCase()}
-                </Badge>
-                {driver.last_active_at && (
-                  <span>Active {new Date(driver.last_active_at).toLocaleDateString()}</span>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          <AdminDriverCard key={driver.id} driver={driver} onAction={handleCardAction} />
         ),
       }}
     />

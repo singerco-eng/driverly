@@ -48,7 +48,7 @@ export default function Companies() {
 
   if (error) {
     return (
-      <div className="p-6 lg:p-8">
+      <div className="p-6">
         <Card className="border-destructive/50 bg-destructive/5 p-6">
           <h1 className="text-xl font-bold text-destructive mb-2">Error Loading Companies</h1>
           <p className="text-destructive">{error.message}</p>
@@ -58,7 +58,7 @@ export default function Companies() {
   }
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="p-6">
       {/* Single unified header via EnhancedDataView */}
       <EnhancedDataView<CompanyWithStats>
         title="Companies"
