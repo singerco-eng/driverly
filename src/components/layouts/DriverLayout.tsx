@@ -44,7 +44,7 @@ const navItems = [
   { path: '/driver/credentials', label: 'Credentials', icon: FileText },
   { path: '/driver/availability', label: 'Availability', icon: Calendar },
   { path: '/driver/brokers', label: 'My Trip Sources', icon: Building2 },
-  { path: '/driver/settings', label: 'Settings', icon: Settings },
+  { path: '/driver/settings/account', label: 'Settings', icon: Settings },
 ];
 
 export default function DriverLayout() {
@@ -191,7 +191,7 @@ export default function DriverLayout() {
                     <User className="w-4 h-4 mr-2" />
                     Profile
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/driver/settings')}>
+                  <DropdownMenuItem onClick={() => navigate('/driver/settings/account')}>
                     <Settings className="w-4 h-4 mr-2" />
                     Settings
                   </DropdownMenuItem>

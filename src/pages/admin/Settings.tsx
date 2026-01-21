@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Palette } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCompany } from '@/hooks/useCompanies';
-import { ThemeSelector } from '@/components/features/driver/ThemeSelector';
+import { ThemePresetSelector } from '@/components/features/driver/ThemePresetSelector';
 
 export default function AdminSettings() {
   const { profile } = useAuth();
@@ -90,13 +90,13 @@ export default function AdminSettings() {
       <Card>
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
-            <Palette className="w-4 h-4 text-primary" />
+            <Palette className="w-4 h-4 text-muted-foreground" />
             Appearance
           </CardTitle>
-          <CardDescription>Choose how the app looks to you.</CardDescription>
+          <CardDescription>Choose your preferred color theme.</CardDescription>
         </CardHeader>
         <CardContent>
-          <ThemeSelector />
+          <ThemePresetSelector />
         </CardContent>
       </Card>
 

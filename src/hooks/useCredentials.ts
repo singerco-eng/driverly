@@ -188,6 +188,23 @@ export function useEnsureVehicleCredential() {
 }
 
 /**
+ * Admin version - allows admins to create credentials for any vehicle
+ */
+export function useAdminEnsureVehicleCredential() {
+  return useMutation({
+    mutationFn: ({
+      vehicleId,
+      credentialTypeId,
+      companyId,
+    }: {
+      vehicleId: string;
+      credentialTypeId: string;
+      companyId: string;
+    }) => credentialService.adminEnsureVehicleCredential(vehicleId, credentialTypeId, companyId),
+  });
+}
+
+/**
  * Generic submit hook for instruction-based credentials
  */
 export function useSubmitCredential() {

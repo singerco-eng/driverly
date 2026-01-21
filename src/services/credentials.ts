@@ -283,6 +283,35 @@ export async function ensureVehicleCredential(
   return data as string;
 }
 
+/**
+ * Admin version - allows admins to create credentials for any vehicle in their company
+ */
+export async function adminEnsureVehicleCredential(
+  vehicleId: string,
+  credentialTypeId: string,
+  companyId: string,
+): Promise<{ id: string }> {
+  // Try to find existing credential first
+  const { data: existing } = await supabase
+    .from('vehicle_credentials')
+    .select('id')
+    .eq('vehicle_id', vehicleId)
+    .eq('credential_type_id', credentialTypeId)
+    .maybeSingle();
+
+  if (existing) return { id: existing.id };
+
+  // Use admin RPC function to create credential
+  const { data, error } = await supabase.rpc('admin_ensure_vehicle_credential', {
+    p_vehicle_id: vehicleId,
+    p_credential_type_id: credentialTypeId,
+    p_company_id: companyId,
+  });
+
+  if (error) throw error;
+  return { id: data as string };
+}
+
 export async function uploadCredentialDocument(
   file: File,
   userId: string,

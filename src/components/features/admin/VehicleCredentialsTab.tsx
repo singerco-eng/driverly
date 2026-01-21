@@ -10,7 +10,7 @@ import { ApproveCredentialModal } from '@/components/features/admin/ApproveCrede
 import { RejectCredentialModal } from '@/components/features/admin/RejectCredentialModal';
 import { VerifyCredentialModal } from '@/components/features/admin/VerifyCredentialModal';
 import { useVehicleCredentialsForAdmin } from '@/hooks/useCredentialReview';
-import { useEnsureVehicleCredential } from '@/hooks/useCredentials';
+import { useAdminEnsureVehicleCredential } from '@/hooks/useCredentials';
 import type { CredentialForReview, ReviewStatus } from '@/types/credentialReview';
 import { isAdminOnlyCredential } from '@/lib/credentialRequirements';
 import { cn } from '@/lib/utils';
@@ -69,7 +69,7 @@ export function VehicleCredentialsTab({ companyId, vehicleId }: VehicleCredentia
   
   // Use the new admin hook that shows ALL credential types
   const { data, isLoading, error } = useVehicleCredentialsForAdmin(companyId, vehicleId);
-  const ensureCredential = useEnsureVehicleCredential();
+  const ensureCredential = useAdminEnsureVehicleCredential();
   
   const [selected, setSelected] = useState<CredentialForReview | null>(null);
   const [approveOpen, setApproveOpen] = useState(false);
@@ -102,12 +102,12 @@ export function VehicleCredentialsTab({ companyId, vehicleId }: VehicleCredentia
     // If this is a placeholder, create the real record first then navigate
     if (credential._isPlaceholder && credential._credentialTypeId) {
       try {
-        const id = await ensureCredential.mutateAsync({
+        const result = await ensureCredential.mutateAsync({
           vehicleId,
           credentialTypeId: credential._credentialTypeId,
           companyId,
         });
-        navigate(`/admin/vehicles/${vehicleId}/credentials/${id}`);
+        navigate(`/admin/vehicles/${vehicleId}/credentials/${result.id}`);
         return;
       } catch (err) {
         console.error('Failed to ensure credential:', err);

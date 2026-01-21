@@ -182,7 +182,7 @@ export default function CredentialTypeDetail() {
             </div>
             <p className="text-muted-foreground mt-1">
               {credentialType.category === 'driver' ? 'Driver' : 'Vehicle'} Credential •{' '}
-              {credentialType.scope === 'global' ? 'Global' : 'Broker-specific'}
+              {credentialType.scope === 'global' ? 'Global' : 'Trip Source-Specific'}
             </p>
           </div>
         </div>

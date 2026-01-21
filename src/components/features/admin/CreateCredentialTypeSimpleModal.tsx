@@ -23,7 +23,13 @@ import {
 } from '@/components/ui/select';
 import { useCreateCredentialTypeSimple, useBrokers } from '@/hooks/useCredentialTypes';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2 } from 'lucide-react';
+import { Loader2, HelpCircle } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 const schema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -148,7 +154,19 @@ export default function CreateCredentialTypeSimpleModal({
 
           {/* Scope */}
           <div className="space-y-2">
-            <Label>Scope *</Label>
+            <div className="flex items-center gap-1.5">
+              <Label>Scope *</Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="max-w-xs">
+                    <p>Tie credentials to a specific trip source. Drivers assigned to that source will need to complete these credentials.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
             <RadioGroup
               value={watch('scope')}
               onValueChange={(value) => setValue('scope', value as 'global' | 'broker')}
@@ -160,21 +178,21 @@ export default function CreateCredentialTypeSimpleModal({
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="broker" id="scope-broker" />
-                <Label htmlFor="scope-broker">Broker-Specific</Label>
+                <Label htmlFor="scope-broker">Trip Source-Specific</Label>
               </div>
             </RadioGroup>
           </div>
 
-          {/* Broker Select (conditional) */}
+          {/* Trip Source Select (conditional) */}
           {watchScope === 'broker' && (
             <div className="space-y-2">
-              <Label>Broker *</Label>
+              <Label>Trip Source *</Label>
               <Select
                 value={watch('broker_id') || ''}
                 onValueChange={(value) => setValue('broker_id', value)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select broker" />
+                  <SelectValue placeholder="Select trip source" />
                 </SelectTrigger>
                 <SelectContent>
                   {brokers?.map((broker) => (

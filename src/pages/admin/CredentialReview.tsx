@@ -14,21 +14,43 @@ import {
 } from '@/hooks/useCredentialReview';
 import type { CredentialForReview, ReviewQueueFilters, ReviewStatus } from '@/types/credentialReview';
 import { CredentialReviewCard } from '@/components/features/admin/CredentialReviewCard';
-import { ApproveCredentialModal } from '@/components/features/admin/ApproveCredentialModal';
-import { RejectCredentialModal } from '@/components/features/admin/RejectCredentialModal';
-import { VerifyCredentialModal } from '@/components/features/admin/VerifyCredentialModal';
 import { ReviewHistoryTab } from '@/components/features/admin/ReviewHistoryTab';
 
 type DisplayStatus = ReviewStatus | 'not_submitted';
 
-const statusStyles: Record<DisplayStatus, string> = {
-  pending_review: 'bg-yellow-500/20 text-yellow-700 border-yellow-500/30',
-  awaiting_verification: 'bg-blue-500/20 text-blue-600 border-blue-500/30',
-  expiring: 'bg-orange-500/20 text-orange-600 border-orange-500/30',
-  expired: 'bg-red-500/20 text-red-600 border-red-500/30',
-  approved: 'bg-green-500/20 text-green-600 border-green-500/30',
-  rejected: 'bg-red-500/20 text-red-600 border-red-500/30',
-  not_submitted: 'bg-muted text-muted-foreground border-muted',
+/** Status config using native Badge variants per design system */
+const statusConfig: Record<DisplayStatus, { 
+  label: string; 
+  badgeVariant: 'default' | 'secondary' | 'destructive' | 'outline';
+}> = {
+  pending_review: {
+    label: 'Pending Review',
+    badgeVariant: 'secondary',
+  },
+  awaiting_verification: {
+    label: 'Awaiting Verification',
+    badgeVariant: 'secondary',
+  },
+  expiring: {
+    label: 'Expiring Soon',
+    badgeVariant: 'outline',
+  },
+  expired: {
+    label: 'Expired',
+    badgeVariant: 'destructive',
+  },
+  approved: {
+    label: 'Approved',
+    badgeVariant: 'default',
+  },
+  rejected: {
+    label: 'Rejected',
+    badgeVariant: 'destructive',
+  },
+  not_submitted: {
+    label: 'Not Submitted',
+    badgeVariant: 'outline',
+  },
 };
 
 const statusOptions: Array<{ value: ReviewQueueFilters['status']; label: string }> = [
@@ -89,13 +111,12 @@ export default function CredentialReviewPage() {
   const { data: credentialTypes } = useCredentialTypes(companyId);
   const { data: brokers } = useBrokers(companyId);
 
-  const [selected, setSelected] = useState<CredentialForReview | null>(null);
-  const [approveOpen, setApproveOpen] = useState(false);
-  const [rejectOpen, setRejectOpen] = useState(false);
-  const [verifyOpen, setVerifyOpen] = useState(false);
 
   const filteredDriver = useMemo(() => {
     return (driverCredentials || []).filter((credential) => {
+      // Filter out inactive credential types
+      if (!credential.credentialType.is_active) return false;
+      
       if (filters.status === 'expiring' && credential.displayStatus !== 'expiring') return false;
       if (filters.status === 'expired' && credential.displayStatus !== 'expired') return false;
       if (filters.status === 'not_submitted' && credential.displayStatus !== 'not_submitted') return false;
@@ -136,6 +157,9 @@ export default function CredentialReviewPage() {
 
   const filteredVehicle = useMemo(() => {
     return (vehicleCredentials || []).filter((credential) => {
+      // Filter out inactive credential types
+      if (!credential.credentialType.is_active) return false;
+      
       if (filters.status === 'expiring' && credential.displayStatus !== 'expiring') return false;
       if (filters.status === 'expired' && credential.displayStatus !== 'expired') return false;
       if (filters.status === 'not_submitted' && credential.displayStatus !== 'not_submitted') return false;
@@ -181,20 +205,6 @@ export default function CredentialReviewPage() {
     }
   };
 
-  const handleApprove = (credential: CredentialForReview) => {
-    setSelected(credential);
-    setApproveOpen(true);
-  };
-
-  const handleReject = (credential: CredentialForReview) => {
-    setSelected(credential);
-    setRejectOpen(true);
-  };
-
-  const handleVerify = (credential: CredentialForReview) => {
-    setSelected(credential);
-    setVerifyOpen(true);
-  };
 
   const commonFilters = [
     {
@@ -216,17 +226,17 @@ export default function CredentialReviewPage() {
       placeholder: 'All Types',
       options: [
         { value: 'all', label: 'All Types' },
-        ...(credentialTypes || []).map((type) => ({ value: type.id, label: type.name })),
+        ...(credentialTypes || []).filter(type => type.is_active).map((type) => ({ value: type.id, label: type.name })),
       ],
     },
     {
       value: filters.brokerId || 'all',
       onValueChange: (value: string) =>
         setFilters((prev) => ({ ...prev, brokerId: value === 'all' ? undefined : value })),
-      label: 'Broker',
-      placeholder: 'All Brokers',
+      label: 'Trip Source',
+      placeholder: 'All Trip Sources',
       options: [
-        { value: 'all', label: 'All Brokers' },
+        { value: 'all', label: 'All Trip Sources' },
         ...(brokers || []).map((broker) => ({ value: broker.id, label: broker.name })),
       ],
     },
@@ -279,31 +289,32 @@ export default function CredentialReviewPage() {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      filteredDriver.map((credential) => (
-                        <TableRow key={credential.id}>
-                          <TableCell className="font-medium">
-                            {credential.credentialType.name}
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant="outline"
-                              className={statusStyles[credential.displayStatus as DisplayStatus] || statusStyles.not_submitted}
-                            >
-                              {credential.displayStatus.replace('_', ' ')}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{getSubjectLabel(credential)}</TableCell>
-                          <TableCell>{formatDate(credential.submittedAt)}</TableCell>
-                          <TableCell className="space-x-2">
-                            <button
-                              className="text-sm text-primary hover:underline"
-                              onClick={() => handleView(credential)}
-                            >
-                              View
-                            </button>
-                          </TableCell>
-                        </TableRow>
-                      ))
+                      filteredDriver.map((credential) => {
+                        const status = statusConfig[credential.displayStatus as DisplayStatus] || statusConfig.not_submitted;
+                        return (
+                          <TableRow 
+                            key={credential.id} 
+                            className="cursor-pointer hover:bg-muted/50"
+                            onClick={() => handleView(credential)}
+                          >
+                            <TableCell className="font-medium">
+                              {credential.credentialType.name}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={status.badgeVariant}>
+                                {status.label}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>{getSubjectLabel(credential)}</TableCell>
+                            <TableCell>{formatDate(credential.submittedAt)}</TableCell>
+                            <TableCell>
+                              <span className="text-sm text-muted-foreground group-hover:text-foreground">
+                                View →
+                              </span>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
                     )}
                   </TableBody>
                 </Table>
@@ -326,9 +337,6 @@ export default function CredentialReviewPage() {
                   key={credential.id}
                   credential={credential}
                   onView={handleView}
-                  onApprove={handleApprove}
-                  onReject={handleReject}
-                  onVerify={handleVerify}
                 />
               ),
             }}
@@ -368,31 +376,32 @@ export default function CredentialReviewPage() {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      filteredVehicle.map((credential) => (
-                        <TableRow key={credential.id}>
-                          <TableCell className="font-medium">
-                            {credential.credentialType.name}
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant="outline"
-                              className={statusStyles[credential.displayStatus as DisplayStatus] || statusStyles.not_submitted}
-                            >
-                              {credential.displayStatus.replace('_', ' ')}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{getSubjectLabel(credential)}</TableCell>
-                          <TableCell>{formatDate(credential.submittedAt)}</TableCell>
-                          <TableCell className="space-x-2">
-                            <button
-                              className="text-sm text-primary hover:underline"
-                              onClick={() => handleView(credential)}
-                            >
-                              View
-                            </button>
-                          </TableCell>
-                        </TableRow>
-                      ))
+                      filteredVehicle.map((credential) => {
+                        const status = statusConfig[credential.displayStatus as DisplayStatus] || statusConfig.not_submitted;
+                        return (
+                          <TableRow 
+                            key={credential.id} 
+                            className="cursor-pointer hover:bg-muted/50"
+                            onClick={() => handleView(credential)}
+                          >
+                            <TableCell className="font-medium">
+                              {credential.credentialType.name}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={status.badgeVariant}>
+                                {status.label}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>{getSubjectLabel(credential)}</TableCell>
+                            <TableCell>{formatDate(credential.submittedAt)}</TableCell>
+                            <TableCell>
+                              <span className="text-sm text-muted-foreground group-hover:text-foreground">
+                                View →
+                              </span>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
                     )}
                   </TableBody>
                 </Table>
@@ -415,9 +424,6 @@ export default function CredentialReviewPage() {
                   key={credential.id}
                   credential={credential}
                   onView={handleView}
-                  onApprove={handleApprove}
-                  onReject={handleReject}
-                  onVerify={handleVerify}
                 />
               ),
             }}
@@ -429,21 +435,6 @@ export default function CredentialReviewPage() {
         </TabsContent>
       </Tabs>
 
-      <ApproveCredentialModal
-        open={approveOpen}
-        onOpenChange={setApproveOpen}
-        credential={selected}
-      />
-      <RejectCredentialModal
-        open={rejectOpen}
-        onOpenChange={setRejectOpen}
-        credential={selected}
-      />
-      <VerifyCredentialModal
-        open={verifyOpen}
-        onOpenChange={setVerifyOpen}
-        credential={selected}
-      />
     </div>
   );
 }

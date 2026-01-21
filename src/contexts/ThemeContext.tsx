@@ -3,17 +3,20 @@ import { useAuth } from '@/contexts/AuthContext';
 import { DEFAULT_THEME_TOKENS } from '@/lib/theme-tokens';
 import { applyThemeTokens, mergeThemeTokens } from '@/lib/theme-utils';
 import { getCompanyTheme, getPlatformTheme } from '@/services/theme';
-import { ColorMode, COLOR_MODE_KEY, createNeutralTokens } from '@/lib/color-modes';
+import { THEME_PRESETS, getPresetById } from '@/lib/theme-presets';
 import type { ThemeTokens } from '@/types/theme';
 
 const THEME_CACHE_KEY = 'driverly-theme-cache';
+const THEME_PRESET_KEY = 'driverly-theme-preset';
 
 interface ThemeContextType {
   tokens: ThemeTokens;
   setTokens: (tokens: ThemeTokens) => void;
   isThemeLoading: boolean;
-  colorMode: ColorMode;
-  setColorMode: (mode: ColorMode) => void;
+  /** Currently selected preset ID (null = use server theme) */
+  selectedPresetId: string | null;
+  /** Select a preset by ID (null = reset to server theme) */
+  setSelectedPresetId: (presetId: string | null) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | null>(null);
@@ -43,13 +46,12 @@ function getCachedTheme(): ThemeTokens {
   return DEFAULT_THEME_TOKENS;
 }
 
-// Get stored color mode
-function getStoredColorMode(): ColorMode {
+// Get stored preset ID
+function getStoredPresetId(): string | null {
   try {
-    const stored = localStorage.getItem(COLOR_MODE_KEY);
-    return stored === 'neutral' ? 'neutral' : 'expressive';
+    return localStorage.getItem(THEME_PRESET_KEY);
   } catch {
-    return 'expressive';
+    return null;
   }
 }
 
@@ -73,33 +75,42 @@ function markThemeReady() {
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
   const { profile, isLoading } = useAuth();
-  // Initialize with cached theme to prevent flash
-  const [baseTokens, setBaseTokens] = useState<ThemeTokens>(getCachedTheme);
-  const [colorMode, setColorModeState] = useState<ColorMode>(getStoredColorMode);
+  // Base tokens from server (platform + company overrides)
+  const [serverTokens, setServerTokens] = useState<ThemeTokens>(getCachedTheme);
+  // User-selected preset ID
+  const [selectedPresetId, setSelectedPresetIdState] = useState<string | null>(getStoredPresetId);
   const [isThemeLoading, setIsThemeLoading] = useState(true);
 
-  // Compute effective tokens based on color mode
-  const tokens = colorMode === 'neutral' ? createNeutralTokens(baseTokens) : baseTokens;
+  // Compute effective tokens: preset tokens if selected, otherwise server tokens
+  const tokens = selectedPresetId
+    ? (getPresetById(selectedPresetId)?.tokens ?? serverTokens)
+    : serverTokens;
 
-  // Persist color mode changes
-  const setColorMode = useCallback((mode: ColorMode) => {
-    setColorModeState(mode);
+  // Persist preset selection
+  const setSelectedPresetId = useCallback((presetId: string | null) => {
+    setSelectedPresetIdState(presetId);
     try {
-      localStorage.setItem(COLOR_MODE_KEY, mode);
+      if (presetId) {
+        localStorage.setItem(THEME_PRESET_KEY, presetId);
+      } else {
+        localStorage.removeItem(THEME_PRESET_KEY);
+      }
     } catch {
       // Ignore localStorage errors
     }
   }, []);
 
-  // Wrapper for setTokens to update base tokens
+  // Wrapper for setTokens to update server tokens (used by super admin)
   const setTokens = useCallback((newTokens: ThemeTokens) => {
-    setBaseTokens(newTokens);
-  }, []);
+    setServerTokens(newTokens);
+    // Clear preset selection when manually setting tokens
+    setSelectedPresetId(null);
+  }, [setSelectedPresetId]);
 
-  // Apply tokens whenever they change (including color mode changes)
+  // Apply tokens whenever they change
   useEffect(() => {
     applyThemeTokens(tokens);
-  }, [tokens, colorMode]);
+  }, [tokens]);
 
   // Load theme from server
   useEffect(() => {
@@ -116,16 +127,16 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
           const companyOverrides = await getCompanyTheme(profile.company_id);
           const merged = mergeThemeTokens(platformTokens, companyOverrides);
           if (isActive) {
-            setBaseTokens(merged);
+            setServerTokens(merged);
             cacheTheme(merged);
           }
         } else if (isActive) {
-          setBaseTokens(platformTokens);
+          setServerTokens(platformTokens);
           cacheTheme(platformTokens);
         }
       } catch {
         if (isActive) {
-          setBaseTokens(DEFAULT_THEME_TOKENS);
+          setServerTokens(DEFAULT_THEME_TOKENS);
           cacheTheme(DEFAULT_THEME_TOKENS);
         }
       } finally {
@@ -157,7 +168,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   }, [isLoading]);
 
   return (
-    <ThemeContext.Provider value={{ tokens, setTokens, isThemeLoading, colorMode, setColorMode }}>
+    <ThemeContext.Provider value={{ tokens, setTokens, isThemeLoading, selectedPresetId, setSelectedPresetId }}>
       {children}
     </ThemeContext.Provider>
   );

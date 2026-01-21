@@ -9,7 +9,7 @@ import { cardVariants } from '@/lib/design-system';
 import { cn } from '@/lib/utils';
 import ChangePasswordModal from '@/components/features/driver/ChangePasswordModal';
 import EditContactInfoModal from '@/components/features/driver/EditContactInfoModal';
-import { ThemeSelector } from '@/components/features/driver/ThemeSelector';
+import { ThemePresetSelector } from '@/components/features/driver/ThemePresetSelector';
 import { Bell, Lock, Mail, Palette, UserCheck } from 'lucide-react';
 
 const DEFAULT_PREFS = {
@@ -102,7 +102,7 @@ export default function AccountSettings() {
       <Card className={cn(cardVariants({ variant: 'default' }))}>
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
-            <Lock className="w-4 h-4 text-primary" />
+            <Lock className="w-4 h-4 text-muted-foreground" />
             Security
           </CardTitle>
           <CardDescription>Update your password and security settings.</CardDescription>
@@ -125,7 +125,7 @@ export default function AccountSettings() {
       <Card className={cn(cardVariants({ variant: 'default' }))}>
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
-            <Mail className="w-4 h-4 text-primary" />
+            <Mail className="w-4 h-4 text-muted-foreground" />
             Email
           </CardTitle>
           <CardDescription>Manage your login email.</CardDescription>
@@ -141,20 +141,20 @@ export default function AccountSettings() {
       <Card className={cn(cardVariants({ variant: 'default' }))}>
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
-            <Palette className="w-4 h-4 text-primary" />
+            <Palette className="w-4 h-4 text-muted-foreground" />
             Appearance
           </CardTitle>
-          <CardDescription>Choose how the app looks to you.</CardDescription>
+          <CardDescription>Choose your preferred color theme.</CardDescription>
         </CardHeader>
         <CardContent>
-          <ThemeSelector />
+          <ThemePresetSelector />
         </CardContent>
       </Card>
 
       <Card className={cn(cardVariants({ variant: 'default' }))}>
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
-            <Bell className="w-4 h-4 text-primary" />
+            <Bell className="w-4 h-4 text-muted-foreground" />
             Notifications
           </CardTitle>
           <CardDescription>These update automatically when you toggle them.</CardDescription>
@@ -178,7 +178,7 @@ export default function AccountSettings() {
       <Card className={cn(cardVariants({ variant: 'default' }))}>
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
-            <UserCheck className="w-4 h-4 text-primary" />
+            <UserCheck className="w-4 h-4 text-muted-foreground" />
             Account
           </CardTitle>
           <CardDescription>Basic account status details.</CardDescription>

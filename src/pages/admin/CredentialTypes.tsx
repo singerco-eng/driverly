@@ -121,7 +121,7 @@ export default function CredentialTypes() {
             options: [
               { value: 'all', label: 'All Scopes' },
               { value: 'global', label: 'Global' },
-              { value: 'broker', label: 'Broker' },
+              { value: 'broker', label: 'Trip Source' },
             ],
           },
           {

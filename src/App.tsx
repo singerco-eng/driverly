@@ -124,7 +124,7 @@ function App() {
                   }
                 />
                 <Route path="availability" element={<DriverAvailability />} />
-                <Route path="settings" element={<Navigate to="settings/payment" replace />} />
+                <Route path="settings" element={<Navigate to="settings/account" replace />} />
                 <Route path="settings/payment" element={<PaymentSettings />} />
                 <Route path="settings/account" element={<AccountSettings />} />
               </Route>

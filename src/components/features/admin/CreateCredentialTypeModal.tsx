@@ -25,6 +25,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useCreateCredentialType, useBrokers } from '@/hooks/useCredentialTypes';
 import { useToast } from '@/hooks/use-toast';
+import { HelpCircle } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import type { CredentialTypeFormData } from '@/types/credential';
 
 const credentialTypeSchema = z.object({
@@ -164,7 +171,19 @@ export default function CreateCredentialTypeModal({
               </div>
 
               <div className="space-y-2">
-                <Label>Scope *</Label>
+                <div className="flex items-center gap-1.5">
+                  <Label>Scope *</Label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent side="right" className="max-w-xs">
+                        <p>Tie credentials to a specific trip source. Drivers assigned to that source will need to complete these credentials.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
                 <RadioGroup
                   value={form.watch('scope')}
                   onValueChange={(v) => form.setValue('scope', v as any)}
@@ -176,20 +195,20 @@ export default function CreateCredentialTypeModal({
                   </div>
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="broker" id="scope-broker" />
-                    <Label htmlFor="scope-broker">Broker-Specific</Label>
+                    <Label htmlFor="scope-broker">Trip Source-Specific</Label>
                   </div>
                 </RadioGroup>
               </div>
 
               {watchScope === 'broker' && (
                 <div className="space-y-2">
-                  <Label>Broker *</Label>
+                  <Label>Trip Source *</Label>
                   <Select
                     value={form.watch('broker_id') || ''}
                     onValueChange={(v) => form.setValue('broker_id', v)}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select broker" />
+                      <SelectValue placeholder="Select trip source" />
                     </SelectTrigger>
                     <SelectContent>
                       {brokers?.map((broker) => (

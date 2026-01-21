@@ -1,131 +1,124 @@
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import { FileText } from 'lucide-react';
 import type { CredentialForReview, ReviewStatus } from '@/types/credentialReview';
-import { isAdminOnlyCredential } from '@/lib/credentialRequirements';
 
 interface CredentialReviewCardProps {
   credential: CredentialForReview;
   onView: (credential: CredentialForReview) => void;
-  onApprove: (credential: CredentialForReview) => void;
-  onReject: (credential: CredentialForReview) => void;
-  onVerify: (credential: CredentialForReview) => void;
 }
 
 type DisplayStatus = ReviewStatus | 'not_submitted';
 
-const statusStyles: Record<DisplayStatus, { label: string; className: string }> = {
+/** Status config using native Badge variants per design system */
+const statusConfig: Record<DisplayStatus, { 
+  label: string; 
+  badgeVariant: 'default' | 'secondary' | 'destructive' | 'outline';
+}> = {
   pending_review: {
     label: 'Pending Review',
-    className: 'bg-yellow-500/20 text-yellow-700 border-yellow-500/30',
+    badgeVariant: 'secondary',
   },
   awaiting_verification: {
     label: 'Awaiting Verification',
-    className: 'bg-blue-500/20 text-blue-600 border-blue-500/30',
+    badgeVariant: 'secondary',
   },
   expiring: {
-    label: 'Expiring',
-    className: 'bg-orange-500/20 text-orange-600 border-orange-500/30',
+    label: 'Expiring Soon',
+    badgeVariant: 'outline',
   },
   expired: {
     label: 'Expired',
-    className: 'bg-red-500/20 text-red-600 border-red-500/30',
+    badgeVariant: 'destructive',
   },
   approved: {
     label: 'Approved',
-    className: 'bg-green-500/20 text-green-600 border-green-500/30',
+    badgeVariant: 'default',
   },
   rejected: {
     label: 'Rejected',
-    className: 'bg-red-500/20 text-red-600 border-red-500/30',
+    badgeVariant: 'destructive',
   },
   not_submitted: {
     label: 'Not Submitted',
-    className: 'bg-muted text-muted-foreground border-muted',
+    badgeVariant: 'outline',
   },
 };
 
 function formatDate(value: string | null) {
-  if (!value) return '—';
+  if (!value) return null;
   return new Date(value).toLocaleDateString();
-}
-
-function getDocumentLabel(credential: CredentialForReview) {
-  const paths = credential.documentUrls ?? (credential.documentUrl ? [credential.documentUrl] : []);
-  if (paths.length === 0) return 'No document';
-  const name = paths[0].split('/').pop() || paths[0];
-  return paths.length > 1 ? `${name} +${paths.length - 1}` : name;
 }
 
 function getSubjectLine(credential: CredentialForReview) {
   if (credential.driver?.user?.full_name) {
-    return `${credential.driver.user.full_name} · ${credential.driver.employment_type.toUpperCase()}`;
+    return credential.driver.user.full_name;
   }
-
   if (credential.vehicle) {
-    const vehicleName = `${credential.vehicle.make} ${credential.vehicle.model} ${credential.vehicle.year}`;
-    const ownerName = credential.vehicle.owner?.user?.full_name
-      ? ` · ${credential.vehicle.owner.user.full_name}`
-      : '';
-    return `${vehicleName}${ownerName}`;
+    return `${credential.vehicle.make} ${credential.vehicle.model} ${credential.vehicle.year}`;
   }
-
-  return '—';
+  return null;
 }
 
 export function CredentialReviewCard({
   credential,
   onView,
-  onApprove,
-  onReject,
-  onVerify,
 }: CredentialReviewCardProps) {
-  const status = statusStyles[credential.displayStatus as DisplayStatus] || statusStyles.not_submitted;
-  const isAdminOnly = isAdminOnlyCredential(credential.credentialType);
-  const showApproveReject = credential.displayStatus === 'pending_review' && !isAdminOnly;
-  const showVerify = credential.displayStatus === 'awaiting_verification';
+  const status = statusConfig[credential.displayStatus as DisplayStatus] || statusConfig.not_submitted;
+  const subjectLine = getSubjectLine(credential);
+  const submittedDate = formatDate(credential.submittedAt);
+  const expiresDate = formatDate(credential.expiresAt);
+  
+  // Count steps from instruction_config
+  const stepCount = credential.credentialType.instruction_config?.steps?.length || 0;
 
   return (
-    <Card className="hover:shadow-soft transition-all">
-      <CardHeader className="pb-2">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <Badge variant="outline" className={status.className}>
+    <Card 
+      className="hover:shadow-soft transition-all cursor-pointer group"
+      onClick={() => onView(credential)}
+    >
+      <CardContent className="p-4 space-y-3">
+        {/* Header row */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <FileText className="w-5 h-5 text-muted-foreground shrink-0" />
+            <div className="min-w-0">
+              <p className="font-medium truncate">{credential.credentialType.name}</p>
+              {subjectLine && (
+                <p className="text-xs text-muted-foreground truncate">{subjectLine}</p>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            {credential.credentialType.broker?.name && (
+              <Badge variant="secondary" className="text-xs">
+                {credential.credentialType.broker.name}
+              </Badge>
+            )}
+            <Badge variant={status.badgeVariant}>
               {status.label}
             </Badge>
-            <CardTitle className="text-base mt-2">{credential.credentialType.name}</CardTitle>
-            <p className="text-sm text-muted-foreground">{getSubjectLine(credential)}</p>
           </div>
-          {credential.credentialType.broker?.name && (
-            <Badge variant="secondary" className="text-xs">
-              {credential.credentialType.broker.name}
-            </Badge>
+        </div>
+        
+        {/* Metadata row */}
+        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          {submittedDate && (
+            <span>Submitted {submittedDate}</span>
           )}
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
-          <span>Submitted: {formatDate(credential.submittedAt)}</span>
-          <span>Document: {getDocumentLabel(credential)}</span>
-        </div>
-        <div className="flex justify-end gap-2">
-          <Button variant="outline" size="sm" onClick={() => onView(credential)}>
-            View
-          </Button>
-          {showApproveReject && (
+          {submittedDate && stepCount > 0 && (
+            <span className="text-border">·</span>
+          )}
+          {stepCount > 0 && (
+            <span>{stepCount} steps</span>
+          )}
+          {expiresDate && (
             <>
-              <Button variant="outline" size="sm" onClick={() => onReject(credential)}>
-                Reject
-              </Button>
-              <Button size="sm" onClick={() => onApprove(credential)}>
-                Approve
-              </Button>
+              <span className="text-border">·</span>
+              <span className={credential.displayStatus === 'expiring' || credential.displayStatus === 'expired' ? 'text-destructive' : ''}>
+                Expires {expiresDate}
+              </span>
             </>
-          )}
-          {showVerify && (
-            <Button size="sm" onClick={() => onVerify(credential)}>
-              Verify
-            </Button>
           )}
         </div>
       </CardContent>
