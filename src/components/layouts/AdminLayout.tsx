@@ -49,12 +49,12 @@ export default function AdminLayout() {
 
   const navItems = [
     { path: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true },
+    { path: '/admin/applications', label: 'Applicants', icon: FileText },
     { path: '/admin/drivers', label: 'Drivers', icon: Users },
-    { path: '/admin/applications', label: 'Applications', icon: FileText },
-    { path: '/admin/credentials', label: 'Credential Review', icon: FileCheck2, showBadge: true },
     { path: '/admin/vehicles', label: 'Vehicles', icon: Car },
     { path: '/admin/brokers', label: 'Trip Sources', icon: Building2 },
-    { path: '/admin/settings/credentials', label: 'Credential Types', icon: FileText },
+    { path: '/admin/settings/credentials', label: 'Credential Builder', icon: FileText },
+    { path: '/admin/credentials', label: 'Credential Review', icon: FileCheck2, showBadge: true },
   ];
 
   const handleSignOut = async () => {

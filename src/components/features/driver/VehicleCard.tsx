@@ -15,13 +15,9 @@ import { resolveVehiclePhotoUrl } from '@/lib/vehiclePhoto';
 import type { DriverVehicleWithStatus, VehicleCompletionStatus } from '@/types/driverVehicle';
 import type { VehicleStatus } from '@/types/vehicle';
 import {
-  AlertTriangle,
-  Building2,
-  CheckCircle,
-  Circle,
+  Car,
   Eye,
   MoreHorizontal,
-  Shield,
   Star,
   Image as ImageIcon,
 } from 'lucide-react';
@@ -37,27 +33,31 @@ export type VehicleCardAction =
 
 interface VehicleCardProps {
   vehicle: DriverVehicleWithStatus;
-  completion: VehicleCompletionStatus;
+  completion?: VehicleCompletionStatus; // Optional, kept for compatibility
   readOnly?: boolean;
   onAction?: (action: VehicleCardAction, vehicle: DriverVehicleWithStatus) => void;
 }
 
-const statusStyles: Record<VehicleStatus, { label: string; className: string }> = {
+/** Status config using native Badge variants per design system */
+const statusConfig: Record<VehicleStatus, { 
+  label: string; 
+  badgeVariant: 'default' | 'secondary' | 'destructive' | 'outline';
+}> = {
   active: {
     label: 'Active',
-    className: 'bg-green-500/20 text-green-600 border-green-500/30',
+    badgeVariant: 'default',
   },
   inactive: {
     label: 'Inactive',
-    className: 'bg-gray-500/20 text-gray-600 border-gray-500/30',
+    badgeVariant: 'secondary',
   },
   retired: {
     label: 'Retired',
-    className: 'bg-red-500/20 text-red-600 border-red-500/30',
+    badgeVariant: 'destructive',
   },
 };
 
-export default function VehicleCard({ vehicle, completion, readOnly, onAction }: VehicleCardProps) {
+export default function VehicleCard({ vehicle, readOnly, onAction }: VehicleCardProps) {
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [photoLoading, setPhotoLoading] = useState(true);
   const [photoError, setPhotoError] = useState(false);
@@ -83,30 +83,8 @@ export default function VehicleCard({ vehicle, completion, readOnly, onAction }:
     };
   }, [vehicle.exterior_photo_url]);
 
-  const statusConfig = statusStyles[vehicle.status];
+  const vehicleStatus = statusConfig[vehicle.status];
   const isPrimary = vehicle.assignment?.is_primary;
-
-  // Credential status
-  const credentialLabel =
-    vehicle.credentialStatus === 'valid'
-      ? 'All credentials valid'
-      : vehicle.credentialSummary || 'Credentials need attention';
-
-  const credentialIconColor =
-    vehicle.credentialStatus === 'valid'
-      ? 'text-green-500'
-      : vehicle.credentialStatus === 'expiring'
-        ? 'text-yellow-500'
-        : vehicle.credentialStatus === 'expired'
-          ? 'text-red-500'
-          : 'text-muted-foreground';
-
-  // Eligible brokers
-  const eligibleCount = vehicle.eligibleBrokers.length;
-  const eligibleText =
-    eligibleCount > 0
-      ? `${eligibleCount} eligible broker${eligibleCount !== 1 ? 's' : ''}`
-      : 'No eligible brokers';
 
   return (
     <Card className="h-full min-h-[280px] flex flex-col hover:shadow-soft transition-all">
@@ -149,9 +127,8 @@ export default function VehicleCard({ vehicle, completion, readOnly, onAction }:
                   {vehicle.vehicle_type.replace('_', ' ')} • {vehicle.license_plate} • {vehicle.license_state}
                 </p>
               </div>
-              <Badge variant="outline" className={statusConfig.className}>
-                <Circle className="h-2.5 w-2.5 mr-1" />
-                {statusConfig.label}
+              <Badge variant={vehicleStatus.badgeVariant}>
+                {vehicleStatus.label}
               </Badge>
             </div>
           </div>
@@ -196,39 +173,31 @@ export default function VehicleCard({ vehicle, completion, readOnly, onAction }:
           )}
         </div>
 
-        {/* Metadata Section */}
+        {/* Metadata Section - matching admin card style */}
         <div className="border-t pt-3 space-y-2 text-sm">
           {/* Primary/Secondary */}
           <div className="flex items-center gap-2 text-muted-foreground">
-            <Star className={`h-4 w-4 flex-shrink-0 ${isPrimary ? 'text-yellow-500' : ''}`} />
+            <Star className="h-4 w-4 flex-shrink-0" />
             <span>{isPrimary ? 'Primary Vehicle' : 'Secondary Vehicle'}</span>
           </div>
 
-          {/* Completion Status */}
+          {/* Capacity Info */}
           <div className="flex items-center gap-2 text-muted-foreground">
-            {completion.isComplete ? (
-              <CheckCircle className="h-4 w-4 flex-shrink-0 text-green-500" />
-            ) : (
-              <AlertTriangle className="h-4 w-4 flex-shrink-0 text-yellow-500" />
-            )}
+            <Car className="h-4 w-4 flex-shrink-0" />
             <span>
-              {completion.isComplete 
-                ? 'Profile complete' 
-                : `Incomplete (${completion.missingFields.length} missing)`}
+              {vehicle.seat_capacity ?? 4} seats
+              {vehicle.wheelchair_capacity ? ` • ${vehicle.wheelchair_capacity} wheelchair` : ''}
+              {vehicle.stretcher_capacity ? ` • ${vehicle.stretcher_capacity} stretcher` : ''}
             </span>
           </div>
 
-          {/* Credential Status */}
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Shield className={`h-4 w-4 flex-shrink-0 ${credentialIconColor}`} />
-            <span>{credentialLabel}</span>
-          </div>
-
-          {/* Eligible Brokers */}
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Building2 className="h-4 w-4 flex-shrink-0" />
-            <span>{eligibleText}</span>
-          </div>
+          {/* Fleet Number - only show if exists */}
+          {vehicle.fleet_number && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Car className="h-4 w-4 flex-shrink-0" />
+              <span>Fleet #{vehicle.fleet_number}</span>
+            </div>
+          )}
         </div>
 
         {/* Spacer to push button to bottom */}

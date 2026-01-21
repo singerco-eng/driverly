@@ -70,7 +70,7 @@ export function VideoBlock({
         <h4 className="font-medium flex items-center gap-2">
           {content.title}
           {content.requireWatch && isWatched && (
-            <CheckCircle2 className="w-4 h-4 text-green-600" />
+            <CheckCircle2 className="w-4 h-4 text-muted-foreground" />
           )}
         </h4>
       )}

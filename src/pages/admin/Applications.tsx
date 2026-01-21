@@ -9,13 +9,17 @@ import { useApplications } from '@/hooks/useApplications';
 import type { ApplicationStatus, EmploymentType } from '@/types/driver';
 import type { ApplicationFilters } from '@/services/applications';
 
-const statusStyles: Record<ApplicationStatus, string> = {
-  draft: 'bg-muted text-muted-foreground border-border/40',
-  pending: 'bg-yellow-500/20 text-yellow-700 border-yellow-500/30',
-  under_review: 'bg-blue-500/20 text-blue-700 border-blue-500/30',
-  approved: 'bg-green-500/20 text-green-700 border-green-500/30',
-  rejected: 'bg-red-500/20 text-red-700 border-red-500/30',
-  withdrawn: 'bg-gray-500/20 text-gray-600 border-gray-500/30',
+/** Status config using native Badge variants per design system */
+const statusConfig: Record<ApplicationStatus, {
+  label: string;
+  badgeVariant: 'default' | 'secondary' | 'destructive' | 'outline';
+}> = {
+  draft: { label: 'Draft', badgeVariant: 'outline' },
+  pending: { label: 'Pending', badgeVariant: 'secondary' },
+  under_review: { label: 'Under Review', badgeVariant: 'secondary' },
+  approved: { label: 'Approved', badgeVariant: 'default' },
+  rejected: { label: 'Rejected', badgeVariant: 'destructive' },
+  withdrawn: { label: 'Withdrawn', badgeVariant: 'outline' },
 };
 
 export default function ApplicationsPage() {
@@ -103,8 +107,8 @@ export default function ApplicationsPage() {
                   >
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                          <span className="text-primary text-sm">
+                        <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                          <span className="text-muted-foreground text-sm">
                             {application.user.full_name.charAt(0).toUpperCase()}
                           </span>
                         </div>
@@ -117,11 +121,8 @@ export default function ApplicationsPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge
-                        variant="outline"
-                        className={statusStyles[application.application_status]}
-                      >
-                        {application.application_status.replace('_', ' ')}
+                      <Badge variant={statusConfig[application.application_status].badgeVariant}>
+                        {statusConfig[application.application_status].label}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -160,8 +161,8 @@ export default function ApplicationsPage() {
             <CardHeader className="pb-2">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-                    <span className="text-primary font-medium">
+                  <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                    <span className="text-muted-foreground font-medium">
                       {application.user.full_name.charAt(0).toUpperCase()}
                     </span>
                   </div>
@@ -170,11 +171,8 @@ export default function ApplicationsPage() {
                     <p className="text-sm text-muted-foreground">{application.user.email}</p>
                   </div>
                 </div>
-                <Badge
-                  variant="outline"
-                  className={statusStyles[application.application_status]}
-                >
-                  {application.application_status.replace('_', ' ')}
+                <Badge variant={statusConfig[application.application_status].badgeVariant}>
+                  {statusConfig[application.application_status].label}
                 </Badge>
               </div>
             </CardHeader>

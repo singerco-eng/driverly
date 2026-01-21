@@ -101,7 +101,7 @@ export default function CredentialDetailPage() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="container max-w-3xl mx-auto px-4 py-6 space-y-6">
+      <div className="space-y-6">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-12 w-full" />
         <Skeleton className="h-64 w-full" />
@@ -112,7 +112,7 @@ export default function CredentialDetailPage() {
   // Not found state
   if (!credentialData) {
     return (
-      <div className="container max-w-3xl mx-auto px-4 py-6 space-y-6">
+      <div className="space-y-6">
         <Card className="p-12 text-center">
           <AlertTriangle className="w-12 h-12 mx-auto text-destructive mb-4" />
           <h3 className="text-lg font-medium mb-2">Credential not found</h3>
@@ -155,17 +155,16 @@ export default function CredentialDetailPage() {
   };
 
   return (
-    <div className="container max-w-3xl mx-auto px-4 py-6">
-      <CredentialDetailView
-        credentialType={credentialType}
-        credential={credentialInstance}
-        credentialTable={isVehicleCredential ? 'vehicle_credentials' : 'driver_credentials'}
-        mode="submit"
-        viewerRole="driver"
-        onBack={() => navigate('/driver/credentials')}
-        onSubmit={handleSubmit}
-        isSubmitting={submitCredential.isPending}
-      />
-    </div>
+    <CredentialDetailView
+      credentialType={credentialType}
+      credential={credentialInstance}
+      credentialTable={isVehicleCredential ? 'vehicle_credentials' : 'driver_credentials'}
+      mode="submit"
+      viewerRole="driver"
+      onBack={() => navigate('/driver/credentials')}
+      backLabel="Back to Credentials"
+      onSubmit={handleSubmit}
+      isSubmitting={submitCredential.isPending}
+    />
   );
 }

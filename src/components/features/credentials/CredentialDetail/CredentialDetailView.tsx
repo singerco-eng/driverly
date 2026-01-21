@@ -69,6 +69,11 @@ interface CredentialDetailViewProps {
   headerActions?: React.ReactNode;
   
   /**
+   * Custom back button label
+   */
+  backLabel?: string;
+  
+  /**
    * Loading state
    */
   isLoading?: boolean;
@@ -104,6 +109,7 @@ export function CredentialDetailView({
   onApprove,
   onReject,
   headerActions,
+  backLabel,
   isLoading = false,
   isSubmitting = false,
   isApproving = false,
@@ -244,6 +250,7 @@ export function CredentialDetailView({
         expiresAt={credential.expires_at}
         submittedAt={credential.submitted_at}
         onBack={onBack}
+        backLabel={backLabel}
         actions={reviewActions}
       />
 

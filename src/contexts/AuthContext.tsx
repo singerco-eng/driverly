@@ -172,8 +172,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function signOut() {
     setIsLoading(true);
-    await supabase.auth.signOut();
-    // onAuthStateChange will handle setting isLoading to false
+    try {
+      // Use 'local' scope to clear the session locally even if server call fails
+      // This prevents 403 errors when the server session is already expired
+      await supabase.auth.signOut({ scope: 'local' });
+    } catch (error) {
+      console.warn('Sign out error (clearing local state anyway):', error);
+    }
+    // Clear state regardless of server response
+    setSession(null);
+    setUser(null);
+    setProfile(null);
+    setIsLoading(false);
   }
 
   const value: AuthContextType = {

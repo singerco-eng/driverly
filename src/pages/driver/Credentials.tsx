@@ -2,22 +2,14 @@ import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQueries } from '@tanstack/react-query';
 import { EnhancedDataView } from '@/components/ui/enhanced-data-view';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
   FileText,
-  CheckCircle,
-  AlertTriangle,
-  Circle,
-  Clock,
-  XCircle,
-  PauseCircle,
   Shield,
-  Globe,
-  Building2,
   Eye,
   Upload,
 } from 'lucide-react';
@@ -27,50 +19,40 @@ import { useDriverAssignments } from '@/hooks/useVehicleAssignments';
 import { useDriverCredentials } from '@/hooks/useCredentials';
 import * as credentialService from '@/services/credentials';
 import type { CredentialWithDisplayStatus, CredentialDisplayStatus } from '@/types/credential';
-import { CredentialRequirementsDisplay } from '@/components/features/credentials/CredentialRequirementsDisplay';
 import { isAdminOnlyCredential } from '@/lib/credentialRequirements';
-import { cn } from '@/lib/utils';
 
-// Status configuration - matching admin patterns with explicit className
+/** Status config using native Badge variants per design system */
 const statusConfig: Record<CredentialDisplayStatus, { 
   label: string; 
-  icon: React.ElementType;
-  className: string;
+  badgeVariant: 'default' | 'secondary' | 'destructive' | 'outline';
 }> = {
   approved: {
     label: 'Complete',
-    icon: CheckCircle,
-    className: 'bg-green-500/20 text-green-600 border-green-500/30',
+    badgeVariant: 'default',
   },
   rejected: {
     label: 'Rejected',
-    icon: XCircle,
-    className: 'bg-red-500/20 text-red-600 border-red-500/30',
+    badgeVariant: 'destructive',
   },
   pending_review: {
     label: 'Pending Review',
-    icon: Clock,
-    className: 'bg-yellow-500/20 text-yellow-700 border-yellow-500/30',
+    badgeVariant: 'secondary',
   },
   not_submitted: {
     label: 'Not Submitted',
-    icon: Circle,
-    className: 'bg-muted text-muted-foreground border-muted',
+    badgeVariant: 'outline',
   },
   expired: {
     label: 'Expired',
-    icon: XCircle,
-    className: 'bg-red-500/20 text-red-600 border-red-500/30',
+    badgeVariant: 'destructive',
   },
   expiring: {
     label: 'Expiring Soon',
-    icon: AlertTriangle,
-    className: 'bg-orange-500/20 text-orange-600 border-orange-500/30',
+    badgeVariant: 'outline',
   },
   awaiting: {
     label: 'In Review',
-    icon: PauseCircle,
-    className: 'bg-blue-500/20 text-blue-600 border-blue-500/30',
+    badgeVariant: 'secondary',
   },
 };
 
@@ -236,89 +218,64 @@ export default function DriverCredentials() {
       : `${count} credential${count !== 1 ? 's' : ''}`;
   }, [filteredCredentials.length, counts.action, activeBrokerId, brokers]);
 
-  // Render credential card - matching admin pattern
+  // Render credential card - matching admin pattern with simplified DS-compliant design
   const renderCredentialCard = (item: CredentialWithId) => {
     const status = statusConfig[item.displayStatus] || statusConfig.not_submitted;
-    const StatusIcon = status.icon;
-    const isGlobal = item.credentialType.scope === 'global';
+    const stepCount = item.credentialType.instruction_config?.steps?.length || 0;
     const needsAction = ['not_submitted', 'rejected', 'expired', 'expiring'].includes(item.displayStatus);
     const isAdminOnly = isAdminOnlyCredential(item.credentialType);
 
     return (
-      <Card key={item.id} className="hover:shadow-soft transition-all h-full flex flex-col">
-        <CardHeader className="pb-2">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex-1 min-w-0">
-              <Badge variant="outline" className={cn('mb-2', status.className)}>
-                <StatusIcon className="w-3 h-3 mr-1" />
-                {status.label}
-              </Badge>
-              <CardTitle className="text-base truncate">{item.credentialType.name}</CardTitle>
-              {item.credentialType.broker?.name && (
-                <Badge variant="secondary" className="text-xs mt-1">
-                  {item.credentialType.broker.name}
-                </Badge>
-              )}
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="flex-1 flex flex-col justify-between">
-          <div className="space-y-2 text-xs text-muted-foreground mb-3">
-            <div className="flex justify-between">
-              <span>Scope:</span>
-              <span className="flex items-center gap-1">
-                {isGlobal ? (
-                  <>
-                    <Globe className="w-3 h-3" />
-                    Global
-                  </>
-                ) : (
-                  <>
-                    <Building2 className="w-3 h-3" />
-                    {item.credentialType.broker?.name || 'Broker'}
-                  </>
+      <Card 
+        key={item.id} 
+        className="hover:shadow-soft transition-all cursor-pointer group"
+        onClick={() => handleView(item)}
+      >
+        <CardContent className="p-4 space-y-3">
+          {/* Header row */}
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <FileText className="w-5 h-5 text-muted-foreground shrink-0" />
+              <div className="min-w-0">
+                <p className="font-medium truncate">{item.credentialType.name}</p>
+                {item.credentialType.broker?.name && (
+                  <p className="text-xs text-muted-foreground">{item.credentialType.broker.name}</p>
                 )}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span>Requirements:</span>
-              <CredentialRequirementsDisplay
-                credentialType={item.credentialType}
-                showLabels={false}
-                showStepCount={true}
-                size="sm"
-              />
-            </div>
-            {item.credential?.submitted_at && (
-              <div className="flex justify-between">
-                <span>Submitted:</span>
-                <span>{formatDate(item.credential.submitted_at)}</span>
               </div>
+            </div>
+            <Badge variant={status.badgeVariant}>
+              {status.label}
+            </Badge>
+          </div>
+          {/* Metadata row */}
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            {item.credential?.submitted_at && (
+              <span>Submitted {formatDate(item.credential.submitted_at)}</span>
+            )}
+            {item.credential?.submitted_at && stepCount > 0 && (
+              <span className="text-border">·</span>
+            )}
+            {stepCount > 0 && (
+              <span>{stepCount} steps</span>
             )}
             {item.credential?.expires_at && (
-              <div className="flex justify-between">
-                <span>Expires:</span>
-                <span className={item.daysUntilExpiration !== null && item.daysUntilExpiration <= 30 ? 'text-orange-600 font-medium' : ''}>
-                  {formatDate(item.credential.expires_at)}
-                  {item.daysUntilExpiration !== null && item.daysUntilExpiration > 0 && item.daysUntilExpiration <= 30 && (
-                    <span className="ml-1">({item.daysUntilExpiration}d)</span>
-                  )}
+              <>
+                <span className="text-border">·</span>
+                <span className={item.daysUntilExpiration !== null && item.daysUntilExpiration <= 30 ? 'text-destructive' : ''}>
+                  Expires {formatDate(item.credential.expires_at)}
                 </span>
-              </div>
+              </>
             )}
           </div>
-          <div className="flex justify-end gap-2 pt-2 border-t">
-            <Button variant="outline" size="sm" onClick={() => handleView(item)}>
-              <Eye className="w-3 h-3 mr-1" />
-              View
-            </Button>
-            {needsAction && !isAdminOnly && (
-              <Button size="sm" onClick={() => handleView(item)}>
+          {/* Action hint for items needing attention */}
+          {needsAction && !isAdminOnly && (
+            <div className="flex justify-end pt-2 border-t">
+              <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); handleView(item); }}>
                 <Upload className="w-3 h-3 mr-1" />
                 Start
               </Button>
-            )}
-          </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     );
@@ -454,7 +411,7 @@ export default function DriverCredentials() {
                 ) : (
                   credentialsWithId.map((item) => {
                     const status = statusConfig[item.displayStatus] || statusConfig.not_submitted;
-                    const StatusIcon = status.icon;
+                    const stepCount = item.credentialType.instruction_config?.steps?.length || 0;
                     const isGlobal = item.credentialType.scope === 'global';
                     const needsAction = ['not_submitted', 'rejected', 'expired', 'expiring'].includes(item.displayStatus);
                     const isAdminOnly = isAdminOnlyCredential(item.credentialType);
@@ -462,41 +419,31 @@ export default function DriverCredentials() {
                     return (
                       <TableRow key={item.id}>
                         <TableCell>
-                          <div className="flex items-center gap-2">
-                            <div>
-                              <div className="font-medium">{item.credentialType.name}</div>
-                              <CredentialRequirementsDisplay
-                                credentialType={item.credentialType}
-                                showLabels={false}
-                                showStepCount={true}
-                                size="sm"
-                                className="mt-1"
-                              />
-                            </div>
+                          <div>
+                            <div className="font-medium">{item.credentialType.name}</div>
+                            {stepCount > 0 && (
+                              <p className="text-xs text-muted-foreground mt-0.5">{stepCount} steps</p>
+                            )}
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline" className={status.className}>
-                            <StatusIcon className="w-3 h-3 mr-1" />
+                          <Badge variant={status.badgeVariant}>
                             {status.label}
                           </Badge>
                         </TableCell>
                         <TableCell>
                           {isGlobal ? (
-                            <span className="flex items-center gap-1 text-muted-foreground">
-                              <Globe className="w-3 h-3" />
-                              Global
-                            </span>
+                            <span className="text-muted-foreground">Global</span>
                           ) : (
-                            <Badge variant="secondary">
+                            <span className="text-muted-foreground">
                               {item.credentialType.broker?.name || 'Broker'}
-                            </Badge>
+                            </span>
                           )}
                         </TableCell>
                         <TableCell>{formatDate(item.credential?.submitted_at)}</TableCell>
                         <TableCell>
                           {item.credential?.expires_at ? (
-                            <span className={item.daysUntilExpiration !== null && item.daysUntilExpiration <= 30 ? 'text-orange-600 font-medium' : ''}>
+                            <span className={item.daysUntilExpiration !== null && item.daysUntilExpiration <= 30 ? 'text-destructive font-medium' : ''}>
                               {formatDate(item.credential.expires_at)}
                             </span>
                           ) : item.credentialType.expiration_type === 'never' ? (
@@ -512,7 +459,7 @@ export default function DriverCredentials() {
                             </Button>
                             {needsAction && !isAdminOnly && (
                               <Button variant="ghost" size="sm" onClick={() => handleView(item)} title="Start">
-                                <Upload className="w-4 h-4 text-primary" />
+                                <Upload className="w-4 h-4" />
                               </Button>
                             )}
                           </div>

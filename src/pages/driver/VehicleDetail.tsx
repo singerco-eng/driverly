@@ -34,10 +34,14 @@ import SetInactiveModal from '@/components/features/driver/SetInactiveModal';
 import RetireVehicleModal from '@/components/features/driver/RetireVehicleModal';
 import type { VehicleStatus } from '@/types/vehicle';
 
-const statusStyles: Record<VehicleStatus, string> = {
-  active: 'bg-green-500/20 text-green-600 border-green-500/30',
-  inactive: 'bg-gray-500/20 text-gray-600 border-gray-400/30',
-  retired: 'bg-red-500/20 text-red-600 border-red-500/30',
+/** Status config using native Badge variants per design system */
+const statusConfig: Record<VehicleStatus, {
+  label: string;
+  badgeVariant: 'default' | 'secondary' | 'destructive' | 'outline';
+}> = {
+  active: { label: 'Active', badgeVariant: 'default' },
+  inactive: { label: 'Inactive', badgeVariant: 'secondary' },
+  retired: { label: 'Retired', badgeVariant: 'destructive' },
 };
 
 export default function DriverVehicleDetail() {
@@ -136,8 +140,8 @@ export default function DriverVehicleDetail() {
             <h1 className="text-2xl font-bold">
               {vehicle.year} {vehicle.make} {vehicle.model}
             </h1>
-            <Badge variant="outline" className={statusStyles[vehicle.status]}>
-              {vehicle.status}
+            <Badge variant={statusConfig[vehicle.status].badgeVariant}>
+              {statusConfig[vehicle.status].label}
             </Badge>
           </div>
           <p className="text-muted-foreground">
