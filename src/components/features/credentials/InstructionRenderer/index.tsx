@@ -203,7 +203,7 @@ export function InstructionRenderer({
       {/* Current Step Content */}
       {currentStep && (
         <Card className="border-border/50">
-          <CardHeader className="pb-4">
+          <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg">{currentStep.title}</CardTitle>
               {currentStep.required && (
@@ -211,7 +211,7 @@ export function InstructionRenderer({
               )}
             </div>
           </CardHeader>
-          <CardContent className="space-y-5">
+          <CardContent className="space-y-4">
             {currentStep.blocks.length === 0 ? (
               <p className="text-muted-foreground text-center py-4 text-sm">
                 No content in this step

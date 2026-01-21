@@ -89,24 +89,15 @@ export function FileUploadBlock({
           accept={content.accept}
           multiple={content.multiple}
           maxSizeMB={content.maxSizeMB}
-          label={content.label}
           fileTypeHint={content.accept}
+          helpText={content.helpText}
           onError={handleError}
+          compact
         />
       )}
 
       {uploadError && (
         <p className="text-sm text-red-600">{uploadError}</p>
-      )}
-
-      {content.helpText && (
-        <p className="text-xs text-muted-foreground">{content.helpText}</p>
-      )}
-
-      {!readOnly && content.required && localFiles.length === 0 && !hasUploads && (
-        <p className="text-xs text-muted-foreground">
-          ⓘ File upload required to continue
-        </p>
       )}
     </div>
   );

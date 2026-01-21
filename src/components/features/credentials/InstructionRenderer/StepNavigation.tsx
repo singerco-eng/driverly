@@ -28,30 +28,39 @@ export function StepNavigation({
   onNext,
   onSubmit,
 }: StepNavigationProps) {
+  const isSingleStep = totalSteps === 1;
+
   return (
     <div className="flex items-center justify-between pt-4 mt-4 border-t">
-      {/* Left: Previous button or placeholder */}
-      <div className="w-24">
-        {canGoPrevious && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onPrevious}
-            disabled={disabled || isSubmitting}
-          >
-            <ChevronLeft className="w-4 h-4 mr-1" />
-            Back
-          </Button>
-        )}
-      </div>
+      {/* Left: Previous button or placeholder (hidden for single step) */}
+      {!isSingleStep && (
+        <div className="w-24">
+          {canGoPrevious && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onPrevious}
+              disabled={disabled || isSubmitting}
+            >
+              <ChevronLeft className="w-4 h-4 mr-1" />
+              Back
+            </Button>
+          )}
+        </div>
+      )}
 
-      {/* Center: Minimal step counter */}
-      <span className="text-xs text-muted-foreground">
-        {currentStepIndex + 1} of {totalSteps}
-      </span>
+      {/* Center: Step counter (hidden for single step) */}
+      {!isSingleStep && (
+        <span className="text-xs text-muted-foreground">
+          {currentStepIndex + 1} of {totalSteps}
+        </span>
+      )}
+
+      {/* Spacer for single step to push button to right */}
+      {isSingleStep && <div className="flex-1" />}
 
       {/* Right: Next/Submit button */}
-      <div className="w-24 flex justify-end">
+      <div className={isSingleStep ? '' : 'w-24 flex justify-end'}>
         {isLastStep ? (
           readOnly ? null : (
             <Button

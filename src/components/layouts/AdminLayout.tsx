@@ -119,25 +119,32 @@ export default function AdminLayout() {
           <SidebarGroup>
             <SidebarGroupContent>
               <SidebarMenu>
-                {navItems.map((item) => (
-                  <SidebarMenuItem key={item.path}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={isActive(item.path, item.exact)}
-                      tooltip={item.label}
-                    >
-                      <Link to={item.path}>
-                        <item.icon className="w-4 h-4" />
-                        <span className="flex-1">{item.label}</span>
-                        {item.showBadge && (reviewStats?.pendingReview || 0) > 0 && (
-                          <span className="ml-auto rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
-                            {reviewStats?.pendingReview}
-                          </span>
-                        )}
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
+                {navItems.map((item) => {
+                  const active = isActive(item.path, item.exact);
+                  return (
+                    <SidebarMenuItem key={item.path}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={active}
+                        tooltip={item.label}
+                      >
+                        <Link to={item.path}>
+                          <item.icon className="w-4 h-4" />
+                          <span className="flex-1">{item.label}</span>
+                          {item.showBadge && (reviewStats?.pendingReview || 0) > 0 && (
+                            <span className={`ml-auto rounded-full px-2 py-0.5 text-xs font-semibold ${
+                              active 
+                                ? 'bg-white/20 text-white' 
+                                : 'bg-primary/10 text-primary'
+                            }`}>
+                              {reviewStats?.pendingReview}
+                            </span>
+                          )}
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>

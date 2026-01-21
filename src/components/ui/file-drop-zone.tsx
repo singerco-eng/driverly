@@ -14,7 +14,7 @@ interface FileDropZoneProps {
   multiple?: boolean;
   /** Max file size in MB */
   maxSizeMB?: number;
-  /** Custom label */
+  /** Custom label shown above the drop zone */
   label?: string;
   /** Disabled state */
   disabled?: boolean;
@@ -22,6 +22,10 @@ interface FileDropZoneProps {
   showPreviews?: boolean;
   /** File type hint (shown in drop zone) */
   fileTypeHint?: string;
+  /** Additional help text merged with file type hint */
+  helpText?: string;
+  /** Compact mode with reduced padding */
+  compact?: boolean;
   /** Callback for validation errors */
   onError?: (message: string) => void;
 }
@@ -32,10 +36,12 @@ export function FileDropZone({
   accept = '.pdf,.jpg,.jpeg,.png',
   multiple = true,
   maxSizeMB = 50,
-  label = 'Upload Documents',
+  label,
   disabled = false,
   showPreviews = true,
   fileTypeHint = 'PDF, JPG, PNG',
+  helpText,
+  compact = false,
   onError,
 }: FileDropZoneProps) {
   const [isDragging, setIsDragging] = useState(false);
@@ -118,6 +124,15 @@ export function FileDropZone({
 
   const isImageFile = (file: File) => file.type.startsWith('image/');
 
+  // Build the hint text - merge file type, size limit, and help text
+  const buildHintText = () => {
+    const parts: string[] = [];
+    if (fileTypeHint) parts.push(fileTypeHint);
+    parts.push(`max ${maxSizeMB}MB`);
+    if (helpText) parts.push(helpText);
+    return parts.join(' · ');
+  };
+
   return (
     <div className="space-y-3">
       {label && <span className="text-sm font-medium">{label}</span>}
@@ -141,23 +156,25 @@ export function FileDropZone({
         onDrop={handleDrop}
         onClick={handleClick}
         className={cn(
-          'rounded-lg border-2 border-dashed p-6 text-center cursor-pointer',
+          'rounded-lg border-2 border-dashed text-center cursor-pointer',
           'transition-all duration-200 ease-in-out',
+          compact ? 'p-4' : 'p-6',
           isDragging 
             ? 'border-primary bg-primary/10 scale-[1.01]' 
             : 'border-muted-foreground/30 hover:border-muted-foreground/50',
           disabled && 'opacity-50 cursor-not-allowed pointer-events-none'
         )}
       >
-        <div className="flex flex-col items-center gap-3">
+        <div className={cn('flex flex-col items-center', compact ? 'gap-2' : 'gap-3')}>
           <div className={cn(
-            'p-3 rounded-full transition-colors',
+            'rounded-full transition-colors',
+            compact ? 'p-2' : 'p-3',
             isDragging ? 'bg-primary/20' : 'bg-muted'
           )}>
             {isDragging ? (
-              <Upload className="h-6 w-6 text-primary" />
+              <Upload className={cn(compact ? 'h-5 w-5' : 'h-6 w-6', 'text-primary')} />
             ) : (
-              <Upload className="h-6 w-6 text-muted-foreground" />
+              <Upload className={cn(compact ? 'h-5 w-5' : 'h-6 w-6', 'text-muted-foreground')} />
             )}
           </div>
           <div className="text-sm">
@@ -169,8 +186,8 @@ export function FileDropZone({
               </span>
             )}
           </div>
-          <p className="text-xs text-muted-foreground">
-            {fileTypeHint} (max {maxSizeMB}MB)
+          <p className="text-xs text-muted-foreground text-center max-w-xs">
+            {buildHintText()}
           </p>
         </div>
       </div>

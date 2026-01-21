@@ -98,23 +98,27 @@ export async function getVehicleCredentialsForReview(
 }
 
 export async function getReviewQueueStats(companyId: string): Promise<ReviewQueueStats> {
+  // Only count credentials where the credential type is active
   const { count: driverPending } = await supabase
     .from('driver_credentials')
-    .select('*', { count: 'exact', head: true })
+    .select('*, credential_type:credential_types!inner(*)', { count: 'exact', head: true })
     .eq('company_id', companyId)
-    .eq('status', 'pending_review');
+    .eq('status', 'pending_review')
+    .eq('credential_type.is_active', true);
 
   const { count: vehiclePending } = await supabase
     .from('vehicle_credentials')
-    .select('*', { count: 'exact', head: true })
+    .select('*, credential_type:credential_types!inner(*)', { count: 'exact', head: true })
     .eq('company_id', companyId)
-    .eq('status', 'pending_review');
+    .eq('status', 'pending_review')
+    .eq('credential_type.is_active', true);
 
   const { count: awaiting } = await supabase
     .from('driver_credentials')
     .select('*, credential_type:credential_types!inner(*)', { count: 'exact', head: true })
     .eq('company_id', companyId)
     .eq('status', 'not_submitted')
+    .eq('credential_type.is_active', true)
     .eq('credential_type.requires_driver_action', false);
 
   const thirtyDays = new Date();
@@ -122,9 +126,10 @@ export async function getReviewQueueStats(companyId: string): Promise<ReviewQueu
 
   const { count: expiring } = await supabase
     .from('driver_credentials')
-    .select('*', { count: 'exact', head: true })
+    .select('*, credential_type:credential_types!inner(*)', { count: 'exact', head: true })
     .eq('company_id', companyId)
     .eq('status', 'approved')
+    .eq('credential_type.is_active', true)
     .lte('expires_at', thirtyDays.toISOString())
     .gte('expires_at', new Date().toISOString());
 
