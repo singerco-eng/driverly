@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
-import { supabase } from '@/integrations/supabase/client';
+import { resolveAvatarUrl } from '@/services/profile';
 import type { DriverWithUser, DriverStatus } from '@/types/driver';
 import {
   Briefcase,
@@ -53,25 +53,6 @@ const statusStyles: Record<DriverStatus, {
     badgeVariant: 'outline',
   },
 };
-
-async function resolveAvatarUrl(avatarUrl: string | null | undefined): Promise<string | null> {
-  if (!avatarUrl) return null;
-  
-  // If it's already a full URL, return as-is
-  if (avatarUrl.startsWith('http://') || avatarUrl.startsWith('https://')) {
-    return avatarUrl;
-  }
-  
-  // Otherwise, get signed URL from Supabase storage
-  try {
-    const { data } = await supabase.storage
-      .from('avatars')
-      .createSignedUrl(avatarUrl, 3600);
-    return data?.signedUrl || null;
-  } catch {
-    return null;
-  }
-}
 
 export function AdminDriverCard({ driver, onAction }: AdminDriverCardProps): JSX.Element {
   const navigate = useNavigate();

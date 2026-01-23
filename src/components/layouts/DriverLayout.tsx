@@ -1,8 +1,11 @@
+import { useEffect, useState } from 'react';
 import { Link, useLocation, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCompany } from '@/hooks/useCompanies';
 import { useDriverByUserId } from '@/hooks/useDrivers';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { resolveAvatarUrl } from '@/services/profile';
 import {
   LayoutDashboard,
   User,
@@ -52,10 +55,26 @@ export default function DriverLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { data: driver } = useDriverByUserId(user?.id);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   // Fetch company data for branding
   const companyId = profile?.company_id ?? '';
   const { data: company, isLoading: companyLoading } = useCompany(companyId);
+
+  // Resolve avatar URL (handles signed URLs for RLS-protected storage)
+  useEffect(() => {
+    let isMounted = true;
+    const loadAvatar = async () => {
+      if (driver?.user?.avatar_url) {
+        const resolved = await resolveAvatarUrl(driver.user.avatar_url);
+        if (isMounted) setAvatarUrl(resolved);
+      } else {
+        if (isMounted) setAvatarUrl(null);
+      }
+    };
+    void loadAvatar();
+    return () => { isMounted = false; };
+  }, [driver?.user?.avatar_url]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -153,12 +172,17 @@ export default function DriverLayout() {
                     className="hover:bg-transparent hover:text-sidebar-foreground data-[state=open]:bg-transparent data-[state=open]:text-sidebar-foreground"
                   >
                     <div className="relative">
-                      <div
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium shrink-0"
-                        style={{ backgroundColor: primaryColor }}
-                      >
-                        {profile?.full_name?.charAt(0) || user?.email?.charAt(0) || 'D'}
-                      </div>
+                      <Avatar size="sm">
+                        {avatarUrl && (
+                          <AvatarImage src={avatarUrl} alt={profile?.full_name || 'Driver'} />
+                        )}
+                        <AvatarFallback
+                          className="text-white text-sm font-medium"
+                          style={{ backgroundColor: primaryColor }}
+                        >
+                          {profile?.full_name?.charAt(0) || user?.email?.charAt(0) || 'D'}
+                        </AvatarFallback>
+                      </Avatar>
                       <span
                         className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-sidebar ${statusColor}`}
                         title={driverStatus === 'active' ? 'Active' : 'Inactive'}

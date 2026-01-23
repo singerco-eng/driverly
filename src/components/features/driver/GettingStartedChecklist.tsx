@@ -15,7 +15,7 @@ interface GettingStartedChecklistProps {
 
 function getStatusIcon(item: OnboardingItemStatus) {
   if (item.completed) {
-    return <CheckCircle2 className="h-5 w-5 text-success" />;
+    return <CheckCircle2 className="h-5 w-5 text-primary" />;
   }
   if (item.missingInfo && item.missingInfo.length > 0) {
     return <AlertTriangle className="h-5 w-5 text-warning" />;
@@ -74,7 +74,7 @@ export function GettingStartedChecklist({ onboardingStatus }: GettingStartedChec
                   className={cn(
                     'flex flex-col gap-3 rounded-lg border p-4 transition-all sm:flex-row sm:items-center sm:justify-between',
                     item.completed
-                      ? 'border-success/20 bg-success/5'
+                      ? 'border-primary/20 bg-primary/5'
                       : 'border-border/60 hover:border-border'
                   )}
                 >
@@ -82,7 +82,7 @@ export function GettingStartedChecklist({ onboardingStatus }: GettingStartedChec
                     {getStatusIcon(item)}
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <p className={cn('font-medium', item.completed && 'text-success')}>
+                        <p className={cn('font-medium', item.completed && 'text-primary')}>
                           {item.label}
                         </p>
                         <Badge

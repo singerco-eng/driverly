@@ -251,7 +251,10 @@ export function useUploadProfilePhoto() {
     mutationFn: (params: { userId: string; file: File }) =>
       profileService.uploadProfilePhoto(params.userId, params.file),
     onSuccess: () => {
+      // Invalidate all queries that might show the user's avatar
       queryClient.invalidateQueries({ queryKey: ['driver-profile'] });
+      queryClient.invalidateQueries({ queryKey: ['drivers'] });
+      queryClient.invalidateQueries({ queryKey: ['driver'] });
       toast({ title: 'Profile photo updated' });
     },
     onError: (error: Error) => {
@@ -267,7 +270,10 @@ export function useRemoveProfilePhoto() {
   return useMutation({
     mutationFn: (userId: string) => profileService.removeProfilePhoto(userId),
     onSuccess: () => {
+      // Invalidate all queries that might show the user's avatar
       queryClient.invalidateQueries({ queryKey: ['driver-profile'] });
+      queryClient.invalidateQueries({ queryKey: ['drivers'] });
+      queryClient.invalidateQueries({ queryKey: ['driver'] });
       toast({ title: 'Profile photo removed' });
     },
   });

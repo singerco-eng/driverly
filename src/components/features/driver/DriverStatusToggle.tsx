@@ -87,7 +87,7 @@ export function DriverStatusToggle({
                 : 'Turn on when you are ready to receive trips.'}
             </p>
             {isDisabled && (
-              <div className="flex items-center gap-1.5 text-xs text-amber-500">
+              <div className="flex items-center gap-1.5 text-xs text-warning">
                 <AlertCircle className="w-3 h-3" />
                 Status is managed by support while your account is suspended.
               </div>

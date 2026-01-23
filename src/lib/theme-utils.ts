@@ -108,6 +108,28 @@ export function deriveTokensFromColors(colors: {
   const bgHue = bgParts ? parseFloat(bgParts[0]) : 0;
   const bgSat = bgParts ? parseFloat(bgParts[1]) : 0;
 
+  // Parse primary color for deriving success/warning
+  const primaryParts = primary.match(/[\d.]+/g);
+  const primaryHue = primaryParts ? parseFloat(primaryParts[0]) : 0;
+  const primarySat = primaryParts ? parseFloat(primaryParts[1]) : 70;
+  const primaryLightness = primaryParts ? parseFloat(primaryParts[2]) : 50;
+
+  // Derive success color that harmonizes with the theme
+  // For warm themes (hue 20-60), use the primary/accent color
+  // For other themes, use a complementary green that matches the saturation
+  const isWarmTheme = primaryHue >= 20 && primaryHue <= 60;
+  const success = isWarmTheme
+    ? `${primaryHue} ${Math.min(80, primarySat)}% ${Math.min(55, primaryLightness + 5)}%`
+    : `142 ${Math.min(80, primarySat)}% ${Math.min(52, primaryLightness)}%`;
+  const successForeground = isDark ? '0 0% 100%' : '0 0% 8%';
+
+  // Derive warning color that harmonizes with the theme
+  // For warm themes, use a slightly shifted hue; for others, use standard amber
+  const warning = isWarmTheme
+    ? `${primaryHue} ${Math.min(85, primarySat)}% ${Math.min(55, primaryLightness + 5)}%`
+    : `38 ${Math.min(92, primarySat + 10)}% 55%`;
+  const warningForeground = '0 0% 8%';
+
   return {
     primary,
     primary_foreground: isDark ? `${bgHue} 25% 6%` : '0 0% 100%',
@@ -123,10 +145,10 @@ export function deriveTokensFromColors(colors: {
     muted_foreground: isDark ? `${bgHue} 12% 68%` : `${bgHue} 12% 40%`,
     border: `${bgHue} ${Math.max(10, bgSat - 5)}% ${borderLightness}%`,
     ring: primary,
-    success: '142 76% 42%',
-    success_foreground: '0 0% 100%',
-    warning: '38 92% 55%',
-    warning_foreground: '0 0% 8%',
+    success,
+    success_foreground: successForeground,
+    warning,
+    warning_foreground: warningForeground,
     destructive,
     destructive_foreground: '0 0% 98%',
   };

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { EnhancedDataView } from '@/components/ui/enhanced-data-view';
 import { Badge } from '@/components/ui/badge';
@@ -10,9 +10,48 @@ import { useDrivers } from '@/hooks/useDrivers';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCompany } from '@/hooks/useCompanies';
 import { useToast } from '@/hooks/use-toast';
+import { resolveAvatarUrl } from '@/services/profile';
 import type { DriverFilters, DriverStatus, EmploymentType, DriverWithUser } from '@/types/driver';
 import { AdminDriverCard, AdminDriverCardAction } from '@/components/features/admin/DriverCard';
 import { driverStatusVariant } from '@/lib/status-styles';
+
+// Helper component to handle avatar URL resolution
+function DriverAvatar({ avatarPath, name }: { avatarPath: string | null | undefined; name: string }) {
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function load() {
+      if (avatarPath) {
+        const url = await resolveAvatarUrl(avatarPath);
+        if (isMounted) setAvatarUrl(url);
+      } else {
+        if (isMounted) setAvatarUrl(null);
+      }
+    }
+    void load();
+    return () => { isMounted = false; };
+  }, [avatarPath]);
+
+  return (
+    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden">
+      {avatarUrl ? (
+        <img
+          src={avatarUrl}
+          alt={name}
+          className="h-full w-full object-cover"
+          onError={(e) => {
+            e.currentTarget.style.display = 'none';
+            e.currentTarget.nextElementSibling?.classList.remove('hidden');
+          }}
+        />
+      ) : null}
+      <span className={`text-primary text-sm ${avatarUrl ? 'hidden' : ''}`}>
+        {name.charAt(0).toUpperCase()}
+      </span>
+    </div>
+  );
+}
 
 const statusLabels: Record<DriverStatus, string> = {
   active: 'Active',
@@ -134,22 +173,7 @@ export default function DriversPage() {
                   >
                     <TableCell onClick={() => navigate(`/admin/drivers/${driver.id}`)}>
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden">
-                          {driver.user.avatar_url ? (
-                            <img 
-                              src={driver.user.avatar_url} 
-                              alt={driver.user.full_name}
-                              className="h-full w-full object-cover"
-                              onError={(e) => {
-                                e.currentTarget.style.display = 'none';
-                                e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                              }}
-                            />
-                          ) : null}
-                          <span className={`text-primary text-sm ${driver.user.avatar_url ? 'hidden' : ''}`}>
-                            {driver.user.full_name.charAt(0).toUpperCase()}
-                          </span>
-                        </div>
+                        <DriverAvatar avatarPath={driver.user.avatar_url} name={driver.user.full_name} />
                         <div>
                           <div className="font-medium">{driver.user.full_name}</div>
                           <div className="text-sm text-muted-foreground">

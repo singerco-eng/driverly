@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useDriver, useUpdateDriverStatus } from '@/hooks/useDrivers';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
+import { UserAvatar } from '@/components/ui/user-avatar';
+import { resolveAvatarUrl } from '@/services/profile';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -47,6 +49,22 @@ export default function DriverDetailPage() {
   const updateStatus = useUpdateDriverStatus();
   const [editOpen, setEditOpen] = useState(false);
   const [suspendOpen, setSuspendOpen] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  // Resolve avatar URL for display
+  useEffect(() => {
+    let isMounted = true;
+    async function loadAvatar() {
+      if (driver?.user?.avatar_url) {
+        const resolved = await resolveAvatarUrl(driver.user.avatar_url);
+        if (isMounted) setAvatarUrl(resolved);
+      } else {
+        if (isMounted) setAvatarUrl(null);
+      }
+    }
+    void loadAvatar();
+    return () => { isMounted = false; };
+  }, [driver?.user?.avatar_url]);
 
   const handleStatusChange = (newStatus: DriverStatus, reason?: string) => {
     if (!id) return;
@@ -86,11 +104,12 @@ export default function DriverDetailPage() {
 
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="flex items-start gap-4">
-          <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center">
-            <span className="text-primary text-2xl font-medium">
-              {driver.user.full_name.charAt(0).toUpperCase()}
-            </span>
-          </div>
+          <UserAvatar
+            src={avatarUrl}
+            fullName={driver.user.full_name}
+            email={driver.user.email}
+            size="lg"
+          />
 
           <div>
             <div className="flex items-center gap-3">

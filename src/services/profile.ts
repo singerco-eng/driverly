@@ -283,36 +283,80 @@ export async function saveNotificationPreferences(
 
 // ============ PROFILE PHOTO ============
 
+const PROFILE_PHOTOS_BUCKET = 'profile-photos';
+
+/**
+ * Resolve an avatar URL - handles both full URLs and storage paths
+ * Returns a signed URL for RLS-protected storage access
+ */
+export async function resolveAvatarUrl(avatarPath: string | null | undefined): Promise<string | null> {
+  if (!avatarPath) return null;
+
+  // If it's already a full URL (legacy data or external URL), return as-is
+  if (avatarPath.startsWith('http://') || avatarPath.startsWith('https://')) {
+    return avatarPath;
+  }
+
+  // Otherwise, generate a signed URL (valid for 1 hour)
+  try {
+    const { data, error } = await supabase.storage
+      .from(PROFILE_PHOTOS_BUCKET)
+      .createSignedUrl(avatarPath, 3600); // 1 hour expiry
+
+    if (error) throw error;
+    return data?.signedUrl || null;
+  } catch {
+    return null;
+  }
+}
+
 export async function uploadProfilePhoto(
   userId: string,
   file: File
 ): Promise<string> {
   const ext = file.name.split('.').pop() || 'jpg';
+  // Use a consistent filename so we can easily replace/clean up
   const path = `${userId}/avatar.${ext}`;
 
-  const { error } = await supabase.storage
-    .from('profile-photos')
+  // Upload to storage (upsert to replace existing)
+  const { error: uploadError } = await supabase.storage
+    .from(PROFILE_PHOTOS_BUCKET)
     .upload(path, file, { upsert: true });
 
-  if (error) throw error;
+  if (uploadError) throw uploadError;
 
-  const { data } = supabase.storage
-    .from('profile-photos')
-    .getPublicUrl(path);
+  // Store the PATH (not the URL) in the database
+  // This allows us to use signed URLs with RLS protection
+  const { error: updateError } = await supabase
+    .from('users')
+    .update({ avatar_url: path })
+    .eq('id', userId);
 
-  return data.publicUrl;
+  if (updateError) throw updateError;
+
+  // Return a signed URL for immediate display
+  const signedUrl = await resolveAvatarUrl(path);
+  return signedUrl || path;
 }
 
 export async function removeProfilePhoto(userId: string): Promise<void> {
-  // List files in user's folder
+  // Clear avatar_url in database
+  const { error: updateError } = await supabase
+    .from('users')
+    .update({ avatar_url: null })
+    .eq('id', userId);
+
+  if (updateError) throw updateError;
+
+  // List files in user's folder and remove them
   const { data: files } = await supabase.storage
-    .from('profile-photos')
+    .from(PROFILE_PHOTOS_BUCKET)
     .list(userId);
 
   if (files && files.length > 0) {
     const filesToRemove = files.map(f => `${userId}/${f.name}`);
     await supabase.storage
-      .from('profile-photos')
+      .from(PROFILE_PHOTOS_BUCKET)
       .remove(filesToRemove);
   }
 }

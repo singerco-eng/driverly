@@ -31,8 +31,8 @@ export function CannotActivateModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader className="text-center pb-2">
-          <div className="mx-auto w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center mb-3">
-            <AlertCircle className="w-6 h-6 text-amber-500" />
+          <div className="mx-auto w-12 h-12 rounded-full bg-warning/10 flex items-center justify-center mb-3">
+            <AlertCircle className="w-6 h-6 text-warning" />
           </div>
           <DialogTitle>Can't Go Active Yet</DialogTitle>
           <DialogDescription className="text-center">
@@ -55,7 +55,7 @@ export function CannotActivateModal({
               className="flex items-center justify-between gap-3 p-3 rounded-lg bg-muted/30 border border-border/40"
             >
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-amber-500" />
+                <div className="w-2 h-2 rounded-full bg-warning" />
                 <span className="text-sm">{blocker.label}</span>
               </div>
               {blocker.route && (

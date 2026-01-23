@@ -7,6 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDriverProfile, useProfileCompletion } from '@/hooks/useProfile';
+import { resolveAvatarUrl } from '@/services/profile';
 import { supabase } from '@/integrations/supabase/client';
 import { cardVariants } from '@/lib/design-system';
 import { cn } from '@/lib/utils';
@@ -23,6 +24,7 @@ export default function DriverProfile() {
   const completion = driver ? useProfileCompletion(driver) : null;
   const [frontPreview, setFrontPreview] = useState<string | null>(null);
   const [backPreview, setBackPreview] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   const [showPersonal, setShowPersonal] = useState(false);
   const [showContact, setShowContact] = useState(false);
@@ -35,6 +37,16 @@ export default function DriverProfile() {
 
     async function loadPreviews() {
       if (!driver) return;
+      
+      // Load avatar
+      if (driver.user?.avatar_url) {
+        const resolved = await resolveAvatarUrl(driver.user.avatar_url);
+        if (isMounted) setAvatarUrl(resolved);
+      } else if (isMounted) {
+        setAvatarUrl(null);
+      }
+      
+      // Load license previews
       if (driver.license_front_url) {
         const { data } = await supabase.storage
           .from('credential-documents')
@@ -153,7 +165,7 @@ export default function DriverProfile() {
         <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
             <Avatar size="lg">
-              <AvatarImage src={driver.user.avatar_url || undefined} alt={driver.user.full_name} />
+              {avatarUrl && <AvatarImage src={avatarUrl} alt={driver.user.full_name} />}
               <AvatarFallback>{initials}</AvatarFallback>
             </Avatar>
             <div>
