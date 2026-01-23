@@ -15,10 +15,10 @@ interface GettingStartedChecklistProps {
 
 function getStatusIcon(item: OnboardingItemStatus) {
   if (item.completed) {
-    return <CheckCircle2 className="h-5 w-5 text-emerald-500" />;
+    return <CheckCircle2 className="h-5 w-5 text-success" />;
   }
   if (item.missingInfo && item.missingInfo.length > 0) {
-    return <AlertTriangle className="h-5 w-5 text-amber-500" />;
+    return <AlertTriangle className="h-5 w-5 text-warning" />;
   }
   return <Circle className="h-5 w-5 text-muted-foreground" />;
 }
@@ -74,7 +74,7 @@ export function GettingStartedChecklist({ onboardingStatus }: GettingStartedChec
                   className={cn(
                     'flex flex-col gap-3 rounded-lg border p-4 transition-all sm:flex-row sm:items-center sm:justify-between',
                     item.completed
-                      ? 'border-emerald-500/20 bg-emerald-500/5'
+                      ? 'border-success/20 bg-success/5'
                       : 'border-border/60 hover:border-border'
                   )}
                 >
@@ -82,7 +82,7 @@ export function GettingStartedChecklist({ onboardingStatus }: GettingStartedChec
                     {getStatusIcon(item)}
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <p className={cn('font-medium', item.completed && 'text-emerald-600')}>
+                        <p className={cn('font-medium', item.completed && 'text-success')}>
                           {item.label}
                         </p>
                         <Badge
@@ -99,7 +99,7 @@ export function GettingStartedChecklist({ onboardingStatus }: GettingStartedChec
                       </div>
                       <p className="text-sm text-muted-foreground">{item.description}</p>
                       {item.missingInfo && item.missingInfo.length > 0 && !item.completed && (
-                        <div className="flex items-center gap-1 text-xs text-amber-500">
+                        <div className="flex items-center gap-1 text-xs text-warning">
                           <AlertTriangle className="w-3 h-3" />
                           {item.missingInfo.join(', ')}
                         </div>

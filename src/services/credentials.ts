@@ -5,7 +5,7 @@ import type {
   CredentialType,
   CredentialSubmissionHistory,
   CredentialWithDisplayStatus,
-  CredentialProgress,
+  CredentialProgressSummary,
   SignatureData,
 } from '@/types/credential';
 import { isAdminOnlyCredential } from '@/lib/credentialRequirements';
@@ -77,14 +77,14 @@ export async function getVehicleCredentials(
 
 export async function getDriverCredentialProgress(
   driverId: string,
-): Promise<CredentialProgress> {
+): Promise<CredentialProgressSummary> {
   const credentials = await getDriverCredentials(driverId);
   return calculateProgress(credentials);
 }
 
 export async function getVehicleCredentialProgress(
   vehicleId: string,
-): Promise<CredentialProgress> {
+): Promise<CredentialProgressSummary> {
   const credentials = await getVehicleCredentials(vehicleId);
   return calculateProgress(credentials);
 }
@@ -456,7 +456,7 @@ function computeDisplayStatus(
   };
 }
 
-function calculateProgress(credentials: CredentialWithDisplayStatus[]): CredentialProgress {
+function calculateProgress(credentials: CredentialWithDisplayStatus[]): CredentialProgressSummary {
   const required = credentials.filter((c) => c.credentialType.requirement === 'required');
   const complete = required.filter((c) => c.displayStatus === 'approved').length;
   const pending = required.filter((c) => ['pending_review', 'awaiting'].includes(c.displayStatus))

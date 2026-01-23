@@ -24,6 +24,25 @@ interface DocumentItem {
   error: boolean;
 }
 
+// Helper functions for URL detection
+const isExternalUrl = (path: string) => 
+  path.startsWith('http://') || path.startsWith('https://');
+
+const isDataUri = (path: string) => path.startsWith('data:');
+
+// Paths served from public folder (e.g., /demo/license-front.png)
+const isPublicPath = (path: string) => path.startsWith('/');
+
+const isImageServiceUrl = (url: string) => 
+  url.includes('unsplash.com') || 
+  url.includes('pexels.com') || 
+  url.includes('picsum.photos') ||
+  url.includes('placehold.co') ||
+  url.includes('placeholder.com');
+
+// Check if path is a demo/mock document (from public folder)
+const isDemoDocument = (path: string) => path.startsWith('/demo/');
+
 export function DocumentPreview({
   paths,
   bucket = 'credential-documents',
@@ -36,10 +55,39 @@ export function DocumentPreview({
     if (!paths || paths.length === 0) return;
 
     // Initialize documents
-    const initialDocs: DocumentItem[] = paths.map((path) => {
-      const fileName = path.split('/').pop() || path;
+    const initialDocs: DocumentItem[] = paths.map((path, index) => {
+      // Handle data URIs specially
+      if (isDataUri(path)) {
+        const mimeMatch = path.match(/^data:([^;,]+)/);
+        const mimeType = mimeMatch ? mimeMatch[1] : '';
+        const isImage = mimeType.startsWith('image/');
+        return {
+          path,
+          signedUrl: path, // Use the data URI directly as the src
+          isImage,
+          fileName: `Document ${index + 1}`,
+          loading: false,
+          error: false,
+        };
+      }
+      
+      const fileName = path.split('/').pop()?.split('?')[0] || path;
       const ext = fileName.split('.').pop()?.toLowerCase() || '';
-      const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext);
+      // Check both file extension AND if it's from a known image service or demo folder
+      const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext) || isImageServiceUrl(path) || isDemoDocument(path);
+      
+      // If it's already a URL or a public path, use it directly (no need to fetch from storage)
+      if (isExternalUrl(path) || isPublicPath(path)) {
+        return {
+          path,
+          signedUrl: path, // Use the URL/path directly
+          isImage,
+          fileName: (isImageServiceUrl(path) || isDemoDocument(path)) ? `Uploaded Document ${index + 1}` : fileName,
+          loading: false,
+          error: false,
+        };
+      }
+      
       return {
         path,
         signedUrl: null,
@@ -51,10 +99,17 @@ export function DocumentPreview({
     });
     setDocuments(initialDocs);
 
-    // Fetch signed URLs
+    // Only fetch signed URLs for storage paths (not external URLs, data URIs, or public paths)
+    const storagePaths = initialDocs.filter(doc => !isExternalUrl(doc.path) && !isDataUri(doc.path) && !isPublicPath(doc.path));
+    if (storagePaths.length === 0) return; // All are external URLs/data URIs, no need to fetch
+
+    // Fetch signed URLs for storage paths
     async function fetchSignedUrls() {
       const updatedDocs = await Promise.all(
         initialDocs.map(async (doc) => {
+          // Skip if already has URL (external or data URI)
+          if (doc.signedUrl) return doc;
+          
           try {
             const { data, error } = await supabase.storage
               .from(bucket)
@@ -159,8 +214,12 @@ export function DocumentPreview({
               <img
                 src={doc.signedUrl}
                 alt={doc.fileName}
-                className="w-full object-contain bg-black/5"
-                style={{ maxHeight: maxPreviewHeight }}
+                className="w-full object-cover bg-black/5"
+                style={{ 
+                  maxHeight: maxPreviewHeight,
+                  // Apply blur to demo/mock images for privacy effect
+                  filter: (isImageServiceUrl(doc.path) || isDemoDocument(doc.path)) ? 'blur(3px)' : undefined,
+                }}
               />
               <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                 <Button

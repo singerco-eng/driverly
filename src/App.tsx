@@ -40,6 +40,9 @@ import CredentialDetailPage from '@/pages/driver/CredentialDetail';
 import DriverVehicles from '@/pages/driver/Vehicles';
 import DriverVehicleDetail from '@/pages/driver/VehicleDetail';
 import DriverVehicleCredentialDetail from '@/pages/driver/VehicleCredentialDetail';
+import { WebsiteLayout } from '@/components/website/WebsiteLayout';
+import HomePage from '@/pages/website/HomePage';
+import CredentialingPage from '@/pages/website/CredentialingPage';
 
 const queryClient = new QueryClient();
 
@@ -129,8 +132,18 @@ function App() {
                 <Route path="settings/account" element={<AccountSettings />} />
               </Route>
 
-              {/* Default redirect */}
-              <Route path="/" element={<Navigate to="/login" replace />} />
+              {/* Public website routes */}
+              <Route path="/website" element={<WebsiteLayout />}>
+                <Route index element={<HomePage />} />
+                <Route path="credentialing" element={<CredentialingPage />} />
+              </Route>
+
+              {/* Redirect old demo routes to website (for browser history cleanup) */}
+              <Route path="/demo/admin" element={<Navigate to="/website" replace />} />
+              <Route path="/demo/driver" element={<Navigate to="/website" replace />} />
+
+              {/* Default redirect to website homepage */}
+              <Route path="/" element={<Navigate to="/website" replace />} />
             </Routes>
           </BrowserRouter>
           <Toaster />

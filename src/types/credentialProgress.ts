@@ -54,11 +54,10 @@ export interface StepState {
   videosWatched: Record<string, boolean>;
 }
 
-export interface SignatureData {
-  type: 'typed' | 'drawn';
-  value: string; // Text for typed, base64 data URL for drawn
-  timestamp: string;
-}
+// Re-export SignatureData from credential.ts to avoid duplication
+// The canonical definition is in credential.ts (includes optional ip_address field)
+import type { SignatureData } from '@/types/credential';
+export type { SignatureData };
 
 // ============================================
 // HELPER FUNCTIONS

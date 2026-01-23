@@ -30,12 +30,13 @@ import { EditDriverModal } from '@/components/features/admin/EditDriverModal';
 import { SuspendDriverModal } from '@/components/features/admin/SuspendDriverModal';
 import { useAuth } from '@/contexts/AuthContext';
 import type { DriverStatus } from '@/types/driver';
+import { driverStatusVariant } from '@/lib/status-styles';
 
-const statusStyles: Record<DriverStatus, string> = {
-  active: 'bg-green-500/20 text-green-600 border-green-500/30',
-  inactive: 'bg-gray-500/20 text-gray-600 border-gray-500/30',
-  suspended: 'bg-red-500/20 text-red-600 border-red-500/30',
-  archived: 'bg-gray-400/20 text-gray-500 border-gray-400/30',
+const statusLabels: Record<DriverStatus, string> = {
+  active: 'Active',
+  inactive: 'Inactive',
+  suspended: 'Suspended',
+  archived: 'Archived',
 };
 
 export default function DriverDetailPage() {
@@ -94,8 +95,8 @@ export default function DriverDetailPage() {
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold">{driver.user.full_name}</h1>
-              <Badge variant="outline" className={statusStyles[driver.status]}>
-                {driver.status}
+              <Badge variant={driverStatusVariant[driver.status]}>
+                {statusLabels[driver.status]}
               </Badge>
             </div>
             <p className="text-muted-foreground">{driver.user.email}</p>

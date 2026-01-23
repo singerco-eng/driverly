@@ -8,7 +8,7 @@ Driverly is a multi-tenant driver management platform for medical transportation
 | Document | Description |
 |----------|-------------|
 | [01-ARCHITECTURE.md](./01-ARCHITECTURE.md) | System architecture, tech stack, and data flow |
-| [02-DATABASE-SCHEMA.md](./02-DATABASE-SCHEMA.md) | Database tables, relationships, and RLS policies |
+| [02-DATABASE-SCHEMA.md](./02-DATABASE-SCHEMA.md) | Database tables, relationships, and RLS policies ⚠️ *Historical - see migrations for current schema* |
 | [03-AUTHENTICATION.md](./03-AUTHENTICATION.md) | Auth system, roles, and JWT claims |
 | [04-FRONTEND-GUIDELINES.md](./04-FRONTEND-GUIDELINES.md) | Design system, components, and UI patterns |
 | [05-TESTING-STRATEGY.md](./05-TESTING-STRATEGY.md) | Testing approach and coverage |
@@ -25,6 +25,7 @@ Driverly is a multi-tenant driver management platform for medical transportation
 ## Implementation Status
 
 > **Last Updated:** 2026-01-20
+> **Milestone:** v1.0 Driver & Vehicle Credentialing Complete ✅
 
 ### Completed Features
 
@@ -36,55 +37,42 @@ Driverly is a multi-tenant driver management platform for medical transportation
 | AD-002 | Driver Management (list, detail, status) | ✅ Complete |
 | AD-003 | Vehicle Management (CRUD, detail pages) | ✅ Complete |
 | AD-004 | Vehicle Assignment (assign, transfer, history) | ✅ Complete |
-| AD-005 | Credential Types (admin configuration) | ✅ Complete |
+| AD-005 | Credential Types (admin configuration, instruction builder) | ✅ Complete |
 | AD-007 | Broker Management (CRUD, driver assignments) | ✅ Complete |
 | DR-001 | Driver Onboarding (checklist, status toggle) | ✅ Complete |
-| DR-004 | Credential Submission (all submission types) | ✅ Complete |
+| DR-002 | Driver Profile Management | ✅ Complete |
+| DR-003 | Driver Vehicle Management (1099/W2) | ✅ Complete |
+| DR-004 | Credential Submission (all submission types, multi-step) | ✅ Complete |
 
-### In Progress / Placeholder
+### In Progress / Planned
 
 | Feature | Description | Status |
 |---------|-------------|--------|
-| DR-002 | Driver Profile Management | ✅ Complete |
-| DR-003 | Driver Vehicle Management (1099/W2) | ✅ Complete |
-| AD-006 | Credential Review Queue | 📝 CODEX-012 |
+| AD-006 | Credential Review Queue | 📝 [CODEX-012](./CODEX-012-AD-006-credential-review.md) |
+| UX-001 | UX Consistency Across Portals | 📝 [CODEX-013](./CODEX-013-UX-consistency.md) |
+| AD-005+ | Credential Type Refactor | 📋 [CODEX-020](./CODEX-TASK-020-credential-type-refactor.md) |
+| AD-005+ | Credential Editor Tabs | 📋 [CODEX-021](./CODEX-TASK-021-credential-type-editor-tabs.md) |
 
-## CODEX Tasks (Historical Reference)
+## CODEX Tasks
 
-> **Note:** These tasks document the original implementation specs. The codebase has evolved beyond these initial tickets.
+### Active Tasks
 
-| Task | Description | Implemented |
-|------|-------------|-------------|
-| [CODEX-TASK-001](./CODEX-TASK-001.md) | Project init, migration 001, app shell | ✅ |
-| [CODEX-TASK-002](./CODEX-TASK-002.md) | Authentication layer (context, routes, login) | ✅ |
-| [CODEX-TASK-003](./CODEX-TASK-003.md) | SA-001 Company list and create modal | ✅ |
-| [CODEX-TASK-004](./CODEX-TASK-004.md) | SA-001 Company detail, edit, status | ✅ |
-| [CODEX-TASK-005](./CODEX-TASK-005.md) | AD-005 Credential Types management | ✅ |
-| [CODEX-TASK-006](./CODEX-TASK-006.md) | AD-007 Broker Management | ✅ |
-| [CODEX-TASK-007](./CODEX-TASK-007.md) | AD-004 Vehicle Assignment | ✅ |
-| [CODEX-TASK-008](./CODEX-TASK-008.md) | DR-001 Driver Onboarding | ✅ |
-| [CODEX-TASK-009](./CODEX-TASK-009.md) | DR-004 Credential Submission | ✅ |
-| [CODEX-TASK-010](./CODEX-TASK-010.md) | DR-002 Driver Profile Management | ✅ |
-| [CODEX-TASK-011](./CODEX-TASK-011.md) | DR-003 Driver Vehicle Management | ✅ |
-| [CODEX-012-AD-006](./CODEX-012-AD-006-credential-review.md) | AD-006 Credential Review Queue | ⏳ Pending |
+| Task | Description | Status |
+|------|-------------|--------|
+| [CODEX-012-AD-006](./CODEX-012-AD-006-credential-review.md) | AD-006 Credential Review Queue | ⏳ In Progress |
 | [CODEX-013-UX](./CODEX-013-UX-consistency.md) | UX Consistency Across Portals | ⏳ Pending |
-| [CODEX-TASK-015](./CODEX-TASK-015-credential-builder-phase1.md) | Enhanced Credential Builder - Phase 1 | ✅ |
-| [CODEX-TASK-016](./CODEX-TASK-016-credential-builder-phase2.md) | Enhanced Credential Builder - Phase 2 | ✅ |
-| [CODEX-TASK-017](./CODEX-TASK-017-credential-detail-phase1.md) | Unified Credential Detail - Phase 1 | ✅ |
-| [CODEX-TASK-018](./CODEX-TASK-018-credential-detail-phase2.md) | Unified Credential Detail - Phase 2 | ✅ |
-| [CODEX-TASK-019](./CODEX-TASK-019-credential-detail-phase3.md) | Unified Credential Detail - Phase 3 | ✅ |
-| [CODEX-TASK-020](./CODEX-TASK-020-credential-type-refactor.md) | Credential Type Refactor (deprecate submission_type) | ⏳ Planned |
-| [CODEX-TASK-021](./CODEX-TASK-021-credential-type-editor-tabs.md) | Credential Editor - Requirements/Expiration/Settings Tabs | ⏳ Planned |
+| [CODEX-TASK-020](./CODEX-TASK-020-credential-type-refactor.md) | Credential Type Refactor (deprecate submission_type) | 📋 Planned |
+| [CODEX-TASK-021](./CODEX-TASK-021-credential-type-editor-tabs.md) | Credential Editor - Requirements/Expiration/Settings Tabs | 📋 Planned |
 
-### Features Implemented Without CODEX Tasks
+### Archived Tasks (Completed)
 
-The following features were implemented directly without formal task documentation:
+> Completed CODEX tasks have been moved to [`docs/archive/codex-tasks/`](./archive/codex-tasks/).
+> These document the original implementation specs but the codebase has evolved beyond them.
 
-- **SA-002 Admin Invitations** - `InviteAdminModal`, `CompanyInvitationsTab`, `AcceptInvitation`
-- **AD-001 Driver Applications** - Full wizard at `/apply/:slug`, `ApplicationReview`
-- **AD-002 Driver Management** - `Drivers.tsx`, `DriverDetail.tsx`, status management
-- **AD-003 Vehicle Management** - `Vehicles.tsx`, `VehicleDetail.tsx`, CRUD operations
-- **Migrations 002-010** - RLS fixes, theme tables, driver tables, applications, etc.
+| Task Range | Description |
+|------------|-------------|
+| CODEX-TASK-001 to 011 | Core platform build (auth, companies, drivers, vehicles, credentials) |
+| CODEX-TASK-012 to 019 | Credential builder phases, vehicle bugs, credential detail views |
 
 ## Feature Specifications
 
@@ -105,7 +93,7 @@ The following features were implemented directly without formal task documentati
 - [DR-001 Onboarding](./features/driver/DR-001-onboarding.md)
 - [DR-002 Profile Management](./features/driver/DR-002-profile-management.md) ✅
 - [DR-003 Vehicle Management](./features/driver/DR-003-vehicle-management.md) ✅
-- [DR-004 Credential Submission](./features/driver/DR-004-credential-submission.md)
+- [DR-004 Credential Submission](./features/driver/DR-004-credential-submission.md) ✅
 
 ## Architecture Decision Records
 - [ADR-001 Multi-Tenancy Approach](./decisions/ADR-001-multi-tenancy-approach.md)
@@ -114,7 +102,7 @@ The following features were implemented directly without formal task documentati
 
 ## Database Migrations
 
-15 migrations exist in `supabase/migrations/`:
+26 migrations exist in `supabase/migrations/`:
 
 | Migration | Description |
 |-----------|-------------|
@@ -135,6 +123,29 @@ The following features were implemented directly without formal task documentati
 | 015_credential_submission | Credential submission workflow |
 | 016_driver_profile | Profile management, audit log, notifications |
 | 017_driver_vehicle_management | Vehicle photos, status tracking, driver RLS |
-| 018-021 | Various RLS fixes and broker settings |
+| 018_fix_rls_policies | RLS policy adjustments |
+| 019_fix_driver_vehicle_rls | Driver vehicle RLS fixes |
+| 020_fix_driver_credential_insert | Driver credential insert RLS |
+| 021_broker_assignment_settings | Broker assignment mode settings |
 | 022_credential_instruction_builder | JSONB instruction config for credential builder |
 | 023_credential_progress | Step progress tracking for multi-step credentials |
+| 024_admin_ensure_driver_credential | RPC to ensure driver credential records exist |
+| 025_admin_ensure_vehicle_credential | RPC to ensure vehicle credential records exist |
+
+## Code Organization
+
+### Key Directories
+
+| Path | Purpose |
+|------|---------|
+| `src/types/` | TypeScript type definitions (use barrel export from `index.ts`) |
+| `src/services/` | Supabase data access layer |
+| `src/hooks/` | React Query hooks for data fetching |
+| `src/lib/` | Utilities, theme, query keys |
+| `src/components/features/` | Feature-specific components by domain |
+| `src/components/ui/` | Reusable UI components (design system) |
+| `src/pages/` | Route components by role (admin, driver, super-admin) |
+
+### Archived Scripts
+
+Debug and one-time fix scripts have been moved to [`scripts/archive/`](../scripts/archive/).

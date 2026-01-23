@@ -13,7 +13,7 @@ export function RichTextBlock({ content }: RichTextBlockProps) {
   // Note: In production, sanitize HTML with DOMPurify or similar
   return (
     <div 
-      className="prose prose-sm dark:prose-invert max-w-none"
+      className="prose prose-sm dark:prose-invert max-w-none p-4 rounded-lg bg-muted/50 border border-border/50 [&>p]:text-foreground [&>ul]:text-foreground [&>ol]:text-foreground [&_strong]:text-foreground"
       dangerouslySetInnerHTML={{ __html: content.html }}
     />
   );

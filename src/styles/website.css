@@ -1,0 +1,180 @@
+/* Driverly Website Theme - Cursor Dark Mode Inspired */
+/* Based on Cursor's dark theme: warm brown backgrounds with cream text */
+
+.website-theme {
+  /* Core palette - Cursor dark mode colors */
+  --ws-background: 40 8% 10%;           /* #1a1917 - main dark bg */
+  --ws-background-elevated: 40 7% 13%;  /* #232220 - elevated surfaces */
+  --ws-foreground: 45 12% 90%;          /* #e8e6e0 - cream text */
+  --ws-foreground-muted: 40 6% 55%;     /* muted text */
+  
+  /* Gold accent - warm amber */
+  --ws-gold: 43 74% 49%;
+  --ws-gold-light: 43 74% 60%;
+  --ws-gold-muted: 43 40% 35%;
+  
+  /* Warm Browns - Cursor dark palette */
+  --ws-grey-900: 40 8% 10%;    /* #1a1917 */
+  --ws-grey-800: 40 7% 14%;    /* #252321 */
+  --ws-grey-700: 40 6% 20%;    /* #353330 */
+  --ws-grey-600: 40 5% 28%;    /* #494644 */
+  --ws-grey-500: 40 4% 40%;    /* #6b6865 */
+  --ws-grey-400: 40 4% 55%;    /* #918e8a */
+  --ws-grey-300: 42 5% 70%;    /* #b5b2ad */
+  --ws-grey-200: 44 8% 84%;    /* #d8d5cf */
+  --ws-grey-100: 45 12% 92%;   /* #eceae4 */
+  
+  /* Gradients */
+  --ws-gradient-gold: linear-gradient(135deg, hsl(43 74% 49%), hsl(38 80% 42%));
+  --ws-gradient-hero: radial-gradient(ellipse 80% 50% at 50% -20%, hsl(43 74% 49% / 0.08), transparent);
+  --ws-gradient-card: linear-gradient(180deg, hsl(40 7% 14%), hsl(40 8% 10%));
+  --ws-gradient-shine: linear-gradient(90deg, transparent, hsl(45 12% 100% / 0.02), transparent);
+  
+  /* Glass effects */
+  --ws-glass: hsl(40 7% 12% / 0.90);
+  --ws-glass-border: hsl(40 5% 22% / 0.6);
+  --ws-glass-blur: 20px;
+  
+  /* Shadows */
+  --ws-shadow-sm: 0 2px 8px hsl(40 15% 3% / 0.35);
+  --ws-shadow-md: 0 8px 30px hsl(40 15% 3% / 0.45);
+  --ws-shadow-lg: 0 20px 60px hsl(40 15% 3% / 0.55);
+  --ws-shadow-gold: 0 0 40px hsl(43 74% 49% / 0.08);
+  --ws-shadow-glow: 0 0 80px hsl(43 74% 49% / 0.05);
+}
+
+/* Base website styles */
+.website-theme {
+  background: hsl(var(--ws-background));
+  color: hsl(var(--ws-foreground));
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  min-height: 100vh;
+}
+
+/* Typography utilities */
+.ws-text-gradient {
+  background: var(--ws-gradient-gold);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.ws-text-muted {
+  color: hsl(var(--ws-foreground-muted));
+}
+
+/* Glass card */
+.ws-glass-card {
+  background: var(--ws-glass);
+  backdrop-filter: blur(var(--ws-glass-blur));
+  -webkit-backdrop-filter: blur(var(--ws-glass-blur));
+  border: 1px solid var(--ws-glass-border);
+  border-radius: 16px;
+}
+
+/* Gold accent elements */
+.ws-gold-glow {
+  box-shadow: var(--ws-shadow-gold);
+}
+
+.ws-gold-border {
+  border: 1px solid hsl(var(--ws-gold) / 0.3);
+}
+
+/* Navigation */
+.ws-nav {
+  background: hsl(var(--ws-background) / 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid hsl(var(--ws-grey-700));
+}
+
+/* Button styles */
+.ws-btn-primary {
+  background: var(--ws-gradient-gold);
+  color: hsl(0 0% 5%);
+  font-weight: 600;
+  padding: 12px 24px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  box-shadow: var(--ws-shadow-sm);
+}
+
+.ws-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--ws-shadow-gold);
+}
+
+.ws-btn-secondary {
+  background: transparent;
+  color: hsl(var(--ws-foreground));
+  font-weight: 500;
+  padding: 12px 24px;
+  border-radius: 8px;
+  border: 1px solid hsl(var(--ws-grey-600));
+  transition: all 0.3s ease;
+}
+
+.ws-btn-secondary:hover {
+  background: hsl(var(--ws-grey-800));
+  border-color: hsl(var(--ws-grey-500));
+}
+
+/* Animated background grid */
+.ws-bg-grid {
+  background-image: 
+    linear-gradient(hsl(var(--ws-grey-700) / 0.3) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(var(--ws-grey-700) / 0.3) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+/* Floating animation */
+@keyframes ws-float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+.ws-float {
+  animation: ws-float 6s ease-in-out infinite;
+}
+
+/* Shimmer effect */
+@keyframes ws-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.ws-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsl(0 0% 100% / 0.05) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: ws-shimmer 3s infinite;
+}
+
+/* Fade in up animation */
+@keyframes ws-fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ws-animate-in {
+  animation: ws-fade-in-up 0.8s ease-out forwards;
+}
+
+/* Stagger children */
+.ws-stagger > *:nth-child(1) { animation-delay: 0.1s; }
+.ws-stagger > *:nth-child(2) { animation-delay: 0.2s; }
+.ws-stagger > *:nth-child(3) { animation-delay: 0.3s; }
+.ws-stagger > *:nth-child(4) { animation-delay: 0.4s; }
+.ws-stagger > *:nth-child(5) { animation-delay: 0.5s; }
+.ws-stagger > *:nth-child(6) { animation-delay: 0.6s; }

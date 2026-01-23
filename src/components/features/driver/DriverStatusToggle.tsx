@@ -52,8 +52,8 @@ export function DriverStatusToggle({
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <div className="flex items-center gap-2">
             {isActive ? (
-              <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center">
-                <Zap className="w-4 h-4 text-emerald-500" />
+              <div className="w-8 h-8 rounded-full bg-success/10 flex items-center justify-center">
+                <Zap className="w-4 h-4 text-success" />
               </div>
             ) : (
               <div className="w-8 h-8 rounded-full bg-muted/50 flex items-center justify-center">
@@ -66,14 +66,14 @@ export function DriverStatusToggle({
             variant={isActive ? 'default' : 'secondary'}
             className={cn(
               isActive
-                ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20'
+                ? 'bg-success/10 text-success border-success/20 hover:bg-success/20'
                 : ''
             )}
           >
             <span
               className={cn(
                 'w-2 h-2 rounded-full mr-1.5',
-                isActive ? 'bg-emerald-500 animate-pulse' : 'bg-muted-foreground'
+                isActive ? 'bg-success animate-pulse' : 'bg-muted-foreground'
               )}
             />
             {isActive ? 'Active' : 'Inactive'}
@@ -102,7 +102,7 @@ export function DriverStatusToggle({
               onCheckedChange={handleToggle}
               disabled={toggleMutation.isPending || isDisabled}
               className={cn(
-                isActive && 'data-[state=checked]:bg-emerald-500'
+                isActive && 'data-[state=checked]:bg-success'
               )}
             />
           </div>

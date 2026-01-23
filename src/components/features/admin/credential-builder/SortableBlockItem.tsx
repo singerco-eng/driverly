@@ -109,6 +109,8 @@ interface SortableBlockItemProps {
   onEdit: () => void;
   onDelete: () => void;
   onDuplicate: () => void;
+  /** Make block read-only (clicks are no-op but drag works) */
+  readOnly?: boolean;
 }
 
 export function SortableBlockItem({
@@ -117,6 +119,7 @@ export function SortableBlockItem({
   onEdit,
   onDelete,
   onDuplicate,
+  readOnly = false,
 }: SortableBlockItemProps) {
   const {
     attributes,
@@ -144,7 +147,7 @@ export function SortableBlockItem({
         isEditing && 'ring-2 ring-primary bg-primary/5',
         isDragging && 'opacity-50 shadow-lg'
       )}
-      onClick={onEdit}
+      onClick={() => !readOnly && onEdit()}
     >
       <div className="flex items-center gap-2">
         <button
@@ -172,16 +175,16 @@ export function SortableBlockItem({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={onEdit}>
+            <DropdownMenuItem onClick={() => !readOnly && onEdit()}>
               <Pencil className="w-4 h-4 mr-2" />
               Edit
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={onDuplicate}>
+            <DropdownMenuItem onClick={() => !readOnly && onDuplicate()}>
               <Copy className="w-4 h-4 mr-2" />
               Duplicate
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={onDelete} className="text-destructive">
+            <DropdownMenuItem onClick={() => !readOnly && onDelete()} className="text-destructive">
               <Trash2 className="w-4 h-4 mr-2" />
               Delete
             </DropdownMenuItem>

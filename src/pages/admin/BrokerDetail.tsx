@@ -15,6 +15,8 @@ import { useCredentialTypes } from '@/hooks/useCredentialTypes';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { cardVariants } from '@/lib/design-system';
+import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FilterBar } from '@/components/ui/filter-bar';
@@ -55,17 +57,19 @@ import type { AssignmentStatus, BrokerStatus, DriverBrokerAssignment, VehicleTyp
 import { getBrokerAssignmentMode, getAssignmentModeLabel, getSourceTypeLabel, SOURCE_TYPE_CONFIG } from '@/types/broker';
 import { Hospital, Shield, User, Briefcase } from 'lucide-react';
 
-const statusStyles: Record<BrokerStatus, string> = {
-  active: 'bg-green-500/20 text-green-600 border-green-500/30',
-  inactive: 'bg-gray-500/20 text-gray-600 border-gray-500/30',
+// DS-compliant: Use Badge variants instead of custom color classes
+const statusVariant: Record<BrokerStatus, 'default' | 'secondary'> = {
+  active: 'default',
+  inactive: 'secondary',
 };
 
-const assignmentStatusStyles: Record<AssignmentStatus, string> = {
-  assigned: 'bg-green-500/20 text-green-600 border-green-500/30',
-  pending: 'bg-yellow-500/20 text-yellow-600 border-yellow-500/30',
-  removed: 'bg-gray-500/20 text-gray-500 border-gray-500/30',
+const assignmentStatusVariant: Record<AssignmentStatus, 'default' | 'secondary' | 'outline'> = {
+  assigned: 'default',
+  pending: 'secondary',
+  removed: 'outline',
 };
 
+// DS-compliant: Use semantic colors from the design system
 const assignmentModeConfig: Record<BrokerAssignmentMode, { icon: React.ReactNode; className: string }> = {
   admin_only: {
     icon: <Lock className="w-4 h-4" />,
@@ -73,11 +77,11 @@ const assignmentModeConfig: Record<BrokerAssignmentMode, { icon: React.ReactNode
   },
   driver_requests: {
     icon: <UserPlus className="w-4 h-4" />,
-    className: 'text-blue-600',
+    className: 'text-primary',  // DS semantic color
   },
   driver_auto_signup: {
     icon: <Zap className="w-4 h-4" />,
-    className: 'text-green-600',
+    className: 'text-success',  // DS semantic color
   },
 };
 
@@ -196,7 +200,7 @@ export default function BrokerDetail() {
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold">{broker.name}</h1>
-              <Badge variant="outline" className={statusStyles[broker.status]}>
+              <Badge variant={statusVariant[broker.status]}>
                 {broker.status}
               </Badge>
             </div>
@@ -253,8 +257,9 @@ export default function BrokerDetail() {
         </TabsList>
 
         <TabsContent value="overview" className="mt-6 space-y-6">
+          {/* DS-compliant stat cards using cardVariants({ variant: "stats" }) */}
           <div className="grid gap-4 md:grid-cols-3">
-            <Card>
+            <Card className={cn(cardVariants({ variant: 'stats', padding: 'none' }))}>
               <CardHeader>
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                   Driver Assignments
@@ -270,7 +275,7 @@ export default function BrokerDetail() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className={cn(cardVariants({ variant: 'stats', padding: 'none' }))}>
               <CardHeader>
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                   Required Credentials
@@ -292,7 +297,7 @@ export default function BrokerDetail() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className={cn(cardVariants({ variant: 'stats', padding: 'none' }))}>
               <CardHeader>
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                   Service Area
@@ -685,7 +690,7 @@ function DriverAssignmentRow({
         </Badge>
       </TableCell>
       <TableCell>
-        <Badge variant="outline" className={assignmentStatusStyles[assignment.status]}>
+        <Badge variant={assignmentStatusVariant[assignment.status]}>
           {assignment.status}
         </Badge>
       </TableCell>

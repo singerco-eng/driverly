@@ -15,9 +15,49 @@ export interface ThemePreset {
 }
 
 /**
+ * Acme Demo theme - Cursor Dark Mode inspired
+ * Warm brown backgrounds with cream text and gold accents
+ * Used for embedded demos on the marketing site
+ */
+export const ACME_DEMO_THEME: ThemePreset = {
+  id: 'acme-cursor-dark',
+  name: 'Acme Cursor Dark',
+  description: 'Cursor dark mode - warm browns with gold accent',
+  colors: {
+    primary: '#d4a017', // Gold/amber accent
+    accent: '#e6b422', // Lighter warm gold
+    background: '#1a1917', // Cursor dark bg
+    destructive: '#ef4444',
+  },
+  tokens: {
+    primary: '43 74% 46%', // Gold accent
+    primary_foreground: '40 8% 10%', // Dark brown on gold
+    secondary: '40 7% 14%', // Warm grey-800
+    secondary_foreground: '45 12% 90%', // Cream text
+    accent: '43 74% 52%', // Warm gold accent
+    accent_foreground: '40 8% 10%',
+    background: '40 8% 10%', // #1a1917 - Cursor dark bg
+    foreground: '45 12% 90%', // #e8e6e0 - Cream text
+    card: '40 7% 13%', // Elevated surface
+    card_foreground: '45 12% 90%',
+    muted: '40 7% 14%', // Muted surface
+    muted_foreground: '40 6% 55%', // Muted text
+    border: '40 6% 20%', // Border grey
+    ring: '43 74% 46%', // Gold ring
+    success: '43 74% 49%', // Gold success - matches sepia theme
+    success_foreground: '40 8% 10%', // Dark on gold
+    warning: '43 74% 49%', // Gold warning
+    warning_foreground: '40 8% 10%',
+    destructive: '0 84% 60%',
+    destructive_foreground: '45 12% 90%',
+  },
+};
+
+/**
  * 5 curated theme presets for platform theming
  */
 export const THEME_PRESETS: ThemePreset[] = [
+  ACME_DEMO_THEME, // Add Acme theme as first option
   {
     id: 'midnight-blue',
     name: 'Midnight Blue',

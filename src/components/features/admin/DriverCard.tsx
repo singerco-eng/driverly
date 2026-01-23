@@ -152,13 +152,13 @@ export function AdminDriverCard({ driver, onAction }: AdminDriverCardProps): JSX
           </div>
 
           {/* Driver Info */}
-          <div className="flex-1 space-y-1 cursor-pointer" onClick={handleClick}>
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <h3 className="text-base font-semibold">{driver.user.full_name}</h3>
-                <p className="text-sm text-muted-foreground">{driver.user.email}</p>
+          <div className="flex-1 min-w-0 space-y-1 cursor-pointer" onClick={handleClick}>
+            <div className="flex items-start justify-between gap-2 min-w-0">
+              <div className="min-w-0">
+                <h3 className="text-base font-semibold truncate">{driver.user.full_name}</h3>
+                <p className="text-sm text-muted-foreground truncate">{driver.user.email}</p>
               </div>
-              <Badge variant={statusConfig.badgeVariant}>
+              <Badge variant={statusConfig.badgeVariant} className="shrink-0">
                 {statusConfig.label}
               </Badge>
             </div>

@@ -33,9 +33,13 @@ interface InstructionBuilderProps {
   config: CredentialTypeInstructions;
   onChange: (config: CredentialTypeInstructions) => void;
   credentialName?: string;
+  /** Hide the AI generation button (used in demo mode) */
+  hideAIButton?: boolean;
+  /** Make the builder read-only (hides all add/edit buttons) */
+  readOnly?: boolean;
 }
 
-export function InstructionBuilder({ config, onChange, credentialName = '' }: InstructionBuilderProps) {
+export function InstructionBuilder({ config, onChange, credentialName = '', hideAIButton = false, readOnly = false }: InstructionBuilderProps) {
   const [expandedStepId, setExpandedStepId] = useState<string | null>(
     config.steps[0]?.id ?? null
   );
@@ -177,15 +181,17 @@ export function InstructionBuilder({ config, onChange, credentialName = '' }: In
           Steps
         </h3>
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowAISheet(true)}
-          >
-            <Sparkles className="w-4 h-4 mr-1" />
-            Create with AI
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => setShowAddStepSheet(true)}>
+          {!hideAIButton && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => !readOnly && setShowAISheet(true)}
+            >
+              <Sparkles className="w-4 h-4 mr-1" />
+              Create with AI
+            </Button>
+          )}
+          <Button variant="outline" size="sm" onClick={() => !readOnly && setShowAddStepSheet(true)}>
             <Plus className="w-4 h-4 mr-1" />
             Add Step
           </Button>
@@ -201,7 +207,7 @@ export function InstructionBuilder({ config, onChange, credentialName = '' }: In
             <p className="text-sm text-muted-foreground mb-4">
               Add steps to build your credential workflow
             </p>
-            <Button onClick={() => setShowAddStepSheet(true)}>
+            <Button onClick={() => !readOnly && setShowAddStepSheet(true)}>
               <Plus className="w-4 h-4 mr-2" />
               Add First Step
             </Button>
@@ -228,6 +234,7 @@ export function InstructionBuilder({ config, onChange, credentialName = '' }: In
                   onDelete={() => handleDeleteStep(step.id)}
                   onDuplicate={() => handleDuplicateStep(step.id)}
                   onEditBlock={(block) => handleEditBlock(step.id, block)}
+                  readOnly={readOnly}
                 />
               ))}
             </div>
@@ -242,7 +249,7 @@ export function InstructionBuilder({ config, onChange, credentialName = '' }: In
             variant="ghost"
             size="sm"
             className="text-muted-foreground"
-            onClick={() => setShowAddStepSheet(true)}
+            onClick={() => !readOnly && setShowAddStepSheet(true)}
           >
             <Plus className="w-4 h-4 mr-1" />
             Add Another Step

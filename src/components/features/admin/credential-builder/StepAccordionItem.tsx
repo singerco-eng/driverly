@@ -90,6 +90,8 @@ interface StepAccordionItemProps {
   onDelete: () => void;
   onDuplicate: () => void;
   onEditBlock: (block: ContentBlock) => void;
+  /** Make step read-only (buttons do nothing) */
+  readOnly?: boolean;
 }
 
 export function StepAccordionItem({
@@ -101,6 +103,7 @@ export function StepAccordionItem({
   onDelete,
   onDuplicate,
   onEditBlock,
+  readOnly = false,
 }: StepAccordionItemProps) {
   const [showPalette, setShowPalette] = useState(false);
 
@@ -282,7 +285,7 @@ export function StepAccordionItem({
                     variant="ghost"
                     size="sm"
                     className="h-7 text-xs"
-                    onClick={() => setShowPalette(true)}
+                    onClick={() => !readOnly && setShowPalette(true)}
                   >
                     <Plus className="w-3 h-3 mr-1" />
                     Add Block
@@ -295,7 +298,7 @@ export function StepAccordionItem({
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setShowPalette(true)}
+                      onClick={() => !readOnly && setShowPalette(true)}
                     >
                       <Plus className="w-3 h-3 mr-1" />
                       Add First Block
@@ -317,6 +320,7 @@ export function StepAccordionItem({
                             onEdit={() => onEditBlock(block)}
                             onDelete={() => handleDeleteBlock(block.id)}
                             onDuplicate={() => handleDuplicateBlock(block.id)}
+                            readOnly={readOnly}
                           />
                         ))}
                       </div>

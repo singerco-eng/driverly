@@ -5,19 +5,20 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Users, Plus, Circle, Eye } from 'lucide-react';
+import { Users, Plus, Eye } from 'lucide-react';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCompany } from '@/hooks/useCompanies';
 import { useToast } from '@/hooks/use-toast';
 import type { DriverFilters, DriverStatus, EmploymentType, DriverWithUser } from '@/types/driver';
 import { AdminDriverCard, AdminDriverCardAction } from '@/components/features/admin/DriverCard';
+import { driverStatusVariant } from '@/lib/status-styles';
 
-const statusStyles: Record<DriverStatus, string> = {
-  active: 'bg-green-500/20 text-green-600 border-green-500/30',
-  inactive: 'bg-gray-500/20 text-gray-600 border-gray-500/30',
-  suspended: 'bg-red-500/20 text-red-600 border-red-500/30',
-  archived: 'bg-gray-400/20 text-gray-500 border-gray-400/30',
+const statusLabels: Record<DriverStatus, string> = {
+  active: 'Active',
+  inactive: 'Inactive',
+  suspended: 'Suspended',
+  archived: 'Archived',
 };
 
 export default function DriversPage() {
@@ -158,9 +159,8 @@ export default function DriversPage() {
                       </div>
                     </TableCell>
                     <TableCell onClick={() => navigate(`/admin/drivers/${driver.id}`)}>
-                      <Badge variant="outline" className={statusStyles[driver.status]}>
-                        <Circle className="h-2 w-2 mr-1" />
-                        {driver.status}
+                      <Badge variant={driverStatusVariant[driver.status]}>
+                        {statusLabels[driver.status]}
                       </Badge>
                     </TableCell>
                     <TableCell onClick={() => navigate(`/admin/drivers/${driver.id}`)}>

@@ -191,14 +191,10 @@ export interface VehicleCredential {
   vehicle?: Vehicle;
 }
 
-// Broker (minimal for this task)
-export interface Broker {
-  id: string;
-  company_id: string;
-  name: string;
-  code: string | null;
-  is_active: boolean;
-}
+// Note: Full Broker type is in @/types/broker - use that for broker operations
+// This minimal type reference is kept for backward compatibility with credential joins
+import type { Broker } from '@/types/broker';
+export type { Broker };
 
 export interface CredentialSubmissionHistory {
   id: string;
@@ -225,7 +221,12 @@ export interface CredentialWithDisplayStatus {
   canSubmit: boolean;
 }
 
-export interface CredentialProgress {
+/**
+ * Summary stats for credential completion progress (UI display)
+ * Note: Not to be confused with CredentialProgress in credentialProgress.ts 
+ * which is the database record for step-by-step progress tracking.
+ */
+export interface CredentialProgressSummary {
   total: number;
   complete: number;
   pending: number;
