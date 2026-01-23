@@ -2,11 +2,12 @@ import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQueries } from '@tanstack/react-query';
 import { EnhancedDataView } from '@/components/ui/enhanced-data-view';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { DriverCredentialCard } from '@/components/features/driver/DriverCredentialCard';
 import {
   FileText,
   Shield,
@@ -218,68 +219,14 @@ export default function DriverCredentials() {
       : `${count} credential${count !== 1 ? 's' : ''}`;
   }, [filteredCredentials.length, counts.action, activeBrokerId, brokers]);
 
-  // Render credential card - matching admin pattern with simplified DS-compliant design
-  const renderCredentialCard = (item: CredentialWithId) => {
-    const status = statusConfig[item.displayStatus] || statusConfig.not_submitted;
-    const stepCount = item.credentialType.instruction_config?.steps?.length || 0;
-    const needsAction = ['not_submitted', 'rejected', 'expired', 'expiring'].includes(item.displayStatus);
-    const isAdminOnly = isAdminOnlyCredential(item.credentialType);
-
-    return (
-      <Card 
-        key={item.id} 
-        className="hover:shadow-soft transition-all cursor-pointer group"
-        onClick={() => handleView(item)}
-      >
-        <CardContent className="p-4 space-y-3">
-          {/* Header row */}
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <FileText className="w-5 h-5 text-muted-foreground shrink-0" />
-              <div className="min-w-0">
-                <p className="font-medium truncate">{item.credentialType.name}</p>
-                {item.credentialType.broker?.name && (
-                  <p className="text-xs text-muted-foreground">{item.credentialType.broker.name}</p>
-                )}
-              </div>
-            </div>
-            <Badge variant={status.badgeVariant}>
-              {status.label}
-            </Badge>
-          </div>
-          {/* Metadata row */}
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            {item.credential?.submitted_at && (
-              <span>Submitted {formatDate(item.credential.submitted_at)}</span>
-            )}
-            {item.credential?.submitted_at && stepCount > 0 && (
-              <span className="text-border">·</span>
-            )}
-            {stepCount > 0 && (
-              <span>{stepCount} steps</span>
-            )}
-            {item.credential?.expires_at && (
-              <>
-                <span className="text-border">·</span>
-                <span className={item.daysUntilExpiration !== null && item.daysUntilExpiration <= 30 ? 'text-destructive' : ''}>
-                  Expires {formatDate(item.credential.expires_at)}
-                </span>
-              </>
-            )}
-          </div>
-          {/* Action hint for items needing attention */}
-          {needsAction && !isAdminOnly && (
-            <div className="flex justify-end pt-2 border-t">
-              <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); handleView(item); }}>
-                <Upload className="w-3 h-3 mr-1" />
-                Start
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    );
-  };
+  // Render credential card using standardized component
+  const renderCredentialCard = (item: CredentialWithId) => (
+    <DriverCredentialCard
+      key={item.id}
+      credential={item}
+      onView={handleView}
+    />
+  );
 
   // Loading skeleton
   if (driverLoading) {
