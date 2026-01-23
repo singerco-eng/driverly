@@ -16,10 +16,13 @@ import { cn } from '@/lib/utils';
 
 // Import REAL components
 import { InstructionBuilder } from '@/components/features/admin/credential-builder/InstructionBuilder';
+import { RequirementsSection } from '@/components/features/admin/credential-builder/RequirementsSection';
+import { SettingsSection } from '@/components/features/admin/credential-builder/SettingsSection';
 
 // Import types
-import type { CredentialTypeInstructions } from '@/types/instructionBuilder';
+import type { CredentialTypeInstructions, InstructionSettings } from '@/types/instructionBuilder';
 import { createEmptyInstructions } from '@/types/instructionBuilder';
+import type { CredentialTypeEdits } from '@/types/credential';
 
 // Import mock data
 import {
@@ -39,7 +42,22 @@ export default function DemoCredentialBuilder({ embedded = false }: DemoCredenti
   const [instructionConfig, setInstructionConfig] = useState<CredentialTypeInstructions>(
     createEmptyInstructions()
   );
+  const [edits, setEdits] = useState<CredentialTypeEdits>({});
+  const [instructionSettings, setInstructionSettings] = useState<InstructionSettings>({
+    showProgressBar: true,
+    allowStepSkip: false,
+    completionBehavior: 'required_only',
+    externalSubmissionAllowed: false,
+  });
   const sheetContentRef = useRef<HTMLDivElement>(null);
+
+  const handleEditChange = (updates: Partial<CredentialTypeEdits>) => {
+    setEdits((prev) => ({ ...prev, ...updates }));
+  };
+
+  const handleInstructionSettingsChange = (updates: Partial<InstructionSettings>) => {
+    setInstructionSettings((prev) => ({ ...prev, ...updates }));
+  };
 
   // Scroll to bottom when preview is shown so users see the Apply button
   useEffect(() => {
@@ -143,15 +161,21 @@ export default function DemoCredentialBuilder({ embedded = false }: DemoCredenti
             </TabsContent>
 
             <TabsContent value="requirements" className="space-y-6">
-              <div className="p-8 text-center text-muted-foreground">
-                Requirements configuration...
-              </div>
+              <RequirementsSection
+                credentialType={mockCredentialType}
+                edits={edits}
+                onEditChange={handleEditChange}
+              />
             </TabsContent>
 
             <TabsContent value="settings" className="space-y-6">
-              <div className="p-8 text-center text-muted-foreground">
-                Advanced settings...
-              </div>
+              <SettingsSection
+                credentialType={mockCredentialType}
+                edits={edits}
+                onEditChange={handleEditChange}
+                instructionSettings={instructionSettings}
+                onInstructionSettingsChange={handleInstructionSettingsChange}
+              />
             </TabsContent>
           </Tabs>
         </div>

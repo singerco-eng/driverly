@@ -218,6 +218,7 @@ export default function HomePage() {
         <div className="text-center">
           <Link
             to="/website/credentialing"
+            onClick={() => window.scrollTo(0, 0)}
             className="inline-flex items-center gap-2 text-amber-400 hover:text-amber-300 transition-colors"
           >
             Learn more about our credentialing platform
