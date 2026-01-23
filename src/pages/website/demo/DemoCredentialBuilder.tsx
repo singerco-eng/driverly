@@ -50,6 +50,11 @@ export default function DemoCredentialBuilder({ embedded = false }: DemoCredenti
     externalSubmissionAllowed: false,
   });
   const sheetContentRef = useRef<HTMLDivElement>(null);
+  
+  // Typewriter animation state
+  const [typedText, setTypedText] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const [sheetReady, setSheetReady] = useState(false);
 
   const handleEditChange = (updates: Partial<CredentialTypeEdits>) => {
     setEdits((prev) => ({ ...prev, ...updates }));
@@ -58,6 +63,37 @@ export default function DemoCredentialBuilder({ embedded = false }: DemoCredenti
   const handleInstructionSettingsChange = (updates: Partial<InstructionSettings>) => {
     setInstructionSettings((prev) => ({ ...prev, ...updates }));
   };
+
+  // Animate sheet open and start typewriter on mount
+  useEffect(() => {
+    // Delay sheet appearance slightly for dramatic effect
+    const sheetTimer = setTimeout(() => {
+      setSheetReady(true);
+    }, 400);
+
+    // Start typing after sheet slides in
+    const typingTimer = setTimeout(() => {
+      setIsTyping(true);
+    }, 800);
+
+    return () => {
+      clearTimeout(sheetTimer);
+      clearTimeout(typingTimer);
+    };
+  }, []);
+
+  // Typewriter effect
+  useEffect(() => {
+    if (!isTyping || stage !== 'prompt') return;
+    
+    if (typedText.length < mockAIPrompt.length) {
+      const speed = 12; // milliseconds per character (fast but readable)
+      const timer = setTimeout(() => {
+        setTypedText(mockAIPrompt.slice(0, typedText.length + 1));
+      }, speed);
+      return () => clearTimeout(timer);
+    }
+  }, [isTyping, typedText, stage]);
 
   // Scroll to bottom when preview is shown so users see the Apply button
   useEffect(() => {
@@ -94,7 +130,7 @@ export default function DemoCredentialBuilder({ embedded = false }: DemoCredenti
     }
   };
 
-  const showSheet = stage !== 'builder';
+  const showSheet = stage !== 'builder' && sheetReady;
 
   return (
     <div className="min-h-[600px] bg-background relative overflow-hidden">
@@ -210,20 +246,23 @@ export default function DemoCredentialBuilder({ embedded = false }: DemoCredenti
 
         {/* Content */}
         <div ref={sheetContentRef} className="flex-1 overflow-auto px-6 py-4 space-y-6">
-          {/* Prompt Input - Read-only prefilled */}
+          {/* Prompt Input - Typewriter effect */}
           <div className="space-y-2">
             <Label>Describe your credential requirements</Label>
-            <div className="min-h-[140px] p-3 rounded-md border border-input bg-muted/30 text-sm">
-              {mockAIPrompt}
+            <div className="min-h-[140px] p-3 rounded-md border border-input bg-muted/30 text-sm whitespace-pre-wrap">
+              {typedText}
+              {isTyping && typedText.length < mockAIPrompt.length && (
+                <span className="inline-block w-0.5 h-4 bg-primary ml-0.5 animate-pulse" />
+              )}
             </div>
             <p className="text-xs text-muted-foreground">
               Be specific about what documents, photos, signatures, or information you need to collect.
             </p>
           </div>
 
-          {/* Generate Button - Only show in prompt stage */}
-          {stage === 'prompt' && (
-            <Button onClick={handleGenerate} className="w-full" size="lg">
+          {/* Generate Button - Show after typing completes */}
+          {stage === 'prompt' && typedText.length >= mockAIPrompt.length && (
+            <Button onClick={handleGenerate} className="w-full animate-in fade-in slide-in-from-bottom-2 duration-300" size="lg">
               <Wand2 className="w-4 h-4 mr-2" />
               Generate Instructions
             </Button>
