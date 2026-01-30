@@ -117,6 +117,23 @@ export type {
 } from './credentialReview';
 
 // ============================================
+// FEATURE FLAGS
+// ============================================
+export type {
+  FeatureFlag,
+  CompanyFeatureOverride,
+  FeatureFlagWithOverride,
+  FeatureFlagWithStats,
+  FeatureFlagKey,
+  FeatureFlagCategory,
+} from './featureFlags';
+
+// ============================================
+// BILLING
+// ============================================
+export * from './billing';
+
+// ============================================
 // INSTRUCTION BUILDER
 // ============================================
 export type {

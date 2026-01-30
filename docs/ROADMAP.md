@@ -22,7 +22,36 @@ Driverly has a complete **driver management foundation**:
 
 ---
 
-## Immediate Priority: Cleanup & QA
+## Immediate Priority: Platform Foundation & Billing
+
+### Phase 0: Platform Foundation (Current Sprint)
+
+| ID | Feature | Description | Status |
+|----|---------|-------------|--------|
+| **FF-001** | Feature Flags | Super Admin feature flag system for gradual rollouts | 📋 Planning |
+
+**Why first?** Feature flags enable safe rollout of billing and future features. They allow:
+- Per-company feature access control
+- "Never bill" test accounts
+- Gradual rollout of new capabilities
+
+### Phase 0.5: Billing System
+
+| ID | Feature | Description | Status |
+|----|---------|-------------|--------|
+| **BILLING-001** | Subscription System | Stripe integration, tier limits, upgrade flow | 📋 Planning |
+
+**Why before new features?** Revenue infrastructure is critical:
+- Free tier with operator limits (drivers + vehicles)
+- Paid tiers: Starter ($59), Growth ($149), Scale ($349)
+- Self-service upgrade via Stripe Checkout
+- Super Admin revenue dashboard
+
+**Depends on:** FF-001 (Feature Flags)
+
+---
+
+## Cleanup & QA (Parallel Track)
 
 Before building new features, existing functionality needs review:
 
@@ -112,18 +141,20 @@ These are **required** for the platform to be operationally useful:
 
 **Format:** Follow existing pattern in `docs/features/`
 
-### New Directories Needed
+### Feature Directories
 
 ```
 docs/features/
-├── admin/           # Existing
-├── driver/          # Existing
-├── super-admin/     # Existing
-├── operations/      # NEW - OP-001, OP-002, OP-003
-├── finance/         # NEW - FIN-001, FIN-002, FIN-003
-├── reports/         # NEW - RPT-001, RPT-002, RPT-003
-├── integrations/    # NEW - INT-001, INT-002, INT-003
-└── mobile/          # NEW - MOB-001, MOB-002
+├── admin/           # Existing - AD-001 to AD-007
+├── driver/          # Existing - DR-001 to DR-004
+├── super-admin/     # Existing - SA-001, SA-002
+├── platform/        # NEW - FF-001 Feature Flags
+├── billing/         # NEW - BILLING-001 Subscription System
+├── operations/      # FUTURE - OP-001, OP-002, OP-003
+├── finance/         # FUTURE - FIN-001, FIN-002, FIN-003
+├── reports/         # FUTURE - RPT-001, RPT-002, RPT-003
+├── integrations/    # FUTURE - INT-001, INT-002, INT-003
+└── mobile/          # FUTURE - MOB-001, MOB-002
 ```
 
 ### Specs Queue (In Priority Order)
@@ -194,20 +225,25 @@ Each spec should include:
 
 ## Recommended Order of Work
 
-### Now
+### Now (Phase 0)
 1. ✅ Complete AD-006 Credential Review (CODEX-012)
-2. 🔄 Feature-by-feature cleanup and testing
+2. 🔄 Build FF-001 Feature Flags (Super Admin)
+3. Build BILLING-001 Subscription System
+
+### Parallel Track
+- Feature-by-feature cleanup and testing
+- UX consistency improvements (CODEX-013)
 
 ### Next (Phase 7)
-3. Write spec: OP-001 Trip Management
-4. Write spec: OP-002 Scheduling
-5. Write spec: OP-003 Notifications
-6. Build: OP-001, OP-002, OP-003
+4. Write spec: OP-001 Trip Management
+5. Write spec: OP-002 Scheduling
+6. Write spec: OP-003 Notifications
+7. Build: OP-001, OP-002, OP-003
 
 ### Then (Phase 8+)
-7. Payments and reporting specs
-8. Build Phase 8-9
-9. Integrations and mobile
+8. Payments and reporting specs
+9. Build Phase 8-9
+10. Integrations and mobile
 
 ---
 

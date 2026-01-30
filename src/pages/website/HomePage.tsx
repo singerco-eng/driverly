@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { ArrowRight, CheckCircle2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { FleetOrchestrationSection } from '@/components/website/FleetOrchestrationSection';
+import { GlobalCredentialsSection } from '@/components/website/GlobalCredentialsSection';
 import { TripSourcesSection } from '@/components/website/TripSourcesSection';
 
 // Import demo components directly (no iframe needed)
@@ -164,6 +165,9 @@ export default function HomePage() {
 
       {/* Fleet Orchestration Section - Animated W2/1099 & Vehicle Management */}
       <FleetOrchestrationSection />
+
+      {/* Global Credentials Section */}
+      <GlobalCredentialsSection />
 
       {/* Trip Sources Section */}
       <TripSourcesSection />

@@ -10,6 +10,9 @@ import { useDrivers } from '@/hooks/useDrivers';
 import { useToast } from '@/hooks/use-toast';
 import { US_STATES } from '@/lib/us-states';
 import type { CreateVehicleData, VehicleOwnership, VehicleType } from '@/types/vehicle';
+import { useAuth } from '@/contexts/AuthContext';
+import { UpgradeModal } from '@/components/features/admin/UpgradeModal';
+import { checkCanAddOperator } from '@/services/billing';
 
 interface CreateVehicleModalProps {
   open: boolean;
@@ -20,7 +23,9 @@ export function CreateVehicleModal({ open, onOpenChange }: CreateVehicleModalPro
   const createVehicle = useCreateVehicle();
   const { data: drivers } = useDrivers();
   const { toast } = useToast();
+  const { profile } = useAuth();
   const [activeTab, setActiveTab] = useState('info');
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [make, setMake] = useState('');
   const [model, setModel] = useState('');
   const [year, setYear] = useState('');
@@ -114,6 +119,20 @@ export function CreateVehicleModal({ open, onOpenChange }: CreateVehicleModalPro
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
+    const companyId = profile?.company_id;
+    if (companyId) {
+      const usageCheck = await checkCanAddOperator(companyId);
+      if (!usageCheck.allowed) {
+        setShowUpgradeModal(true);
+        toast({
+          title: 'Upgrade required',
+          description: usageCheck.message,
+          variant: 'destructive',
+        });
+        onOpenChange(false);
+        return;
+      }
+    }
     const payload: CreateVehicleData = {
       make: make.trim(),
       model: model.trim(),
@@ -385,6 +404,18 @@ export function CreateVehicleModal({ open, onOpenChange }: CreateVehicleModalPro
           </Button>
         </div>
       </div>
+
+      <UpgradeModal
+        companyId={profile?.company_id ?? ''}
+        open={showUpgradeModal}
+        onOpenChange={(value) => {
+          if (!value) {
+            setShowUpgradeModal(false);
+          }
+        }}
+        showTrigger={false}
+        triggerLabel="View Plans"
+      />
     </ElevatedContainer>
   );
 }

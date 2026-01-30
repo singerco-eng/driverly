@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { ONBOARDING_ITEMS } from '@/lib/onboarding-items';
+import * as featureFlagService from '@/services/featureFlags';
 import type {
   OnboardingStatus,
   OnboardingItemStatus,
@@ -18,6 +19,19 @@ export async function getOnboardingStatus(driverId: string): Promise<OnboardingS
 
   if (driverError) throw driverError;
 
+  const { data: user, error: userError } = await supabase
+    .from('users')
+    .select('avatar_url')
+    .eq('id', driver.user_id)
+    .single();
+
+  if (userError) throw userError;
+
+  const paymentsEnabled = await featureFlagService.isFeatureEnabled(
+    driver.company_id,
+    'driver_payments'
+  );
+
   const { data: progress } = await supabase
     .from('driver_onboarding_progress')
     .select('*')
@@ -28,6 +42,14 @@ export async function getOnboardingStatus(driverId: string): Promise<OnboardingS
     .select('*', { count: 'exact', head: true })
     .eq('driver_id', driverId)
     .is('ended_at', null);
+
+  const { data: assignedVehicles, error: assignedVehiclesError } = await supabase
+    .from('driver_vehicle_assignments')
+    .select('vehicle_id, vehicle:vehicles(id, status)')
+    .eq('driver_id', driverId)
+    .is('ended_at', null);
+
+  if (assignedVehiclesError) throw assignedVehiclesError;
 
   const { data: credentials } = await supabase
     .from('driver_credentials')
@@ -43,12 +65,61 @@ export async function getOnboardingStatus(driverId: string): Promise<OnboardingS
     .eq('requirement', 'required')
     .eq('is_active', true);
 
+  const { data: requiredVehicleCredentials, error: requiredVehicleError } = await supabase
+    .from('credential_types')
+    .select('id')
+    .eq('company_id', driver.company_id)
+    .eq('category', 'vehicle')
+    .eq('scope', 'global')
+    .eq('requirement', 'required')
+    .eq('is_active', true);
+
+  if (requiredVehicleError) throw requiredVehicleError;
+
   const approvedCredentials = credentials?.filter((credential) => credential.status === 'approved') || [];
   const requiredCount = requiredCredentials?.length || 0;
   const approvedCount = approvedCredentials.length;
+  const requiredVehicleIds = requiredVehicleCredentials?.map((credential) => credential.id) || [];
+  const activeAssignedVehicleIds =
+    assignedVehicles
+      ?.filter((assignment) => assignment.vehicle?.status === 'active')
+      .map((assignment) => assignment.vehicle_id) || [];
+
+  let hasEligibleVehicle = false;
+
+  if (activeAssignedVehicleIds.length > 0) {
+    if (requiredVehicleIds.length === 0) {
+      hasEligibleVehicle = true;
+    } else {
+      const { data: approvedVehicleCredentials, error: approvedVehicleError } = await supabase
+        .from('vehicle_credentials')
+        .select('vehicle_id, credential_type_id')
+        .in('vehicle_id', activeAssignedVehicleIds)
+        .in('credential_type_id', requiredVehicleIds)
+        .eq('status', 'approved');
+
+      if (approvedVehicleError) throw approvedVehicleError;
+
+      const vehicleApprovedMap = new Map<string, Set<string>>();
+      (approvedVehicleCredentials || []).forEach((credential) => {
+        const vehicleId = credential.vehicle_id;
+        if (!vehicleApprovedMap.has(vehicleId)) {
+          vehicleApprovedMap.set(vehicleId, new Set());
+        }
+        vehicleApprovedMap.get(vehicleId)!.add(credential.credential_type_id);
+      });
+
+      hasEligibleVehicle = activeAssignedVehicleIds.some(
+        (vehicleId) => (vehicleApprovedMap.get(vehicleId)?.size || 0) >= requiredVehicleIds.length
+      );
+    }
+  }
 
   const items: OnboardingItemStatus[] = ONBOARDING_ITEMS.filter((item) => {
     if (item.forEmploymentType && item.forEmploymentType !== driver.employment_type) {
+      return false;
+    }
+    if (item.key === 'payment_info' && !paymentsEnabled) {
       return false;
     }
     return true;
@@ -81,6 +152,10 @@ export async function getOnboardingStatus(driverId: string): Promise<OnboardingS
         completed = !!driver.has_payment_info;
         if (!completed) missingInfo = ['Add payment information'];
         break;
+      case 'profile_photo':
+        completed = !!user?.avatar_url;
+        if (!completed) missingInfo = ['Upload a profile photo'];
+        break;
       default:
         completed = saved?.completed || false;
     }
@@ -96,6 +171,11 @@ export async function getOnboardingStatus(driverId: string): Promise<OnboardingS
 
   const requiredItems = items.filter((item) => item.required);
   const completedRequired = requiredItems.filter((item) => item.completed);
+  const canActivate = completedRequired.length === requiredItems.length && hasEligibleVehicle;
+  const blockers = requiredItems.filter((item) => !item.completed).map((item) => item.label);
+  if (!hasEligibleVehicle) {
+    blockers.push('Active vehicle with required credentials');
+  }
   const progress_pct =
     requiredItems.length > 0
       ? Math.round((completedRequired.length / requiredItems.length) * 100)
@@ -105,8 +185,8 @@ export async function getOnboardingStatus(driverId: string): Promise<OnboardingS
     items,
     progress: progress_pct,
     isComplete: completedRequired.length === requiredItems.length,
-    canActivate: completedRequired.length === requiredItems.length,
-    blockers: requiredItems.filter((item) => !item.completed).map((item) => item.label),
+    canActivate,
+    blockers,
   };
 }
 

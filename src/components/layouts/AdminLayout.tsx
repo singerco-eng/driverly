@@ -12,6 +12,7 @@ import {
   FileText,
   Building2,
   FileCheck2,
+  CreditCard,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -36,6 +37,7 @@ import {
 } from '@/components/ui/sidebar';
 
 import { useReviewQueueStats } from '@/hooks/useCredentialReview';
+import { useFeatureFlag } from '@/hooks/useFeatureFlags';
 
 export default function AdminLayout() {
   const { user, profile, signOut } = useAuth();
@@ -46,6 +48,7 @@ export default function AdminLayout() {
   const companyId = profile?.company_id ?? '';
   const { data: company, isLoading: companyLoading } = useCompany(companyId);
   const { data: reviewStats } = useReviewQueueStats(companyId || undefined);
+  const billingEnabled = useFeatureFlag('billing_enabled');
 
   const navItems = [
     { path: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true },
@@ -55,6 +58,7 @@ export default function AdminLayout() {
     { path: '/admin/brokers', label: 'Trip Sources', icon: Building2 },
     { path: '/admin/settings/credentials', label: 'Credential Builder', icon: FileText },
     { path: '/admin/credentials', label: 'Credential Review', icon: FileCheck2, showBadge: true },
+    ...(billingEnabled ? [{ path: '/admin/billing', label: 'Billing', icon: CreditCard }] : []),
   ];
 
   const handleSignOut = async () => {

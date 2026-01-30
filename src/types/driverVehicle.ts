@@ -15,6 +15,8 @@ export interface DriverVehicleWithStatus extends DriverVehicle {
   credentialSummary: string;
   eligibleBrokers: string[];
   ineligibleBrokers: { name: string; reason: string }[];
+  isUncredentialed?: boolean;
+  missingCredentials?: { name: string; credentialTypeId: string }[];
 }
 
 export interface VehicleCompletionStatus {

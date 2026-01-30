@@ -64,6 +64,14 @@ function formatDate(value: string | null | undefined) {
   return new Date(value).toLocaleDateString();
 }
 
+function formatVehicleLabel(
+  vehicle?: { year?: number | null; make?: string | null; model?: string | null } | null,
+) {
+  if (!vehicle) return null;
+  const label = [vehicle.year, vehicle.make, vehicle.model].filter(Boolean).join(' ');
+  return label || null;
+}
+
 export function DriverCredentialCard({
   credential,
   onView,
@@ -82,6 +90,10 @@ export function DriverCredentialCard({
   const isInProgress = credential.displayStatus === 'not_submitted' && completedSteps > 0;
   
   const CategoryIcon = credential.credentialType.category === 'vehicle' ? Car : User;
+  const vehicleLabel =
+    credential.credentialType.category === 'vehicle'
+      ? formatVehicleLabel(credential.credential?.vehicle)
+      : null;
 
   return (
     <Card 
@@ -112,6 +124,13 @@ export function DriverCredentialCard({
                   <span className="text-border">•</span>
                   <Building2 className="h-3.5 w-3.5" />
                   <span className="truncate">{credential.credentialType.broker.name}</span>
+                </>
+              )}
+              {vehicleLabel && (
+                <>
+                  <span className="text-border">•</span>
+                  <Car className="h-3.5 w-3.5" />
+                  <span className="truncate">{vehicleLabel}</span>
                 </>
               )}
             </div>

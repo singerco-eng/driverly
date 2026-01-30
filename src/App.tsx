@@ -11,6 +11,8 @@ import AdminLayout from '@/components/layouts/AdminLayout';
 import DriverLayout from '@/components/layouts/DriverLayout';
 import Companies from '@/pages/super-admin/Companies';
 import CompanyDetail from '@/pages/super-admin/CompanyDetail';
+import FeatureFlags from '@/pages/super-admin/FeatureFlags';
+import SuperAdminBilling from '@/pages/super-admin/Billing';
 import Settings from '@/pages/super-admin/Settings';
 import AdminDashboard from '@/pages/admin/Dashboard';
 import DriversPage from '@/pages/admin/Drivers';
@@ -27,6 +29,7 @@ import DriverCredentialDetail from '@/pages/admin/DriverCredentialDetail';
 import VehicleCredentialDetail from '@/pages/admin/VehicleCredentialDetail';
 import Brokers from '@/pages/admin/Brokers';
 import BrokerDetail from '@/pages/admin/BrokerDetail';
+import Billing from '@/pages/admin/Billing';
 import ApplicationPage from '@/pages/apply/[companySlug]';
 import ApplicationStatus from '@/pages/driver/ApplicationStatus';
 import DriverDashboard from '@/pages/driver/Dashboard';
@@ -43,8 +46,20 @@ import DriverVehicleCredentialDetail from '@/pages/driver/VehicleCredentialDetai
 import { WebsiteLayout } from '@/components/website/WebsiteLayout';
 import HomePage from '@/pages/website/HomePage';
 import CredentialingPage from '@/pages/website/CredentialingPage';
+import PricingPage from '@/pages/website/PricingPage';
+import { useFeatureFlag } from '@/hooks/useFeatureFlags';
 
 const queryClient = new QueryClient();
+
+function DriverPaymentRoute() {
+  const paymentsEnabled = useFeatureFlag('driver_payments');
+
+  if (!paymentsEnabled) {
+    return <Navigate to="/driver/settings/account" replace />;
+  }
+
+  return <PaymentSettings />;
+}
 
 function App() {
   return (
@@ -70,6 +85,8 @@ function App() {
                 <Route index element={<Navigate to="companies" replace />} />
                 <Route path="companies" element={<Companies />} />
                 <Route path="companies/:id" element={<CompanyDetail />} />
+                <Route path="feature-flags" element={<FeatureFlags />} />
+                <Route path="billing" element={<SuperAdminBilling />} />
                 <Route path="settings" element={<Settings />} />
               </Route>
 
@@ -97,6 +114,7 @@ function App() {
                 <Route path="credentials" element={<CredentialReview />} />
                 <Route path="brokers" element={<Brokers />} />
                 <Route path="brokers/:id" element={<BrokerDetail />} />
+                <Route path="billing" element={<Billing />} />
               </Route>
 
               {/* Driver routes */}
@@ -128,7 +146,7 @@ function App() {
                 />
                 <Route path="availability" element={<DriverAvailability />} />
                 <Route path="settings" element={<Navigate to="settings/account" replace />} />
-                <Route path="settings/payment" element={<PaymentSettings />} />
+                <Route path="settings/payment" element={<DriverPaymentRoute />} />
                 <Route path="settings/account" element={<AccountSettings />} />
               </Route>
 
@@ -136,6 +154,7 @@ function App() {
               <Route path="/website" element={<WebsiteLayout />}>
                 <Route index element={<HomePage />} />
                 <Route path="credentialing" element={<CredentialingPage />} />
+                <Route path="pricing" element={<PricingPage />} />
               </Route>
 
               {/* Redirect old demo routes to website (for browser history cleanup) */}

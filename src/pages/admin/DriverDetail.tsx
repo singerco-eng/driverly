@@ -30,9 +30,12 @@ import { DriverVehiclesTab } from '@/components/features/admin/DriverVehiclesTab
 import { DriverCredentialsTab } from '@/components/features/admin/DriverCredentialsTab';
 import { EditDriverModal } from '@/components/features/admin/EditDriverModal';
 import { SuspendDriverModal } from '@/components/features/admin/SuspendDriverModal';
+import { UpgradeModal } from '@/components/features/admin/UpgradeModal';
 import { useAuth } from '@/contexts/AuthContext';
 import type { DriverStatus } from '@/types/driver';
 import { driverStatusVariant } from '@/lib/status-styles';
+import { checkCanAddOperator } from '@/services/billing';
+import { useToast } from '@/hooks/use-toast';
 
 const statusLabels: Record<DriverStatus, string> = {
   active: 'Active',
@@ -45,10 +48,12 @@ export default function DriverDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
+  const { toast } = useToast();
   const { data: driver, isLoading, error } = useDriver(id || '');
   const updateStatus = useUpdateDriverStatus();
   const [editOpen, setEditOpen] = useState(false);
   const [suspendOpen, setSuspendOpen] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   // Resolve avatar URL for display
@@ -66,8 +71,20 @@ export default function DriverDetailPage() {
     return () => { isMounted = false; };
   }, [driver?.user?.avatar_url]);
 
-  const handleStatusChange = (newStatus: DriverStatus, reason?: string) => {
+  const handleStatusChange = async (newStatus: DriverStatus, reason?: string) => {
     if (!id) return;
+    if (newStatus === 'active' && driver?.company_id) {
+      const usageCheck = await checkCanAddOperator(driver.company_id);
+      if (!usageCheck.allowed) {
+        setShowUpgradeModal(true);
+        toast({
+          title: 'Upgrade required',
+          description: usageCheck.message,
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
     updateStatus.mutate({ driverId: id, status: newStatus, reason });
   };
 
@@ -149,13 +166,13 @@ export default function DriverDetailPage() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               {driver.status === 'active' && (
-                <DropdownMenuItem onClick={() => handleStatusChange('inactive')}>
+                <DropdownMenuItem onClick={() => void handleStatusChange('inactive')}>
                   <XCircle className="w-4 h-4 mr-2" />
                   Set Inactive
                 </DropdownMenuItem>
               )}
               {driver.status === 'inactive' && (
-                <DropdownMenuItem onClick={() => handleStatusChange('active')}>
+                <DropdownMenuItem onClick={() => void handleStatusChange('active')}>
                   <CheckCircle className="w-4 h-4 mr-2" />
                   Set Active
                 </DropdownMenuItem>
@@ -170,14 +187,14 @@ export default function DriverDetailPage() {
                 </DropdownMenuItem>
               )}
               {driver.status === 'suspended' && (
-                <DropdownMenuItem onClick={() => handleStatusChange('active')}>
+                <DropdownMenuItem onClick={() => void handleStatusChange('active')}>
                   <CheckCircle className="w-4 h-4 mr-2" />
                   Reactivate Driver
                 </DropdownMenuItem>
               )}
               <DropdownMenuSeparator />
               <DropdownMenuItem
-                onClick={() => handleStatusChange('archived')}
+                onClick={() => void handleStatusChange('archived')}
                 className="text-destructive"
               >
                 <Archive className="w-4 h-4 mr-2" />
@@ -222,10 +239,18 @@ export default function DriverDetailPage() {
         onOpenChange={setSuspendOpen}
         onConfirm={(reason) => {
           setSuspendOpen(false);
-          handleStatusChange('suspended', reason);
+          void handleStatusChange('suspended', reason);
         }}
         isSubmitting={updateStatus.isPending}
       />
+      {showUpgradeModal && (
+        <UpgradeModal
+          companyId={driver.company_id}
+          open={showUpgradeModal}
+          onOpenChange={setShowUpgradeModal}
+          showTrigger={false}
+        />
+      )}
     </div>
   );
 }

@@ -59,6 +59,10 @@ Driverly is a multi-tenant driver management platform for medical transportation
 
 | Task | Description | Status |
 |------|-------------|--------|
+| [CODEX-030-FF-001](./CODEX-030-FF-001-feature-flags.md) | Feature Flags System (Phase 0) | ✅ Complete |
+| [CODEX-031-BILLING-001](./CODEX-031-BILLING-001-subscription-system.md) | Billing System (Phase 0.5) | ✅ Mostly Complete |
+| [CODEX-032-FF-001-Tests](./CODEX-032-FF-001-automated-tests.md) | FF-001 Automated Tests | 📋 Ready |
+| [CODEX-033-BILLING-Remaining](./CODEX-033-BILLING-001-remaining-items.md) | Billing Remaining Items (P0/P1) | 🔥 Next Up |
 | [CODEX-012-AD-006](./CODEX-012-AD-006-credential-review.md) | AD-006 Credential Review Queue | ⏳ In Progress |
 | [CODEX-013-UX](./CODEX-013-UX-consistency.md) | UX Consistency Across Portals | ⏳ Pending |
 | [CODEX-TASK-020](./CODEX-TASK-020-credential-type-refactor.md) | Credential Type Refactor (deprecate submission_type) | 📋 Planned |
@@ -94,6 +98,16 @@ Driverly is a multi-tenant driver management platform for medical transportation
 - [DR-002 Profile Management](./features/driver/DR-002-profile-management.md) ✅
 - [DR-003 Vehicle Management](./features/driver/DR-003-vehicle-management.md) ✅
 - [DR-004 Credential Submission](./features/driver/DR-004-credential-submission.md) ✅
+
+### Platform Features
+- [FF-001 Feature Flags](./features/platform/FF-001-feature-flags.md) ✅ Complete
+  - [Implementation Guide](./CODEX-030-FF-001-feature-flags.md)
+  - [Test Plan (Manual)](./TEST-PLAN-FF-001-feature-flags.md)
+  - [Automated Tests](./CODEX-032-FF-001-automated-tests.md) 📋 Ready for Implementation
+
+### Billing Features (New)
+- [BILLING-000 Decisions Needed](./features/billing/BILLING-000-decisions-needed.md) ✅ Decisions Made
+- [BILLING-001 Subscription System](./features/billing/BILLING-001-subscription-system.md) 🔥 Next Up
 
 ## Architecture Decision Records
 - [ADR-001 Multi-Tenancy Approach](./decisions/ADR-001-multi-tenancy-approach.md)

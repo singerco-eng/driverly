@@ -127,9 +127,15 @@ export default function VehicleCard({ vehicle, readOnly, onAction }: VehicleCard
                   {vehicle.vehicle_type.replace('_', ' ')} • {vehicle.license_plate} • {vehicle.license_state}
                 </p>
               </div>
-              <Badge variant={vehicleStatus.badgeVariant}>
-                {vehicleStatus.label}
-              </Badge>
+              <div className="flex flex-col items-end gap-1">
+                {vehicle.isUncredentialed ? (
+                  <Badge variant="destructive">Uncredentialed</Badge>
+                ) : (
+                  <Badge variant={vehicleStatus.badgeVariant}>
+                    {vehicleStatus.label}
+                  </Badge>
+                )}
+              </div>
             </div>
           </div>
 

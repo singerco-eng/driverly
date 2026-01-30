@@ -8,6 +8,7 @@ import type {
   CredentialProgressSummary,
   SignatureData,
 } from '@/types/credential';
+import type { Vehicle } from '@/types/vehicle';
 import { isAdminOnlyCredential } from '@/lib/credentialRequirements';
 
 interface RequiredCredentialRow {
@@ -56,12 +57,19 @@ export async function getVehicleCredentials(
 
   if (reqError) throw reqError;
 
+  const { data: vehicle } = await supabase
+    .from('vehicles')
+    .select('id, year, make, model')
+    .eq('id', vehicleId)
+    .maybeSingle();
+
   const { data: credentials, error } = await supabase
     .from('vehicle_credentials')
     .select(
       `
       *,
-      credential_type:credential_types(*, broker:brokers(id, name))
+      credential_type:credential_types(*, broker:brokers(id, name)),
+      vehicle:vehicles(id, year, make, model)
     `,
     )
     .eq('vehicle_id', vehicleId);
@@ -72,6 +80,7 @@ export async function getVehicleCredentials(
     (credentials || []) as VehicleCredential[],
     (required || []) as RequiredCredentialRow[],
     vehicleId,
+    (vehicle || null) as Vehicle | null,
   );
 }
 
@@ -379,6 +388,7 @@ function mergeCredentialsWithTypes(
   credentials: Array<DriverCredential | VehicleCredential>,
   required: RequiredCredentialRow[],
   vehicleId?: string,
+  vehicleSummary?: Vehicle | null,
 ): CredentialWithDisplayStatus[] {
   const result: CredentialWithDisplayStatus[] = [];
 
@@ -386,6 +396,12 @@ function mergeCredentialsWithTypes(
     const existing = credentials.find((c) => c.credential_type_id === req.credential_type_id);
 
     if (existing) {
+      if (vehicleSummary && 'vehicle_id' in existing) {
+        const vehicleCredential = existing as VehicleCredential;
+        if (!vehicleCredential.vehicle) {
+          vehicleCredential.vehicle = vehicleSummary;
+        }
+      }
       result.push(computeDisplayStatus(existing, existing.credential_type as CredentialType));
       continue;
     }
@@ -395,6 +411,7 @@ function mergeCredentialsWithTypes(
       credential_type_id: req.credential_type_id,
       status: 'not_submitted' as const,
       vehicle_id: vehicleId,
+      vehicle: vehicleSummary ?? undefined,
     };
 
     result.push(

@@ -7,4 +7,5 @@ export { FeaturesSection } from './FeaturesSection';
 export { FooterCTA } from './FooterCTA';
 export { CredentialBlocksShowcase } from './CredentialBlocksShowcase';
 export { FleetOrchestrationSection } from './FleetOrchestrationSection';
+export { GlobalCredentialsSection } from './GlobalCredentialsSection';
 export { TripSourcesSection } from './TripSourcesSection';

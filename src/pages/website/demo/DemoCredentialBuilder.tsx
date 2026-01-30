@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
 import { InstructionBuilder } from '@/components/features/admin/credential-builder/InstructionBuilder';
 import { RequirementsSection } from '@/components/features/admin/credential-builder/RequirementsSection';
 import { SettingsSection } from '@/components/features/admin/credential-builder/SettingsSection';
+import { PreviewModal } from '@/components/features/admin/credential-builder/PreviewModal';
 
 // Import types
 import type { CredentialTypeInstructions, InstructionSettings } from '@/types/instructionBuilder';
@@ -55,6 +56,9 @@ export default function DemoCredentialBuilder({ embedded = false }: DemoCredenti
   const [typedText, setTypedText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [sheetReady, setSheetReady] = useState(false);
+  
+  // Preview modal state
+  const [showPreview, setShowPreview] = useState(false);
 
   const handleEditChange = (updates: Partial<CredentialTypeEdits>) => {
     setEdits((prev) => ({ ...prev, ...updates }));
@@ -166,7 +170,13 @@ export default function DemoCredentialBuilder({ embedded = false }: DemoCredenti
               </div>
 
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" className="gap-1">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="gap-1"
+                  onClick={() => setShowPreview(true)}
+                  disabled={instructionConfig.steps.length === 0}
+                >
                   <Eye className="w-4 h-4" />
                   Preview
                 </Button>
@@ -336,6 +346,14 @@ export default function DemoCredentialBuilder({ embedded = false }: DemoCredenti
           )}
         </div>
       </div>
+
+      {/* Preview Modal - uses real component */}
+      <PreviewModal
+        open={showPreview}
+        onOpenChange={setShowPreview}
+        config={instructionConfig}
+        credentialName={mockCredentialType.name}
+      />
     </div>
   );
 }

@@ -7,9 +7,7 @@ import { useState } from 'react';
 const navItems = [
   { path: '/website', label: 'Home', exact: true },
   { path: '/website/credentialing', label: 'Credentialing' },
-  { path: '/website/payments', label: 'Payments', comingSoon: true },
-  { path: '/website/scheduling', label: 'Scheduling', comingSoon: true },
-  { path: '/website/mobile', label: 'Mobile App', comingSoon: true },
+  { path: '/website/pricing', label: 'Pricing' },
 ];
 
 export function WebsiteLayout() {
@@ -194,8 +192,7 @@ export function WebsiteLayout() {
               <h4 className="font-semibold text-white mb-4">Product</h4>
               <ul className="space-y-2">
                 <li><Link to="/website/credentialing" className="text-sm text-gray-400 hover:text-white transition-colors">Credentialing</Link></li>
-                <li><span className="text-sm text-gray-600">Payments <span className="text-amber-500/60">Soon</span></span></li>
-                <li><span className="text-sm text-gray-600">Scheduling <span className="text-amber-500/60">Soon</span></span></li>
+                <li><Link to="/website/pricing" className="text-sm text-gray-400 hover:text-white transition-colors">Pricing</Link></li>
                 <li><span className="text-sm text-gray-600">Mobile App <span className="text-amber-500/60">Soon</span></span></li>
               </ul>
             </div>

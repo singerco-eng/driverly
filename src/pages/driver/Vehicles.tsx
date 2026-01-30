@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useQueries, useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { EnhancedDataView } from '@/components/ui/enhanced-data-view';
+import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -23,6 +24,7 @@ import AddVehicleWizard from '@/components/features/driver/AddVehicleWizard';
 import EditVehicleModal from '@/components/features/driver/EditVehicleModal';
 import SetInactiveModal from '@/components/features/driver/SetInactiveModal';
 import RetireVehicleModal from '@/components/features/driver/RetireVehicleModal';
+import { CannotActivateVehicleModal } from '@/components/features/driver/CannotActivateVehicleModal';
 
 interface VehiclesFilters {
   search?: string;
@@ -53,6 +55,24 @@ function computeCredentialStatus(credentials: Awaited<ReturnType<typeof credenti
   return { status: 'valid' as const, summary: 'All credentials valid' };
 }
 
+function computeGlobalCredentialMissing(
+  credentials: Awaited<ReturnType<typeof credentialService.getVehicleCredentials>>
+) {
+  const requiredGlobal = credentials.filter(
+    (c) => c.credentialType.requirement === 'required' && c.credentialType.scope === 'global'
+  );
+  if (requiredGlobal.length === 0) {
+    return { missing: false, remaining: 0, missingCredentials: [] };
+  }
+  const missingCredentials = requiredGlobal
+    .filter((c) => c.displayStatus !== 'approved')
+    .map((c) => ({
+      name: c.credentialType.name,
+      credentialTypeId: c.credentialType.id,
+    }));
+  return { missing: missingCredentials.length > 0, remaining: missingCredentials.length, missingCredentials };
+}
+
 export default function DriverVehicles() {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
@@ -61,6 +81,7 @@ export default function DriverVehicles() {
   const [editingVehicle, setEditingVehicle] = useState<DriverVehicleWithStatus | null>(null);
   const [inactiveVehicle, setInactiveVehicle] = useState<DriverVehicleWithStatus | null>(null);
   const [retireVehicle, setRetireVehicle] = useState<DriverVehicleWithStatus | null>(null);
+  const [cannotActivateVehicle, setCannotActivateVehicle] = useState<DriverVehicleWithStatus | null>(null);
 
   const { data: driver, isLoading: driverLoading } = useDriverByUserId(user?.id);
   const driverId = driver?.id;
@@ -91,6 +112,7 @@ export default function DriverVehicles() {
     return vehicles.map((vehicle, index) => {
       const credentials = credentialQueries[index]?.data || [];
       const { status, summary } = computeCredentialStatus(credentials);
+      const { missing: isUncredentialed, missingCredentials } = computeGlobalCredentialMissing(credentials);
 
       const eligibleBrokers: string[] = [];
       const ineligibleBrokers: { name: string; reason: string }[] = [];
@@ -129,6 +151,8 @@ export default function DriverVehicles() {
         credentialSummary: summary,
         eligibleBrokers,
         ineligibleBrokers,
+        isUncredentialed,
+        missingCredentials,
       };
     });
   }, [vehicles, credentialQueries, brokers, driver?.employment_type]);
@@ -158,6 +182,11 @@ export default function DriverVehicles() {
       return;
     }
     if (action === 'set-active') {
+      // Check if vehicle is uncredentialed before allowing activation
+      if (vehicle.isUncredentialed) {
+        setCannotActivateVehicle(vehicle);
+        return;
+      }
       void setActive.mutateAsync(vehicle.id);
       return;
     }
@@ -242,7 +271,13 @@ export default function DriverVehicles() {
                       <TableCell>{vehicle.year} {vehicle.make} {vehicle.model}</TableCell>
                       <TableCell>{vehicle.vehicle_type.replace('_', ' ')}</TableCell>
                       <TableCell>{vehicle.license_plate}</TableCell>
-                      <TableCell className="capitalize">{vehicle.status}</TableCell>
+                      <TableCell>
+                        {vehicle.isUncredentialed ? (
+                          <Badge variant="destructive">Uncredentialed</Badge>
+                        ) : (
+                          <span className="capitalize">{vehicle.status}</span>
+                        )}
+                      </TableCell>
                       <TableCell>{vehicle.assignment?.is_primary ? 'Yes' : 'No'}</TableCell>
                     </TableRow>
                   ))
@@ -311,6 +346,16 @@ export default function DriverVehicles() {
           onOpenChange={() => setRetireVehicle(null)}
           vehicle={retireVehicle}
           driverId={driverId}
+        />
+      )}
+
+      {cannotActivateVehicle && (
+        <CannotActivateVehicleModal
+          open={!!cannotActivateVehicle}
+          onOpenChange={() => setCannotActivateVehicle(null)}
+          vehicleId={cannotActivateVehicle.id}
+          vehicleName={`${cannotActivateVehicle.year} ${cannotActivateVehicle.make} ${cannotActivateVehicle.model}`}
+          missingCredentials={cannotActivateVehicle.missingCredentials || []}
         />
       )}
     </div>

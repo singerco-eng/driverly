@@ -22,9 +22,15 @@ export function CannotActivateModal({
   onOpenChange,
   blockers,
 }: CannotActivateModalProps) {
+  const blockerRouteOverrides: Record<string, string> = {
+    'Active vehicle with required credentials': '/driver/vehicles',
+  };
+
   const blockerItems = blockers.map((label) => ({
     label,
-    route: ONBOARDING_ITEMS.find((item) => item.label === label)?.route,
+    route:
+      blockerRouteOverrides[label] ??
+      ONBOARDING_ITEMS.find((item) => item.label === label)?.route,
   }));
 
   return (

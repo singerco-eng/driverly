@@ -1,5 +1,10 @@
 import type { OnboardingItem } from '@/types/onboarding';
 
+/**
+ * Core onboarding items for the Getting Started checklist.
+ * Focused on global credentials and essential setup.
+ * Trip source/broker credentials are handled separately after onboarding is complete.
+ */
 export const ONBOARDING_ITEMS: OnboardingItem[] = [
   {
     key: 'profile_complete',
@@ -10,11 +15,19 @@ export const ONBOARDING_ITEMS: OnboardingItem[] = [
     route: '/driver/profile',
   },
   {
+    key: 'profile_photo',
+    label: 'Add Profile Photo',
+    description: 'Add a professional photo',
+    required: true,
+    category: 'setup',
+    route: '/driver/profile',
+  },
+  {
     key: 'vehicle_added',
     label: 'Add a Vehicle',
     description: 'Add vehicle details and photos',
     required: true,
-    category: 'setup',
+    category: 'vehicle',
     forEmploymentType: '1099',
     route: '/driver/vehicles',
   },
@@ -23,7 +36,7 @@ export const ONBOARDING_ITEMS: OnboardingItem[] = [
     label: 'Complete Vehicle Information',
     description: 'Add VIN, photos, and documentation',
     required: true,
-    category: 'setup',
+    category: 'vehicle',
     forEmploymentType: '1099',
     route: '/driver/vehicles',
   },
@@ -51,36 +64,12 @@ export const ONBOARDING_ITEMS: OnboardingItem[] = [
     category: 'payment',
     route: '/driver/settings/payment',
   },
-  {
-    key: 'broker_requested',
-    label: 'Request Broker Assignment',
-    description: 'Expand your trip opportunities',
-    required: false,
-    category: 'brokers',
-    route: '/driver/brokers',
-  },
-  {
-    key: 'broker_credentials',
-    label: 'Complete Broker Credentials',
-    description: 'Submit broker-specific documents',
-    required: false,
-    category: 'credentials',
-    route: '/driver/credentials',
-  },
-  {
-    key: 'profile_photo',
-    label: 'Add Profile Photo',
-    description: 'Add a professional photo',
-    required: false,
-    category: 'setup',
-    route: '/driver/profile',
-  },
 ];
 
 export const CATEGORY_LABELS: Record<string, string> = {
-  setup: 'Setup',
+  setup: 'Profile',
+  vehicle: 'Vehicle',
   credentials: 'Credentials',
-  schedule: 'Schedule & Payment',
-  payment: 'Schedule & Payment',
-  brokers: 'Brokers',
+  schedule: 'Schedule',
+  payment: 'Payment',
 };

@@ -32,6 +32,8 @@ import CompanyStatusModal from '@/components/features/super-admin/CompanyStatusM
 import CompanyInfoTab from '@/components/features/super-admin/CompanyInfoTab';
 import CompanyAdminsTab from '@/components/features/super-admin/CompanyAdminsTab';
 import CompanyInvitationsTab from '@/components/features/super-admin/CompanyInvitationsTab';
+import { CompanyFeaturesTab } from '@/components/features/super-admin/CompanyFeaturesTab';
+import { CompanyBillingTab } from '@/components/features/super-admin/CompanyBillingTab';
 
 // DS-compliant status badge variants
 const getStatusVariant = (status: CompanyStatus): 'default' | 'secondary' | 'destructive' | 'outline' => {
@@ -179,9 +181,8 @@ export default function CompanyDetail() {
           <TabsTrigger value="info">Company Info</TabsTrigger>
           <TabsTrigger value="admins">Admins</TabsTrigger>
           <TabsTrigger value="invitations">Invitations</TabsTrigger>
-          <TabsTrigger value="billing" disabled>
-            Billing
-          </TabsTrigger>
+          <TabsTrigger value="features">Features</TabsTrigger>
+          <TabsTrigger value="billing">Billing</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
@@ -251,10 +252,12 @@ export default function CompanyDetail() {
           <CompanyInvitationsTab companyId={company.id} companyName={company.name} />
         </TabsContent>
 
+        <TabsContent value="features">
+          <CompanyFeaturesTab companyId={company.id} companyName={company.name} />
+        </TabsContent>
+
         <TabsContent value="billing">
-          <Card className="p-12 text-center">
-            <p className="text-muted-foreground">Billing management coming soon...</p>
-          </Card>
+          <CompanyBillingTab companyId={company.id} />
         </TabsContent>
       </Tabs>
 

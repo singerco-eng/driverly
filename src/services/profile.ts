@@ -14,6 +14,7 @@ import type { DriverWithUser } from '@/types/driver';
 // Required fields for profile completion
 const REQUIRED_FIELDS = [
   { key: 'full_name', label: 'Full Name', source: 'user' },
+  { key: 'avatar_url', label: 'Profile Photo', source: 'user' },
   { key: 'date_of_birth', label: 'Date of Birth', source: 'driver' },
   { key: 'email', label: 'Email', source: 'user' },
   { key: 'phone', label: 'Phone', source: 'user' },
@@ -26,6 +27,9 @@ const REQUIRED_FIELDS = [
   { key: 'license_expiration', label: 'License Expiration', source: 'driver' },
   { key: 'license_front_url', label: 'License Front Photo', source: 'driver' },
   { key: 'license_back_url', label: 'License Back Photo', source: 'driver' },
+  { key: 'emergency_contact_name', label: 'Emergency Contact Name', source: 'driver' },
+  { key: 'emergency_contact_phone', label: 'Emergency Contact Phone', source: 'driver' },
+  { key: 'emergency_contact_relation', label: 'Emergency Contact Relation', source: 'driver' },
 ];
 
 export function calculateProfileCompletion(driver: DriverWithUser): ProfileCompletionStatus {

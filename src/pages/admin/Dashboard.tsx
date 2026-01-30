@@ -1,10 +1,15 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { UsageBanner } from '@/components/features/admin/UsageBanner';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useVehicles } from '@/hooks/useVehicles';
+import { useOperatorUsage } from '@/hooks/useBilling';
+import { useFeatureFlag } from '@/hooks/useFeatureFlags';
 
 export default function AdminDashboard() {
   const { data: drivers, isLoading: driversLoading } = useDrivers();
   const { data: vehicles, isLoading: vehiclesLoading } = useVehicles();
+  const { data: usage } = useOperatorUsage();
+  const billingEnabled = useFeatureFlag('billing_enabled');
 
   const isLoading = driversLoading || vehiclesLoading;
 
@@ -14,6 +19,8 @@ export default function AdminDashboard() {
         <h1 className="text-2xl font-bold">Admin Dashboard</h1>
         <p className="text-muted-foreground">Overview of your fleet operations.</p>
       </div>
+
+      {billingEnabled && <UsageBanner usage={usage} />}
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card>

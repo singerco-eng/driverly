@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQueries } from '@tanstack/react-query';
 import { EnhancedDataView } from '@/components/ui/enhanced-data-view';
 import { Card } from '@/components/ui/card';
@@ -78,13 +78,15 @@ function formatDate(value: string | null | undefined) {
 export default function DriverCredentials() {
   const { user } = useAuth();
   const { brokerId } = useParams<{ brokerId?: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [filters, setFilters] = useState<CredentialFilters>({
-    status: 'all',
+  const preset = searchParams.get('preset');
+  const [filters, setFilters] = useState<CredentialFilters>(() => ({
+    status: preset === 'action' ? 'action' : 'all',
     scope: brokerId ? 'broker' : 'all',
     category: 'all',
     broker: 'all',
-  });
+  }));
   const activeBrokerId =
     brokerId || (filters.broker && filters.broker !== 'all' ? filters.broker : undefined);
 

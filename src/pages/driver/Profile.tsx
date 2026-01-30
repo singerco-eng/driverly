@@ -122,7 +122,7 @@ export default function DriverProfile() {
         </p>
       </div>
 
-      {completion && (
+      {completion && !completion.isComplete && (
         <Card className={cn(cardVariants({ variant: 'stats' }))}>
           <CardHeader>
             <div className="flex items-center justify-between">

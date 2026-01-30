@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -24,6 +24,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { useDriverByUserId } from '@/hooks/useDrivers';
 import { useDriverVehicle, useSetPrimaryVehicle, useSetVehicleActive } from '@/hooks/useDriverVehicles';
+import { useVehicleCredentials } from '@/hooks/useCredentials';
 import { resolveVehiclePhotoUrl } from '@/lib/vehiclePhoto';
 import { VehicleOverviewTab } from '@/components/features/driver/VehicleOverviewTab';
 import { VehicleDetailsTab } from '@/components/features/driver/VehicleDetailsTab';
@@ -32,6 +33,7 @@ import EditVehicleModal from '@/components/features/driver/EditVehicleModal';
 import UpdatePhotosModal from '@/components/features/driver/UpdatePhotosModal';
 import SetInactiveModal from '@/components/features/driver/SetInactiveModal';
 import RetireVehicleModal from '@/components/features/driver/RetireVehicleModal';
+import { CannotActivateVehicleModal } from '@/components/features/driver/CannotActivateVehicleModal';
 import type { VehicleStatus } from '@/types/vehicle';
 
 /** Status config using native Badge variants per design system */
@@ -46,14 +48,17 @@ const statusConfig: Record<VehicleStatus, {
 
 export default function DriverVehicleDetail() {
   const { vehicleId } = useParams<{ vehicleId: string }>();
+  const [searchParams] = useSearchParams();
   const { user, profile } = useAuth();
   const { data: driver, isLoading: driverLoading } = useDriverByUserId(user?.id);
   const { data: vehicle, isLoading: vehicleLoading } = useDriverVehicle(vehicleId);
+  const { data: credentials = [] } = useVehicleCredentials(vehicleId);
   
   const [editOpen, setEditOpen] = useState(false);
   const [photosOpen, setPhotosOpen] = useState(false);
   const [inactiveOpen, setInactiveOpen] = useState(false);
   const [retireOpen, setRetireOpen] = useState(false);
+  const [cannotActivateOpen, setCannotActivateOpen] = useState(false);
 
   // Photo loading state for hero image
   const [heroPhotoUrl, setHeroPhotoUrl] = useState<string | null>(null);
@@ -62,6 +67,33 @@ export default function DriverVehicleDetail() {
   const is1099 = driver?.employment_type === '1099';
   const setPrimary = useSetPrimaryVehicle();
   const setActive = useSetVehicleActive();
+
+  // Calculate missing required global credentials
+  const missingCredentials = useMemo(() => {
+    const requiredGlobal = credentials.filter(
+      (c) => c.credentialType.requirement === 'required' && c.credentialType.scope === 'global'
+    );
+    return requiredGlobal
+      .filter((c) => c.displayStatus !== 'approved')
+      .map((c) => ({
+        name: c.credentialType.name,
+        credentialTypeId: c.credentialType.id,
+      }));
+  }, [credentials]);
+
+  const isUncredentialed = missingCredentials.length > 0;
+
+  // Handle attempting to set vehicle active
+  const handleSetActive = () => {
+    if (isUncredentialed) {
+      setCannotActivateOpen(true);
+    } else {
+      setActive.mutate(vehicle!.id);
+    }
+  };
+
+  // Default tab from URL param
+  const defaultTab = searchParams.get('tab') || 'overview';
 
   // Resolve hero photo
   useEffect(() => {
@@ -140,9 +172,13 @@ export default function DriverVehicleDetail() {
             <h1 className="text-2xl font-bold">
               {vehicle.year} {vehicle.make} {vehicle.model}
             </h1>
-            <Badge variant={statusConfig[vehicle.status].badgeVariant}>
-              {statusConfig[vehicle.status].label}
-            </Badge>
+            {isUncredentialed ? (
+              <Badge variant="destructive">Uncredentialed</Badge>
+            ) : (
+              <Badge variant={statusConfig[vehicle.status].badgeVariant}>
+                {statusConfig[vehicle.status].label}
+              </Badge>
+            )}
           </div>
           <p className="text-muted-foreground">
             {vehicle.vehicle_type.replace('_', ' ')} • {vehicle.license_plate} • {vehicle.license_state}
@@ -181,7 +217,7 @@ export default function DriverVehicleDetail() {
                     </DropdownMenuItem>
                   )}
                   {vehicle.status === 'inactive' ? (
-                    <DropdownMenuItem onClick={() => setActive.mutate(vehicle.id)}>
+                    <DropdownMenuItem onClick={handleSetActive}>
                       <CheckCircle className="w-4 h-4 mr-2" />
                       Set Active
                     </DropdownMenuItem>
@@ -211,7 +247,7 @@ export default function DriverVehicleDetail() {
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="overview">
+      <Tabs defaultValue={defaultTab}>
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="details">Details</TabsTrigger>
@@ -251,6 +287,13 @@ export default function DriverVehicleDetail() {
             onOpenChange={setRetireOpen}
             vehicle={vehicle}
             driverId={driver?.id || ''}
+          />
+          <CannotActivateVehicleModal
+            open={cannotActivateOpen}
+            onOpenChange={setCannotActivateOpen}
+            vehicleId={vehicle.id}
+            vehicleName={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
+            missingCredentials={missingCredentials}
           />
         </>
       )}

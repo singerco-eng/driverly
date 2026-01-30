@@ -2,9 +2,11 @@ import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   Building2,
+  DollarSign,
   Settings,
   LogOut,
   ChevronsUpDown,
+  ToggleLeft,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -30,6 +32,8 @@ import {
 
 const navItems = [
   { path: '/super-admin/companies', label: 'Companies', icon: Building2 },
+  { path: '/super-admin/billing', label: 'Billing', icon: DollarSign },
+  { path: '/super-admin/feature-flags', label: 'Feature Flags', icon: ToggleLeft },
   { path: '/super-admin/settings', label: 'Settings', icon: Settings },
 ];
 
