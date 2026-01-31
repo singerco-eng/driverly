@@ -38,6 +38,7 @@ import {
 
 import { useReviewQueueStats } from '@/hooks/useCredentialReview';
 import { useFeatureFlag } from '@/hooks/useFeatureFlags';
+import { ColorModeToggle } from '@/components/ui/color-mode-toggle';
 
 export default function AdminLayout() {
   const { user, profile, signOut } = useAuth();
@@ -139,7 +140,7 @@ export default function AdminLayout() {
                             <span className={`ml-auto rounded-full px-2 py-0.5 text-xs font-semibold ${
                               active 
                                 ? 'bg-white/20 text-white' 
-                                : 'bg-primary/10 text-primary'
+                                : 'bg-primary-muted/15 text-primary-muted'
                             }`}>
                               {reviewStats?.pendingReview}
                             </span>
@@ -190,6 +191,8 @@ export default function AdminLayout() {
                     <Settings className="w-4 h-4 mr-2" />
                     Settings
                   </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <ColorModeToggle />
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
                     <LogOut className="w-4 h-4 mr-2" />

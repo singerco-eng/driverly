@@ -159,7 +159,7 @@ export default function VehicleCard({ vehicle, readOnly, onAction }: VehicleCard
             )}
             {/* Show placeholder if no photo or error */}
             {(!photoUrl || photoError) && !photoLoading && (
-              <ImageIcon className="h-8 w-8 text-muted-foreground" />
+              <ImageIcon className="h-8 w-8 text-foreground/40" />
             )}
           </div>
 

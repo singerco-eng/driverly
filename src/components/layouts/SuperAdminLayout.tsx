@@ -29,6 +29,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from '@/components/ui/sidebar';
+import { ColorModeToggle } from '@/components/ui/color-mode-toggle';
 
 const navItems = [
   { path: '/super-admin/companies', label: 'Companies', icon: Building2 },
@@ -56,7 +57,7 @@ export default function SuperAdminLayout() {
           <SidebarMenu>
             <SidebarMenuItem>
               <Link to="/super-admin/companies" className="flex items-center gap-2 px-2 py-1.5">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm bg-primary">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm bg-primary-muted">
                   D
                 </div>
                 <span className="font-semibold text-base truncate">Driverly</span>
@@ -97,7 +98,7 @@ export default function SuperAdminLayout() {
                     size="lg"
                     className="hover:bg-transparent hover:text-sidebar-foreground data-[state=open]:bg-transparent data-[state=open]:text-sidebar-foreground"
                   >
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium shrink-0 bg-primary">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium shrink-0 bg-primary-muted">
                       {profile?.full_name?.charAt(0) || user?.email?.charAt(0) || 'S'}
                     </div>
                     <div className="flex-1 text-left text-sm leading-tight">
@@ -120,6 +121,8 @@ export default function SuperAdminLayout() {
                     <Settings className="w-4 h-4 mr-2" />
                     Settings
                   </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <ColorModeToggle />
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
                     <LogOut className="w-4 h-4 mr-2" />

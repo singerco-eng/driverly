@@ -36,7 +36,7 @@ export function StepProgress({
             className={cn(
               'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-sm whitespace-nowrap transition-colors border',
               // Current step - subtle primary indicator
-              isCurrent && 'bg-primary/10 text-foreground border-primary/30',
+              isCurrent && 'bg-primary-muted/10 text-foreground border-primary-muted/30',
               // Completed - neutral muted
               isCompleted && !isCurrent && 'bg-muted/50 text-muted-foreground border-transparent',
               // Future incomplete - very subtle
@@ -51,7 +51,7 @@ export function StepProgress({
             ) : (
               <span className={cn(
                 'w-5 h-5 flex items-center justify-center text-xs font-medium rounded-full',
-                isCurrent ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                isCurrent ? 'bg-primary-muted text-primary-muted-foreground' : 'bg-muted text-muted-foreground'
               )}>
                 {index + 1}
               </span>

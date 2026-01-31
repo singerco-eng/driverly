@@ -88,7 +88,7 @@ export const AudioLevelMeter: React.FC<AudioLevelMeterProps> = ({
             key={dot}
             className={cn(
               'w-1 h-1 rounded-full transition-colors duration-150',
-              clampedLevel > (dot * 25) ? 'bg-primary' : 'bg-muted'
+              clampedLevel > (dot * 25) ? 'bg-primary-muted' : 'bg-muted'
             )}
           />
         ))}

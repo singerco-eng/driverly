@@ -7,7 +7,7 @@ const segmentedButtonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-glass-subtle border border-border/40 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground",
+        default: "bg-[var(--segmented-track)] text-[var(--segmented-inactive-foreground)] data-[state=active]:bg-[var(--segmented-active)] data-[state=active]:text-[var(--segmented-active-foreground)] data-[state=active]:shadow-[var(--segmented-active-shadow)]",
         ghost: "hover:bg-accent hover:text-accent-foreground data-[state=active]:bg-accent data-[state=active]:text-accent-foreground",
       },
       size: {

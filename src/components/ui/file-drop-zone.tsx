@@ -160,7 +160,7 @@ export function FileDropZone({
           'transition-all duration-200 ease-in-out',
           compact ? 'p-4' : 'p-6',
           isDragging 
-            ? 'border-primary bg-primary/10 scale-[1.01]' 
+            ? 'border-primary-muted bg-primary-muted/10 scale-[1.01]' 
             : 'border-muted-foreground/30 hover:border-muted-foreground/50',
           disabled && 'opacity-50 cursor-not-allowed pointer-events-none'
         )}
@@ -169,7 +169,7 @@ export function FileDropZone({
           <div className={cn(
             'rounded-full transition-colors',
             compact ? 'p-2' : 'p-3',
-            isDragging ? 'bg-primary/20' : 'bg-muted'
+            isDragging ? 'bg-primary-muted/20' : 'bg-muted'
           )}>
             {isDragging ? (
               <Upload className={cn(compact ? 'h-5 w-5' : 'h-6 w-6', 'text-primary')} />

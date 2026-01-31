@@ -3,6 +3,8 @@ import type { ThemeTokenKey, ThemeTokens } from '@/types/theme';
 export const DEFAULT_THEME_TOKENS: ThemeTokens = {
   primary: '218 95% 58%',
   primary_foreground: '215 28% 6%',
+  primary_muted: '218 55% 48%',
+  primary_muted_foreground: '0 0% 100%',
   secondary: '215 25% 16%',
   secondary_foreground: '210 20% 98%',
   accent: '259 94% 56%',
@@ -19,13 +21,19 @@ export const DEFAULT_THEME_TOKENS: ThemeTokens = {
   success_foreground: '0 0% 100%',
   warning: '38 92% 55%',
   warning_foreground: '0 0% 8%',
+  warning_muted: '38 55% 45%',
+  warning_muted_foreground: '0 0% 100%',
   destructive: '0 84% 65%',
   destructive_foreground: '0 0% 92%',
+  destructive_muted: '0 55% 45%',
+  destructive_muted_foreground: '0 0% 100%',
 };
 
 export const THEME_TOKEN_KEYS: ThemeTokenKey[] = [
   'primary',
   'primary_foreground',
+  'primary_muted',
+  'primary_muted_foreground',
   'secondary',
   'secondary_foreground',
   'accent',
@@ -42,8 +50,12 @@ export const THEME_TOKEN_KEYS: ThemeTokenKey[] = [
   'success_foreground',
   'warning',
   'warning_foreground',
+  'warning_muted',
+  'warning_muted_foreground',
   'destructive',
   'destructive_foreground',
+  'destructive_muted',
+  'destructive_muted_foreground',
 ];
 
 export const THEME_TOKEN_CONFIG: Array<{
@@ -51,8 +63,10 @@ export const THEME_TOKEN_CONFIG: Array<{
   label: string;
   description: string;
 }> = [
-  { key: 'primary', label: 'Primary', description: 'Primary brand color' },
+  { key: 'primary', label: 'Primary', description: 'Primary brand color for accents and focus' },
   { key: 'primary_foreground', label: 'Primary Foreground', description: 'Text on primary backgrounds' },
+  { key: 'primary_muted', label: 'Primary Muted', description: 'Toned-down primary for buttons and badges' },
+  { key: 'primary_muted_foreground', label: 'Primary Muted Foreground', description: 'Text on muted primary backgrounds' },
   { key: 'secondary', label: 'Secondary', description: 'Secondary surfaces and buttons' },
   { key: 'secondary_foreground', label: 'Secondary Foreground', description: 'Text on secondary surfaces' },
   { key: 'accent', label: 'Accent', description: 'Accent highlights and emphasis' },
@@ -69,6 +83,10 @@ export const THEME_TOKEN_CONFIG: Array<{
   { key: 'success_foreground', label: 'Success Foreground', description: 'Text on success' },
   { key: 'warning', label: 'Warning', description: 'Warning states' },
   { key: 'warning_foreground', label: 'Warning Foreground', description: 'Text on warnings' },
+  { key: 'warning_muted', label: 'Warning Muted', description: 'Toned-down warning for badges' },
+  { key: 'warning_muted_foreground', label: 'Warning Muted Foreground', description: 'Text on muted warning' },
   { key: 'destructive', label: 'Destructive', description: 'Errors and destructive actions' },
   { key: 'destructive_foreground', label: 'Destructive Foreground', description: 'Text on destructive' },
+  { key: 'destructive_muted', label: 'Destructive Muted', description: 'Toned-down destructive for badges' },
+  { key: 'destructive_muted_foreground', label: 'Destructive Muted Foreground', description: 'Text on muted destructive' },
 ];

@@ -65,7 +65,7 @@ export function CredentialProgressIndicator({
                     'w-6 h-6 rounded-full flex items-center justify-center transition-all',
                     'hover:scale-110 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
                     section.isComplete
-                      ? 'bg-primary text-primary-foreground'
+                      ? 'bg-primary-muted text-primary-muted-foreground'
                       : 'bg-muted text-muted-foreground hover:bg-muted/80'
                   )}
                   aria-label={`${section.label}${section.isComplete ? ' (complete)' : ''}`}
@@ -90,7 +90,7 @@ export function CredentialProgressIndicator({
         {/* Bottom progress bar (vertical) */}
         <div className="w-1 h-12 bg-muted rounded-full mt-2 overflow-hidden">
           <div
-            className="w-full bg-primary transition-all duration-300 rounded-full"
+            className="w-full bg-primary-muted transition-all duration-300 rounded-full"
             style={{ height: `${percentComplete}%` }}
           />
         </div>

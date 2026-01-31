@@ -39,6 +39,7 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { Badge } from '@/components/ui/badge';
+import { ColorModeToggle } from '@/components/ui/color-mode-toggle';
 
 const navItems = [
   { path: '/driver', label: 'Dashboard', icon: LayoutDashboard, exact: true },
@@ -218,6 +219,8 @@ export default function DriverLayout() {
                     <Settings className="w-4 h-4 mr-2" />
                     Settings
                   </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <ColorModeToggle />
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
                     <LogOut className="w-4 h-4 mr-2" />

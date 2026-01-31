@@ -9,7 +9,7 @@ const labelVariants = cva(
       variant: {
         default: "bg-muted/50 text-foreground border border-border/30",
         accent: "bg-accent/10 text-accent border border-accent/20",
-        primary: "bg-primary/10 text-primary border border-primary/20",
+        primary: "bg-primary-muted/15 text-primary-muted border border-primary-muted/25",
         success: "bg-success/10 text-success border border-success/20",
         warning: "bg-warning/10 text-warning border border-warning/20",
         destructive: "bg-destructive/10 text-destructive border border-destructive/20",

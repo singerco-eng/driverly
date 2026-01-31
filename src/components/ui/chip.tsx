@@ -9,8 +9,8 @@ const chipVariants = cva(
   {
     variants: {
       variant: {
-        filter: "bg-glass-subtle backdrop-blur-md border border-border/50 text-foreground hover:bg-glass-intense hover:shadow-soft data-[selected=true]:bg-primary/20 data-[selected=true]:text-white data-[selected=true]:shadow-soft",
-        assist: "bg-primary/80 text-white shadow-soft hover:bg-primary hover:shadow-glow",
+        filter: "bg-glass-subtle backdrop-blur-md border border-border/50 text-foreground hover:bg-glass-intense hover:shadow-soft data-[selected=true]:bg-primary-muted/20 data-[selected=true]:text-white data-[selected=true]:shadow-soft",
+        assist: "bg-primary-muted/80 text-primary-muted-foreground shadow-soft hover:bg-primary-muted hover:shadow-glow",
         suggestion: "bg-secondary text-secondary-foreground border border-border/50 hover:bg-glass-subtle hover:backdrop-blur-md hover:shadow-soft"
       },
       size: {

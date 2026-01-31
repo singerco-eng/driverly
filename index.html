@@ -16,13 +16,18 @@
       }
     </style>
     <script>
-      // Apply cached theme immediately to prevent flash of default theme
+      // Apply cached theme and color mode immediately to prevent flash
       (function() {
         try {
+          var root = document.documentElement;
+          
+          // Apply color mode immediately
+          var colorMode = localStorage.getItem('driverly-color-mode') || 'dark';
+          root.dataset.colorMode = colorMode;
+          
           var cached = localStorage.getItem('driverly-theme-cache');
           if (cached) {
             var tokens = JSON.parse(cached);
-            var root = document.documentElement;
             
             // Apply core color tokens
             if (tokens.primary) root.style.setProperty('--primary', tokens.primary);

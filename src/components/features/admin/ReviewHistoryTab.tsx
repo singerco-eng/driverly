@@ -167,7 +167,7 @@ export function ReviewHistoryTab({ companyId, viewMode = 'table' }: ReviewHistor
                   {/* Reviewer Avatar */}
                   <div className={`
                     h-14 w-14 rounded-full flex items-center justify-center mb-2
-                    ${isApproved ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}
+                    ${isApproved ? 'bg-primary-muted/15 text-primary-muted' : 'bg-muted text-muted-foreground'}
                   `}>
                     <span className="font-semibold text-lg">{initials}</span>
                   </div>

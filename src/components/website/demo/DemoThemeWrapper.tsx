@@ -45,6 +45,8 @@ export function DemoThemeWrapper({ children }: DemoThemeWrapperProps) {
       '--warning-foreground': tokens.warning_foreground,
       '--destructive': tokens.destructive,
       '--destructive-foreground': tokens.destructive_foreground,
+      '--destructive-muted': tokens.destructive_muted,
+      '--destructive-muted-foreground': tokens.destructive_muted_foreground,
       '--gradient-primary': `linear-gradient(135deg, hsl(${tokens.primary}), hsl(${tokens.accent}))`,
     };
     
@@ -92,6 +94,8 @@ export function DemoThemeWrapper({ children }: DemoThemeWrapperProps) {
     '--warning-foreground': tokens.warning_foreground,
     '--destructive': tokens.destructive,
     '--destructive-foreground': tokens.destructive_foreground,
+    '--destructive-muted': tokens.destructive_muted,
+    '--destructive-muted-foreground': tokens.destructive_muted_foreground,
     // Gradients
     '--gradient-primary': `linear-gradient(135deg, hsl(${tokens.primary}), hsl(${tokens.accent}))`,
     '--gradient-hero': `linear-gradient(135deg, hsl(${tokens.primary} / 0.08), hsl(${tokens.accent} / 0.08))`,
@@ -105,9 +109,9 @@ export function DemoThemeWrapper({ children }: DemoThemeWrapperProps) {
     '--shadow-glow-subtle': `0 0 6px hsl(${tokens.primary} / 0.03)`,
     '--shadow-glow': `0 0 10px hsl(${tokens.primary} / 0.05)`,
     '--shadow-glow-intense': `0 0 15px hsl(${tokens.primary} / 0.08)`,
-    // Sidebar colors
-    '--sidebar-accent': tokens.primary,
-    '--sidebar-accent-foreground': tokens.primary_foreground,
+    // Sidebar colors - use muted for toned-down active state
+    '--sidebar-accent': tokens.primary_muted,
+    '--sidebar-accent-foreground': tokens.primary_muted_foreground,
     // Radius values
     '--radius': '0.5rem',
   };

@@ -28,6 +28,8 @@ const config: Config = {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
           hover: "hsl(var(--primary-hover))",
+          muted: "hsl(var(--primary-muted))",
+          "muted-foreground": "hsl(var(--primary-muted-foreground))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -36,6 +38,8 @@ const config: Config = {
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
           foreground: "hsl(var(--destructive-foreground))",
+          muted: "hsl(var(--destructive-muted))",
+          "muted-foreground": "hsl(var(--destructive-muted-foreground))",
         },
         muted: {
           DEFAULT: "hsl(var(--muted))",
@@ -65,6 +69,8 @@ const config: Config = {
         warning: {
           DEFAULT: "hsl(var(--warning))",
           foreground: "hsl(var(--warning-foreground))",
+          muted: "hsl(var(--warning-muted))",
+          "muted-foreground": "hsl(var(--warning-muted-foreground))",
         },
         "live-connected": "hsl(var(--live-connected))",
         "live-connecting": "hsl(var(--live-connecting))",

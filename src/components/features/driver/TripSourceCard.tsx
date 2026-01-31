@@ -121,7 +121,7 @@ export function TripSourceCard({
             {broker.logo_url ? (
               <img src={broker.logo_url} alt={broker.name} className="h-12 w-12 object-contain" />
             ) : (
-              <Building2 className="h-8 w-8 text-muted-foreground" />
+              <Building2 className="h-8 w-8 text-foreground/40" />
             )}
           </div>
 

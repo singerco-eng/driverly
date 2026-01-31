@@ -158,7 +158,7 @@ export function VehicleCredentialsTab({ companyId, vehicleId }: VehicleCredentia
             {/* Credential Icon */}
             <div className={`
               h-12 w-12 rounded-lg flex items-center justify-center mb-2
-              ${isComplete ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}
+              ${isComplete ? 'bg-primary-muted/15 text-primary-muted' : 'bg-muted text-muted-foreground'}
             `}>
               <FileText className="h-6 w-6" />
             </div>

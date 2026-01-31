@@ -1,13 +1,16 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { DEFAULT_THEME_TOKENS } from '@/lib/theme-tokens';
-import { applyThemeTokens, mergeThemeTokens } from '@/lib/theme-utils';
+import { applyThemeTokens, mergeThemeTokens, deriveTokensForMode } from '@/lib/theme-utils';
 import { getCompanyTheme, getPlatformTheme } from '@/services/theme';
 import { THEME_PRESETS, getPresetById } from '@/lib/theme-presets';
 import type { ThemeTokens } from '@/types/theme';
 
 const THEME_CACHE_KEY = 'driverly-theme-cache';
 const THEME_PRESET_KEY = 'driverly-theme-preset';
+const COLOR_MODE_KEY = 'driverly-color-mode';
+
+export type ColorMode = 'light' | 'dark';
 
 interface ThemeContextType {
   tokens: ThemeTokens;
@@ -17,6 +20,12 @@ interface ThemeContextType {
   selectedPresetId: string | null;
   /** Select a preset by ID (null = reset to server theme) */
   setSelectedPresetId: (presetId: string | null) => void;
+  /** Current color mode (light or dark) */
+  colorMode: ColorMode;
+  /** Set the color mode */
+  setColorMode: (mode: ColorMode) => void;
+  /** Toggle between light and dark mode */
+  toggleColorMode: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | null>(null);
@@ -55,6 +64,19 @@ function getStoredPresetId(): string | null {
   }
 }
 
+// Get stored color mode
+function getStoredColorMode(): ColorMode {
+  try {
+    const stored = localStorage.getItem(COLOR_MODE_KEY);
+    if (stored === 'light' || stored === 'dark') {
+      return stored;
+    }
+  } catch {
+    // Ignore errors
+  }
+  return 'dark'; // Default to dark mode
+}
+
 // Cache theme to localStorage
 function cacheTheme(tokens: ThemeTokens) {
   try {
@@ -79,12 +101,19 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   const [serverTokens, setServerTokens] = useState<ThemeTokens>(getCachedTheme);
   // User-selected preset ID
   const [selectedPresetId, setSelectedPresetIdState] = useState<string | null>(getStoredPresetId);
+  // Color mode (light/dark)
+  const [colorMode, setColorModeState] = useState<ColorMode>(getStoredColorMode);
   const [isThemeLoading, setIsThemeLoading] = useState(true);
 
-  // Compute effective tokens: preset tokens if selected, otherwise server tokens
-  const tokens = selectedPresetId
-    ? (getPresetById(selectedPresetId)?.tokens ?? serverTokens)
-    : serverTokens;
+  // Get the selected preset
+  const selectedPreset = selectedPresetId ? getPresetById(selectedPresetId) : null;
+
+  // Compute effective tokens based on preset and color mode
+  const tokens = selectedPreset
+    ? deriveTokensForMode(selectedPreset, colorMode)
+    : colorMode === 'light'
+      ? deriveTokensForMode({ colors: { primary: '#808080', accent: '#666666', background: '#f5f5f5', destructive: '#ef4444' } } as any, 'light')
+      : serverTokens;
 
   // Persist preset selection
   const setSelectedPresetId = useCallback((presetId: string | null) => {
@@ -99,6 +128,23 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
       // Ignore localStorage errors
     }
   }, []);
+
+  // Persist color mode
+  const setColorMode = useCallback((mode: ColorMode) => {
+    setColorModeState(mode);
+    try {
+      localStorage.setItem(COLOR_MODE_KEY, mode);
+      // Also set data attribute for CSS targeting
+      document.documentElement.dataset.colorMode = mode;
+    } catch {
+      // Ignore localStorage errors
+    }
+  }, []);
+
+  // Toggle color mode
+  const toggleColorMode = useCallback(() => {
+    setColorMode(colorMode === 'dark' ? 'light' : 'dark');
+  }, [colorMode, setColorMode]);
 
   // Wrapper for setTokens to update server tokens (used by super admin)
   const setTokens = useCallback((newTokens: ThemeTokens) => {
@@ -168,7 +214,16 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   }, [isLoading]);
 
   return (
-    <ThemeContext.Provider value={{ tokens, setTokens, isThemeLoading, selectedPresetId, setSelectedPresetId }}>
+    <ThemeContext.Provider value={{ 
+      tokens, 
+      setTokens, 
+      isThemeLoading, 
+      selectedPresetId, 
+      setSelectedPresetId,
+      colorMode,
+      setColorMode,
+      toggleColorMode
+    }}>
       {children}
     </ThemeContext.Provider>
   );

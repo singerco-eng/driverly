@@ -25,6 +25,8 @@ All colors MUST be HSL.
       --primary: 0 0% 60%;
       --primary-foreground: 0 0% 8%;
       --primary-hover: 0 0% 55%;
+      --primary-muted: 0 0% 50%;
+      --primary-muted-foreground: 0 0% 100%;
 
       --secondary: 0 0% 15%;
       --secondary-foreground: 0 0% 92%;
@@ -37,6 +39,8 @@ All colors MUST be HSL.
 
       --destructive: 0 62% 50%;
       --destructive-foreground: 0 0% 92%;
+      --destructive-muted: 0 55% 45%;
+      --destructive-muted-foreground: 0 0% 100%;
 
       --border: 0 0% 20%;
       --input: 0 0% 18%;
@@ -50,6 +54,8 @@ All colors MUST be HSL.
       --success-foreground: 0 0% 100%;
       --warning: 38 92% 55%;
       --warning-foreground: 0 0% 8%;
+      --warning-muted: 38 55% 45%;
+      --warning-muted-foreground: 0 0% 100%;
 
       /* Neutral gradients - will be overridden by themes */
       --gradient-primary: linear-gradient(135deg, hsl(0 0% 60%), hsl(0 0% 50%));
@@ -89,19 +95,19 @@ All colors MUST be HSL.
       --container-background: hsl(var(--background));
       --container-border: 1px solid hsl(var(--border) / 0.35);
       --container-shadow: 0 30px 80px hsl(var(--glass-shadow) / 0.35);
-      --container-overlay: radial-gradient(circle at 20% 20%, hsla(var(--primary) / 0.2), transparent 50%);
+      --container-overlay: radial-gradient(circle at 20% 20%, hsla(var(--primary-muted) / 0.15), transparent 50%);
 
       --card-background: hsl(var(--card) / 0.95);
       --card-border: 1px solid hsl(var(--border) / 0.35);
       --card-shadow: 0 20px 60px hsl(var(--glass-shadow) / 0.35);
-      --card-highlight: linear-gradient(120deg, hsla(var(--primary) / 0.15), transparent);
+      --card-highlight: linear-gradient(120deg, hsla(var(--primary-muted) / 0.1), transparent);
 
-      --buttons-primary-background: linear-gradient(120deg, hsl(var(--primary)), hsl(var(--accent)));
-      --buttons-primary-color: hsl(var(--primary-foreground));
-      --buttons-primary-hover-background: linear-gradient(120deg, hsl(var(--primary) / 0.9), hsl(var(--accent)));
+      --buttons-primary-background: hsl(var(--primary-muted));
+      --buttons-primary-color: hsl(var(--primary-muted-foreground));
+      --buttons-primary-hover-background: hsl(var(--primary-muted) / 0.85);
       --buttons-primary-border: none;
-      --buttons-primary-shadow: 0 15px 30px hsla(var(--primary) / 0.35);
-      --buttons-primary-glow: 0 0 45px hsla(var(--primary) / 0.45);
+      --buttons-primary-shadow: 0 8px 20px hsla(var(--primary-muted) / 0.25);
+      --buttons-primary-glow: 0 0 30px hsla(var(--primary-muted) / 0.3);
       --buttons-primary-text-shadow: none;
 
       --buttons-secondary-background: hsl(var(--secondary));
@@ -112,7 +118,7 @@ All colors MUST be HSL.
 
       --buttons-ghost-background: transparent;
       --buttons-ghost-color: hsl(var(--primary));
-      --buttons-ghost-hover-background: hsla(var(--primary) / 0.12);
+      --buttons-ghost-hover-background: hsla(var(--primary-muted) / 0.15);
       --buttons-ghost-border: 1px solid transparent;
       --buttons-ghost-text-shadow: none;
 
@@ -124,15 +130,15 @@ All colors MUST be HSL.
 
       --decor-grid: linear-gradient(90deg, hsla(var(--border) / 0.15) 1px, transparent 1px),
         linear-gradient(0deg, hsla(var(--border) / 0.15) 1px, transparent 1px);
-      --decor-glow: 0 0 60px hsla(var(--primary) / 0.45);
+      --decor-glow: 0 0 60px hsla(var(--primary-muted) / 0.35);
       --decor-accent: hsla(var(--accent) / 0.4);
 
       /* Sidebar colors - for navigation sidebar */
       --sidebar: 0 0% 6%;
       --sidebar-foreground: 0 0% 92%;
       --sidebar-border: 0 0% 20%;
-      --sidebar-accent: var(--accent);
-      --sidebar-accent-foreground: var(--accent-foreground);
+      --sidebar-accent: var(--primary-muted);
+      --sidebar-accent-foreground: var(--primary-muted-foreground);
       --sidebar-ring: var(--ring);
 
       /* Smooth color transitions */
@@ -155,6 +161,8 @@ All colors MUST be HSL.
       --primary: 0 0% 60%;
       --primary-foreground: 0 0% 8%;
       --primary-hover: 0 0% 55%;
+      --primary-muted: 0 0% 50%;
+      --primary-muted-foreground: 0 0% 100%;
 
       /* Darker glass surface */
       --secondary: 0 0% 15%;
@@ -170,6 +178,8 @@ All colors MUST be HSL.
 
       --destructive: 0 62% 50%;
       --destructive-foreground: 0 0% 92%;
+      --destructive-muted: 0 55% 45%;
+      --destructive-muted-foreground: 0 0% 100%;
 
       --border: 0 0% 20%;
       --input: 0 0% 18%;
@@ -311,11 +321,11 @@ All colors MUST be HSL.
     }
 
     .shadow-glow-subtle {
-      box-shadow: var(--shadow-glow-subtle, 0 0 6px hsl(var(--primary) / 0.03));
+      box-shadow: var(--shadow-glow-subtle, 0 0 6px hsl(var(--primary-muted) / 0.05));
     }
 
     .shadow-glow {
-      box-shadow: var(--shadow-glow, 0 0 10px hsl(var(--primary) / 0.05));
+      box-shadow: var(--shadow-glow, 0 0 10px hsl(var(--primary-muted) / 0.08));
     }
 
     .grid-overlay {

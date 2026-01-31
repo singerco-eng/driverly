@@ -88,7 +88,7 @@ const FilterBar = React.forwardRef<HTMLDivElement, FilterBarProps>(
               </Label>
             )}
             <Select value={filter.value} onValueChange={filter.onValueChange}>
-              <SelectTrigger className="border-border/50 focus:border-primary/50 focus:ring-primary/20 bg-background/50">
+              <SelectTrigger className="border-border focus:border-primary/50 focus:ring-primary/20 bg-card">
                 <SelectValue placeholder={filter.placeholder || "Select..."} />
               </SelectTrigger>
               <SelectContent>
@@ -123,7 +123,7 @@ const FilterBar = React.forwardRef<HTMLDivElement, FilterBarProps>(
                 placeholder={searchPlaceholder}
                 value={searchValue}
                 onChange={(e) => onSearchChange(e.target.value)}
-                className="border-border/50 focus:border-primary/50 focus:ring-primary/20 bg-background/50"
+                className="border-border focus:border-primary/50 focus:ring-primary/20 bg-card"
               />
             </div>
             
@@ -143,7 +143,7 @@ const FilterBar = React.forwardRef<HTMLDivElement, FilterBarProps>(
                         <Filter className="w-4 h-4" />
                         <span>Advanced</span>
                         {activeSecondaryCount > 0 && (
-                          <span className="bg-primary text-primary-foreground text-xs rounded-full px-1.5 py-0.5 min-w-[16px] text-center">
+                          <span className="bg-primary-muted text-primary-muted-foreground text-xs rounded-full px-1.5 py-0.5 min-w-[16px] text-center">
                             {activeSecondaryCount}
                           </span>
                         )}
@@ -213,7 +213,7 @@ const FilterBar = React.forwardRef<HTMLDivElement, FilterBarProps>(
             placeholder={searchPlaceholder}
             value={searchValue}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="border-border/50 focus:border-primary/50 focus:ring-primary/20 bg-background/50"
+            className="border-border focus:border-primary/50 focus:ring-primary/20 bg-card"
           />
         </div>
         
@@ -225,7 +225,7 @@ const FilterBar = React.forwardRef<HTMLDivElement, FilterBarProps>(
               </Label>
             )}
             <Select value={filter.value} onValueChange={filter.onValueChange}>
-              <SelectTrigger className="border-border/50 focus:border-primary/50 focus:ring-primary/20 bg-background/50">
+              <SelectTrigger className="border-border focus:border-primary/50 focus:ring-primary/20 bg-card">
                 <SelectValue placeholder={filter.placeholder || "Select..."} />
               </SelectTrigger>
               <SelectContent>

@@ -78,8 +78,8 @@ const SelectContent = React.forwardRef<
     <SelectPrimitive.Content
       ref={ref}
       className={cn(
-        "relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-lg border border-border/50",
-        "bg-glass-intense backdrop-blur-md shadow-glow",
+        "relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-lg border border-border",
+        "bg-popover backdrop-blur-md shadow-[var(--shadow-popover)]",
         "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
         "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
         "data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2",
@@ -127,11 +127,11 @@ const SelectItem = React.forwardRef<
     ref={ref}
     className={cn(
       "relative flex w-full cursor-default select-none items-center rounded-md py-2 pl-8 pr-2 text-sm outline-none",
-      "text-white transition-colors duration-150",
+      "text-popover-foreground transition-colors duration-150",
       "focus:bg-accent focus:text-accent-foreground",
       "hover:bg-accent/80 hover:text-accent-foreground",
       "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
-      "data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary data-[state=checked]:font-medium",
+      "data-[state=checked]:bg-primary-muted/10 data-[state=checked]:text-primary-muted data-[state=checked]:font-medium",
       className
     )}
     {...props}

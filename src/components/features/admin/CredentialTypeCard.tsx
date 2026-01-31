@@ -60,7 +60,7 @@ export function CredentialTypeCard({ credentialType }: CredentialTypeCardProps) 
         >
           {/* Credential Icon */}
           <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center mb-2">
-            <FileText className="h-6 w-6 text-muted-foreground" />
+            <FileText className="h-6 w-6 text-foreground/50" />
           </div>
 
           {/* Credential Type Name */}

@@ -32,6 +32,8 @@ export const ACME_DEMO_THEME: ThemePreset = {
   tokens: {
     primary: '43 74% 46%', // Gold accent
     primary_foreground: '40 8% 10%', // Dark brown on gold
+    primary_muted: '43 50% 38%', // Toned-down gold for buttons/badges
+    primary_muted_foreground: '0 0% 100%', // White text on muted gold
     secondary: '40 7% 14%', // Warm grey-800
     secondary_foreground: '45 12% 90%', // Cream text
     accent: '43 74% 52%', // Warm gold accent
@@ -48,8 +50,12 @@ export const ACME_DEMO_THEME: ThemePreset = {
     success_foreground: '40 8% 10%', // Dark on gold
     warning: '43 74% 49%', // Gold warning
     warning_foreground: '40 8% 10%',
+    warning_muted: '43 50% 40%',
+    warning_muted_foreground: '0 0% 100%',
     destructive: '0 84% 60%',
     destructive_foreground: '45 12% 90%',
+    destructive_muted: '0 55% 42%',
+    destructive_muted_foreground: '0 0% 100%',
   },
 };
 
@@ -71,6 +77,8 @@ export const THEME_PRESETS: ThemePreset[] = [
     tokens: {
       primary: '218 95% 58%',
       primary_foreground: '215 28% 6%',
+      primary_muted: '218 55% 48%',
+      primary_muted_foreground: '0 0% 100%',
       secondary: '215 25% 16%',
       secondary_foreground: '210 20% 98%',
       accent: '259 94% 56%',
@@ -87,8 +95,12 @@ export const THEME_PRESETS: ThemePreset[] = [
       success_foreground: '0 0% 100%',
       warning: '38 92% 55%',
       warning_foreground: '0 0% 8%',
+      warning_muted: '38 55% 48%',
+      warning_muted_foreground: '0 0% 100%',
       destructive: '0 84% 65%',
       destructive_foreground: '0 0% 92%',
+      destructive_muted: '0 55% 45%',
+      destructive_muted_foreground: '0 0% 100%',
     },
   },
   {
@@ -104,6 +116,8 @@ export const THEME_PRESETS: ThemePreset[] = [
     tokens: {
       primary: '173 80% 40%',
       primary_foreground: '180 20% 6%',
+      primary_muted: '173 50% 38%',
+      primary_muted_foreground: '0 0% 100%',
       secondary: '180 20% 14%',
       secondary_foreground: '180 15% 95%',
       accent: '188 94% 43%',
@@ -120,8 +134,12 @@ export const THEME_PRESETS: ThemePreset[] = [
       success_foreground: '0 0% 100%',
       warning: '45 93% 47%',
       warning_foreground: '0 0% 8%',
+      warning_muted: '45 55% 42%',
+      warning_muted_foreground: '0 0% 100%',
       destructive: '350 89% 60%',
       destructive_foreground: '0 0% 98%',
+      destructive_muted: '350 55% 45%',
+      destructive_muted_foreground: '0 0% 100%',
     },
   },
   {
@@ -137,6 +155,8 @@ export const THEME_PRESETS: ThemePreset[] = [
     tokens: {
       primary: '258 90% 76%',
       primary_foreground: '270 25% 8%',
+      primary_muted: '258 55% 50%',
+      primary_muted_foreground: '0 0% 100%',
       secondary: '270 20% 15%',
       secondary_foreground: '270 15% 95%',
       accent: '330 86% 70%',
@@ -153,8 +173,12 @@ export const THEME_PRESETS: ThemePreset[] = [
       success_foreground: '0 0% 100%',
       warning: '43 96% 56%',
       warning_foreground: '0 0% 8%',
+      warning_muted: '43 55% 50%',
+      warning_muted_foreground: '0 0% 100%',
       destructive: '350 96% 74%',
       destructive_foreground: '0 0% 8%',
+      destructive_muted: '350 55% 45%',
+      destructive_muted_foreground: '0 0% 100%',
     },
   },
   {
@@ -170,6 +194,8 @@ export const THEME_PRESETS: ThemePreset[] = [
     tokens: {
       primary: '25 95% 53%',
       primary_foreground: '20 20% 6%',
+      primary_muted: '25 60% 48%',
+      primary_muted_foreground: '0 0% 100%',
       secondary: '20 15% 14%',
       secondary_foreground: '30 20% 95%',
       accent: '45 96% 56%',
@@ -186,8 +212,12 @@ export const THEME_PRESETS: ThemePreset[] = [
       success_foreground: '0 0% 100%',
       warning: '48 96% 53%',
       warning_foreground: '0 0% 8%',
+      warning_muted: '48 55% 48%',
+      warning_muted_foreground: '0 0% 100%',
       destructive: '0 72% 51%',
       destructive_foreground: '0 0% 98%',
+      destructive_muted: '0 50% 42%',
+      destructive_muted_foreground: '0 0% 100%',
     },
   },
   {
@@ -203,6 +233,8 @@ export const THEME_PRESETS: ThemePreset[] = [
     tokens: {
       primary: '142 71% 45%',
       primary_foreground: '140 25% 6%',
+      primary_muted: '142 45% 40%',
+      primary_muted_foreground: '0 0% 100%',
       secondary: '140 15% 14%',
       secondary_foreground: '140 15% 95%',
       accent: '84 81% 44%',
@@ -219,8 +251,12 @@ export const THEME_PRESETS: ThemePreset[] = [
       success_foreground: '0 0% 100%',
       warning: '43 96% 56%',
       warning_foreground: '0 0% 8%',
+      warning_muted: '43 55% 50%',
+      warning_muted_foreground: '0 0% 100%',
       destructive: '0 84% 60%',
       destructive_foreground: '0 0% 98%',
+      destructive_muted: '0 55% 45%',
+      destructive_muted_foreground: '0 0% 100%',
     },
   },
 ];

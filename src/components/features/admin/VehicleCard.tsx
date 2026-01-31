@@ -143,7 +143,7 @@ export function AdminVehicleCard({ vehicle, onAction }: AdminVehicleCardProps): 
             )}
             {/* Show placeholder if no photo or error */}
             {(!photoUrl || photoError) && !photoLoading && (
-              <ImageIcon className="h-8 w-8 text-muted-foreground" />
+              <ImageIcon className="h-8 w-8 text-foreground/40" />
             )}
           </div>
 

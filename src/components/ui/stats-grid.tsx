@@ -31,7 +31,7 @@ const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
       >
         <div className="flex flex-row items-center justify-between space-y-0 pb-2">
           <h3 className={textVariants({ variant: "muted" })}>{title}</h3>
-          <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+          <div className="w-10 h-10 bg-primary-muted/15 rounded-lg flex items-center justify-center">
             {icon}
           </div>
         </div>

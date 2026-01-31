@@ -21,8 +21,8 @@ export function ApplicationProgress({ steps, currentStep }: ApplicationProgressP
             <div
               className={cn(
                 'w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold border',
-                isComplete && 'bg-primary text-primary-foreground border-primary',
-                isActive && 'bg-primary/10 text-primary border-primary/40',
+                isComplete && 'bg-primary-muted text-primary-muted-foreground border-primary-muted',
+                isActive && 'bg-primary-muted/10 text-primary-muted border-primary-muted/40',
                 !isActive && !isComplete && 'bg-muted text-muted-foreground border-border/40'
               )}
             >
