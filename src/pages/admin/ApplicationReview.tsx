@@ -4,18 +4,23 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { DetailPageHeader } from '@/components/ui/DetailPageHeader';
 import { supabase } from '@/integrations/supabase/client';
 import { useApplication, useApproveApplication, useRejectApplication, useUpdateApplicationNotes } from '@/hooks/useApplications';
 import { RejectApplicationModal } from '@/components/features/admin/RejectApplicationModal';
 import type { ApplicationStatus } from '@/types/driver';
 
-const statusStyles: Record<ApplicationStatus, string> = {
-  draft: 'bg-muted text-muted-foreground border-border/40',
-  pending: 'bg-yellow-500/20 text-yellow-700 border-yellow-500/30',
-  under_review: 'bg-blue-500/20 text-blue-700 border-blue-500/30',
-  approved: 'bg-green-500/20 text-green-700 border-green-500/30',
-  rejected: 'bg-red-500/20 text-red-700 border-red-500/30',
-  withdrawn: 'bg-gray-500/20 text-gray-600 border-gray-500/30',
+const statusConfig: Record<ApplicationStatus, {
+  label: string;
+  badgeVariant: 'default' | 'secondary' | 'destructive' | 'outline';
+}> = {
+  draft: { label: 'Draft', badgeVariant: 'outline' },
+  pending: { label: 'Pending', badgeVariant: 'secondary' },
+  under_review: { label: 'Under Review', badgeVariant: 'secondary' },
+  approved: { label: 'Approved', badgeVariant: 'default' },
+  rejected: { label: 'Rejected', badgeVariant: 'destructive' },
+  withdrawn: { label: 'Withdrawn', badgeVariant: 'outline' },
 };
 
 export default function ApplicationReviewPage() {
@@ -62,135 +67,188 @@ export default function ApplicationReviewPage() {
 
   const primaryVehicle = useMemo(() => application?.vehicles?.[0]?.vehicle, [application?.vehicles]);
 
-  if (isLoading || !application) {
+  if (isLoading) {
     return (
-      <Card className="p-8 text-center text-muted-foreground">Loading application...</Card>
+      <div className="min-h-screen bg-background">
+        <div className="border-b bg-background">
+          <div className="px-6 py-4">
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-4 w-64 mt-2" />
+          </div>
+        </div>
+        <div className="p-6">
+          <div className="max-w-4xl mx-auto">
+            <Skeleton className="h-64 w-full" />
+          </div>
+        </div>
+      </div>
     );
   }
 
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Application Review</h1>
-          <p className="text-muted-foreground">Driver application details and actions.</p>
+  if (!application) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="border-b bg-background">
+          <div className="px-6 py-4">
+            <h1 className="text-xl font-bold">Application Not Found</h1>
+          </div>
         </div>
-        <Badge variant="outline" className={statusStyles[application.application_status]}>
-          {application.application_status.replace('_', ' ')}
-        </Badge>
+        <div className="p-6">
+          <div className="max-w-4xl mx-auto">
+            <Card className="p-8 text-center text-muted-foreground">
+              Application not found.
+            </Card>
+          </div>
+        </div>
       </div>
+    );
+  }
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Applicant</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <div className="text-sm">Name: {application.user.full_name}</div>
-          <div className="text-sm">Email: {application.user.email}</div>
-          {application.user.phone && <div className="text-sm">Phone: {application.user.phone}</div>}
-        </CardContent>
-      </Card>
+  const status = statusConfig[application.application_status];
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Personal Information</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm">
-          <div>Date of birth: {application.date_of_birth || '—'}</div>
-          <div>
-            Address: {application.address_line1 || '—'} {application.address_line2 || ''}
-          </div>
-          <div>
-            {application.city || ''} {application.state || ''} {application.zip || ''}
-          </div>
-        </CardContent>
-      </Card>
+  // Action buttons for the header
+  const actions = (
+    <div className="flex items-center gap-2">
+      <Button
+        onClick={() => approveApplication.mutate(application.id)}
+        disabled={approveApplication.isPending || application.application_status === 'approved'}
+      >
+        {approveApplication.isPending ? 'Approving...' : 'Approve'}
+      </Button>
+      <Button 
+        variant="destructive" 
+        onClick={() => setRejectModalOpen(true)}
+        disabled={application.application_status === 'rejected'}
+      >
+        Reject
+      </Button>
+    </div>
+  );
 
-      <Card>
-        <CardHeader>
-          <CardTitle>License</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="text-sm">Number: {application.license_number || '—'}</div>
-          <div className="text-sm">State: {application.license_state || '—'}</div>
-          <div className="text-sm">
-            Expiration: {application.license_expiration || '—'}
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <DetailPageHeader
+        title={application.user.full_name}
+        subtitle="Driver application details and actions"
+        badges={
+          <Badge variant={status.badgeVariant}>
+            {status.label}
+          </Badge>
+        }
+        avatar={
+          <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+            <span className="text-primary font-semibold">
+              {application.user.full_name.charAt(0).toUpperCase()}
+            </span>
           </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            {frontPhotoUrl ? (
-              <img src={frontPhotoUrl} alt="License front" className="rounded-md border" />
-            ) : (
-              <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
-                Front photo not available
+        }
+        onBack={() => navigate('/admin/applications')}
+        backLabel="Back to Applications"
+        actions={actions}
+      />
+
+      {/* Content area */}
+      <div className="p-6">
+        <div className="max-w-4xl mx-auto space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Applicant</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="text-sm">Name: {application.user.full_name}</div>
+              <div className="text-sm">Email: {application.user.email}</div>
+              {application.user.phone && <div className="text-sm">Phone: {application.user.phone}</div>}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Personal Information</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              <div>Date of birth: {application.date_of_birth || '—'}</div>
+              <div>
+                Address: {application.address_line1 || '—'} {application.address_line2 || ''}
               </div>
-            )}
-            {backPhotoUrl ? (
-              <img src={backPhotoUrl} alt="License back" className="rounded-md border" />
-            ) : (
-              <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
-                Back photo not available
+              <div>
+                {application.city || ''} {application.state || ''} {application.zip || ''}
               </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
 
-      {primaryVehicle && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Vehicle</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <div>
-              {primaryVehicle.year} {primaryVehicle.make} {primaryVehicle.model}
-            </div>
-            <div>Plate: {primaryVehicle.license_plate}</div>
-            <div>Type: {primaryVehicle.vehicle_type}</div>
-          </CardContent>
-        </Card>
-      )}
+          <Card>
+            <CardHeader>
+              <CardTitle>License</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="text-sm">Number: {application.license_number || '—'}</div>
+              <div className="text-sm">State: {application.license_state || '—'}</div>
+              <div className="text-sm">
+                Expiration: {application.license_expiration || '—'}
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                {frontPhotoUrl ? (
+                  <img src={frontPhotoUrl} alt="License front" className="rounded-md border" />
+                ) : (
+                  <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
+                    Front photo not available
+                  </div>
+                )}
+                {backPhotoUrl ? (
+                  <img src={backPhotoUrl} alt="License back" className="rounded-md border" />
+                ) : (
+                  <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
+                    Back photo not available
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Additional Information</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm">
-          <div>Experience: {application.experience_notes || '—'}</div>
-          <div>Referral: {application.referral_source || '—'}</div>
-        </CardContent>
-      </Card>
+          {primaryVehicle && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Vehicle</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                <div>
+                  {primaryVehicle.year} {primaryVehicle.make} {primaryVehicle.model}
+                </div>
+                <div>Plate: {primaryVehicle.license_plate}</div>
+                <div>Type: {primaryVehicle.vehicle_type}</div>
+              </CardContent>
+            </Card>
+          )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Admin Notes</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <Textarea value={notes} onChange={(event) => setNotes(event.target.value)} />
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={() => updateNotes.mutate({ driverId: application.id, notes })}
-              disabled={updateNotes.isPending}
-            >
-              {updateNotes.isPending ? 'Saving...' : 'Save Notes'}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Additional Information</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              <div>Experience: {application.experience_notes || '—'}</div>
+              <div>Referral: {application.referral_source || '—'}</div>
+            </CardContent>
+          </Card>
 
-      <div className="flex flex-wrap gap-3">
-        <Button
-          onClick={() => approveApplication.mutate(application.id)}
-          disabled={approveApplication.isPending}
-        >
-          {approveApplication.isPending ? 'Approving...' : 'Approve'}
-        </Button>
-        <Button variant="destructive" onClick={() => setRejectModalOpen(true)}>
-          Reject
-        </Button>
-        <Button variant="outline" onClick={() => navigate('/admin/applications')}>
-          Back to Applications
-        </Button>
+          <Card>
+            <CardHeader>
+              <CardTitle>Admin Notes</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Textarea value={notes} onChange={(event) => setNotes(event.target.value)} />
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => updateNotes.mutate({ driverId: application.id, notes })}
+                  disabled={updateNotes.isPending}
+                >
+                  {updateNotes.isPending ? 'Saving...' : 'Save Notes'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       <RejectApplicationModal

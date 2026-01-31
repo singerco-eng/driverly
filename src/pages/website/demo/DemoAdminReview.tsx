@@ -1020,6 +1020,7 @@ export default function DemoAdminReview({ embedded = false }: DemoAdminReviewPro
             onSubmit={() => {}}
             disabled={true}
             readOnly={true}
+            credentialName={selectedCredential.credentialType.name}
           />
         </div>
       </div>

@@ -31,6 +31,19 @@ export function FormFieldBlock({
   const value = stepState.formData[content.key] ?? '';
   const isDisabled = disabled || readOnly;
 
+  const getDisplayValue = () => {
+    if (content.type === 'checkbox') {
+      return value ? 'Checked' : 'Not checked';
+    }
+
+    if (content.type === 'select') {
+      const selected = content.options?.find((option) => option.value === value);
+      return selected?.label ?? String(value);
+    }
+
+    return String(value);
+  };
+
   const handleChange = (newValue: unknown) => {
     if (isDisabled) return;
     
@@ -52,7 +65,7 @@ export function FormFieldBlock({
             onChange={(e) => handleChange(e.target.value)}
             placeholder={content.placeholder}
             disabled={isDisabled}
-            rows={4}
+            className="min-h-[120px] resize-y"
           />
         );
 
@@ -154,6 +167,31 @@ export function FormFieldBlock({
         );
     }
   };
+
+  // Checkbox has its own label rendering
+  if (readOnly) {
+    const displayValue = getDisplayValue();
+    const hasValue = content.type === 'checkbox' ? true : displayValue.trim().length > 0;
+
+    return (
+      <div className="space-y-2">
+        <Label>
+          {content.label}
+          {content.required && <span className="text-destructive ml-1">*</span>}
+        </Label>
+        <p className="text-sm py-2 px-3 bg-muted/50 rounded-md">
+          {hasValue ? (
+            displayValue
+          ) : (
+            <span className="text-muted-foreground">Not provided</span>
+          )}
+        </p>
+        {content.helpText && (
+          <p className="text-xs text-muted-foreground">{content.helpText}</p>
+        )}
+      </div>
+    );
+  }
 
   // Checkbox has its own label rendering
   if (content.type === 'checkbox') {

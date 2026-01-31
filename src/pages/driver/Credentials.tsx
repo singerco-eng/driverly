@@ -1,18 +1,21 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQueries } from '@tanstack/react-query';
-import { EnhancedDataView } from '@/components/ui/enhanced-data-view';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { FilterBar } from '@/components/ui/filter-bar';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { EnhancedTable, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DriverCredentialCard } from '@/components/features/driver/DriverCredentialCard';
 import {
   FileText,
   Shield,
   Eye,
   Upload,
+  LayoutGrid,
+  List,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDriverByUserId } from '@/hooks/useDrivers';
@@ -171,12 +174,17 @@ export default function DriverCredentials() {
     });
   }, [allCredentials, filters, activeBrokerId]);
 
-  // Add id field for EnhancedDataView compatibility
+  // Add id field for compatibility
   const credentialsWithId: CredentialWithId[] = useMemo(() => {
-    return filteredCredentials.map((item) => ({
-      ...item,
-      id: `${item.credentialType.id}-${item.credentialType.category}`,
-    }));
+    return filteredCredentials.map((item) => {
+      const vehicleId = 'vehicle_id' in item.credential ? item.credential.vehicle_id : null;
+      return {
+        ...item,
+        id: vehicleId
+          ? `${item.credentialType.id}-${item.credentialType.category}-${vehicleId}`
+          : `${item.credentialType.id}-${item.credentialType.category}`,
+      };
+    });
   }, [filteredCredentials]);
 
   // Counts for badges
@@ -209,17 +217,8 @@ export default function DriverCredentials() {
   };
 
   // Description with counts
-  const description = useMemo(() => {
-    const count = filteredCredentials.length;
-    const actionCount = counts.action;
-    if (activeBrokerId) {
-      const brokerName = brokers.find((b) => b.id === activeBrokerId)?.name || 'Broker';
-      return `${brokerName} credentials · ${count} total`;
-    }
-    return actionCount > 0
-      ? `${count} credential${count !== 1 ? 's' : ''} · ${actionCount} need action`
-      : `${count} credential${count !== 1 ? 's' : ''}`;
-  }, [filteredCredentials.length, counts.action, activeBrokerId, brokers]);
+  const credentialCount = filteredCredentials.length;
+  const actionCount = counts.action;
 
   // Render credential card using standardized component
   const renderCredentialCard = (item: CredentialWithId) => (
@@ -259,185 +258,237 @@ export default function DriverCredentials() {
     );
   }
 
-  return (
-    <div className="space-y-6">
-      <EnhancedDataView
-        title={brokerId ? `Broker Credentials` : 'Credentials'}
-        description={description}
-        defaultViewMode="card"
-        cardLabel="Cards"
-        tableLabel="Table"
-        showViewModeToggle={true}
-        searchValue={filters.search || ''}
-        onSearchChange={(value) => setFilters((prev) => ({ ...prev, search: value }))}
-        searchPlaceholder="Search credentials..."
-        filters={[
-          {
-            value: filters.category || 'all',
-            onValueChange: (value) =>
-              setFilters((prev) => ({ ...prev, category: value as CredentialFilters['category'] })),
-            label: 'Type',
-            placeholder: 'All Types',
-            options: [
-              { value: 'all', label: 'All Types' },
-              { value: 'driver', label: 'Driver' },
-              { value: 'vehicle', label: 'Vehicle' },
-            ],
-          },
-          {
-            value: filters.status || 'all',
-            onValueChange: (value) =>
-              setFilters((prev) => ({ ...prev, status: value as CredentialFilters['status'] })),
-            label: 'Status',
-            placeholder: 'All Status',
-            options: [
-              { value: 'all', label: 'All Status' },
-              { value: 'action', label: `Action Needed (${counts.action})` },
-              { value: 'pending', label: `Pending (${counts.pending})` },
-              { value: 'complete', label: `Complete (${counts.complete})` },
-            ],
-          },
-          ...(brokerId || brokers.length === 0
-            ? []
-            : [
-                {
-                  value: filters.broker || 'all',
-                  onValueChange: (value: string) =>
-                    setFilters((prev) => ({ ...prev, broker: value })),
-                  label: 'Broker',
-                  placeholder: 'All Brokers',
-                  options: [
-                    { value: 'all', label: 'All Brokers' },
-                    ...brokers.map((broker) => ({
-                      value: broker.id,
-                      label: broker.name,
-                    })),
-                  ],
-                },
-              ]),
-          ...(brokerId
-            ? []
-            : [
-                {
-                  value: filters.scope || 'all',
-                  onValueChange: (value: string) =>
-                    setFilters((prev) => ({ ...prev, scope: value as CredentialFilters['scope'] })),
-                  label: 'Scope',
-                  placeholder: 'All Scopes',
-                  options: [
-                    { value: 'all', label: 'All Scopes' },
-                    { value: 'global', label: 'Global' },
-                    { value: 'broker', label: 'Broker Specific' },
-                  ],
-                },
-              ]),
-        ]}
-        tableProps={{
-          data: credentialsWithId,
-          loading: credentialsLoading,
-          children: (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Credential</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Scope</TableHead>
-                  <TableHead>Submitted</TableHead>
-                  <TableHead>Expires</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {credentialsWithId.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center">
-                      <div className="flex flex-col items-center gap-2">
-                        <FileText className="w-8 h-8 text-muted-foreground" />
-                        <p className="text-muted-foreground">No credentials found</p>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  credentialsWithId.map((item) => {
-                    const status = statusConfig[item.displayStatus] || statusConfig.not_submitted;
-                    const stepCount = item.credentialType.instruction_config?.steps?.length || 0;
-                    const isGlobal = item.credentialType.scope === 'global';
-                    const needsAction = ['not_submitted', 'rejected', 'expired', 'expiring'].includes(item.displayStatus);
-                    const isAdminOnly = isAdminOnlyCredential(item.credentialType);
+  // View toggle in header
+  const viewToggle = (
+    <TabsList>
+      <TabsTrigger value="table" className="gap-1.5">
+        <List className="w-4 h-4" />
+        Table
+      </TabsTrigger>
+      <TabsTrigger value="cards" className="gap-1.5">
+        <LayoutGrid className="w-4 h-4" />
+        Cards
+      </TabsTrigger>
+    </TabsList>
+  );
 
-                    return (
-                      <TableRow key={item.id}>
-                        <TableCell>
-                          <div>
-                            <div className="font-medium">{item.credentialType.name}</div>
-                            {stepCount > 0 && (
-                              <p className="text-xs text-muted-foreground mt-0.5">{stepCount} steps</p>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={status.badgeVariant}>
-                            {status.label}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {isGlobal ? (
-                            <span className="text-muted-foreground">Global</span>
-                          ) : (
-                            <span className="text-muted-foreground">
-                              {item.credentialType.broker?.name || 'Broker'}
-                            </span>
-                          )}
-                        </TableCell>
-                        <TableCell>{formatDate(item.credential?.submitted_at)}</TableCell>
-                        <TableCell>
-                          {item.credential?.expires_at ? (
-                            <span className={item.daysUntilExpiration !== null && item.daysUntilExpiration <= 30 ? 'text-destructive font-medium' : ''}>
-                              {formatDate(item.credential.expires_at)}
-                            </span>
-                          ) : item.credentialType.expiration_type === 'never' ? (
-                            'Never'
-                          ) : (
-                            '—'
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-1">
-                            <Button variant="ghost" size="sm" onClick={() => handleView(item)}>
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                            {needsAction && !isAdminOnly && (
-                              <Button variant="ghost" size="sm" onClick={() => handleView(item)} title="Start">
-                                <Upload className="w-4 h-4" />
-                              </Button>
-                            )}
+  return (
+    <div className="min-h-screen bg-background">
+      <Tabs defaultValue="table">
+        {/* Full-width header */}
+        <div className="border-b bg-background">
+          <div className="px-6 py-4">
+            <div className="flex items-center justify-between">
+              {/* Left: title */}
+              <div className="flex-1">
+                <h1 className="text-xl font-bold">{brokerId ? 'Broker Credentials' : 'Credentials'}</h1>
+                <p className="text-sm text-muted-foreground">
+                  {activeBrokerId
+                    ? `${brokers.find((b) => b.id === activeBrokerId)?.name || 'Broker'} credentials · ${credentialCount} total`
+                    : actionCount > 0
+                      ? `${credentialCount} credential${credentialCount !== 1 ? 's' : ''} · ${actionCount} need action`
+                      : `${credentialCount} credential${credentialCount !== 1 ? 's' : ''}`}
+                </p>
+              </div>
+
+              {/* Center: view toggle */}
+              <div className="flex items-center justify-center">
+                {viewToggle}
+              </div>
+
+              {/* Right: placeholder for balance */}
+              <div className="flex-1" />
+            </div>
+          </div>
+        </div>
+
+        {/* Content area */}
+        <div className="p-6">
+          <div className="max-w-5xl mx-auto space-y-4">
+            {/* Filter bar */}
+            <FilterBar
+              searchValue={filters.search || ''}
+              onSearchChange={(value) => setFilters((prev) => ({ ...prev, search: value }))}
+              searchPlaceholder="Search credentials..."
+              filters={[
+                {
+                  value: filters.category || 'all',
+                  onValueChange: (value) =>
+                    setFilters((prev) => ({ ...prev, category: value as CredentialFilters['category'] })),
+                  label: 'Type',
+                  placeholder: 'All Types',
+                  options: [
+                    { value: 'all', label: 'All Types' },
+                    { value: 'driver', label: 'Driver' },
+                    { value: 'vehicle', label: 'Vehicle' },
+                  ],
+                },
+                {
+                  value: filters.status || 'all',
+                  onValueChange: (value) =>
+                    setFilters((prev) => ({ ...prev, status: value as CredentialFilters['status'] })),
+                  label: 'Status',
+                  placeholder: 'All Status',
+                  options: [
+                    { value: 'all', label: 'All Status' },
+                    { value: 'action', label: `Action Needed (${counts.action})` },
+                    { value: 'pending', label: `Pending (${counts.pending})` },
+                    { value: 'complete', label: `Complete (${counts.complete})` },
+                  ],
+                },
+                ...(brokerId || brokers.length === 0
+                  ? []
+                  : [
+                      {
+                        value: filters.broker || 'all',
+                        onValueChange: (value: string) =>
+                          setFilters((prev) => ({ ...prev, broker: value })),
+                        label: 'Broker',
+                        placeholder: 'All Brokers',
+                        options: [
+                          { value: 'all', label: 'All Brokers' },
+                          ...brokers.map((broker) => ({
+                            value: broker.id,
+                            label: broker.name,
+                          })),
+                        ],
+                      },
+                    ]),
+                ...(brokerId
+                  ? []
+                  : [
+                      {
+                        value: filters.scope || 'all',
+                        onValueChange: (value: string) =>
+                          setFilters((prev) => ({ ...prev, scope: value as CredentialFilters['scope'] })),
+                        label: 'Scope',
+                        placeholder: 'All Scopes',
+                        options: [
+                          { value: 'all', label: 'All Scopes' },
+                          { value: 'global', label: 'Global' },
+                          { value: 'broker', label: 'Broker Specific' },
+                        ],
+                      },
+                    ]),
+              ]}
+            />
+
+            {/* Cards view */}
+            <TabsContent value="cards" className="mt-0">
+              {credentialsLoading ? (
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {[...Array(6)].map((_, i) => (
+                    <Skeleton key={i} className="h-32 rounded-lg" />
+                  ))}
+                </div>
+              ) : credentialsWithId.length === 0 ? (
+                <Card className="p-12 text-center">
+                  <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No credentials found</h3>
+                  <p className="text-muted-foreground">
+                    {filters.search || filters.status !== 'all'
+                      ? 'Try adjusting your search or filters.'
+                      : 'Credentials will appear here once configured.'}
+                  </p>
+                </Card>
+              ) : (
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {credentialsWithId.map(renderCredentialCard)}
+                </div>
+              )}
+            </TabsContent>
+
+            {/* Table view */}
+            <TabsContent value="table" className="mt-0">
+              <EnhancedTable loading={credentialsLoading} skeletonRows={5} skeletonColumns={6}>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Credential</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Scope</TableHead>
+                      <TableHead>Submitted</TableHead>
+                      <TableHead>Expires</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {credentialsWithId.length === 0 && !credentialsLoading ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="h-24 text-center">
+                          <div className="flex flex-col items-center gap-2">
+                            <FileText className="w-8 h-8 text-muted-foreground" />
+                            <p className="text-muted-foreground">No credentials found</p>
                           </div>
                         </TableCell>
                       </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
-          ),
-        }}
-        cardProps={{
-          data: credentialsWithId,
-          loading: credentialsLoading,
-          emptyState: (
-            <Card className="p-12 text-center">
-              <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">No credentials found</h3>
-              <p className="text-muted-foreground">
-                {filters.search || filters.status !== 'all'
-                  ? 'Try adjusting your search or filters.'
-                  : 'Credentials will appear here once configured.'}
-              </p>
-            </Card>
-          ),
-          renderCard: renderCredentialCard,
-        }}
-      />
+                    ) : (
+                      credentialsWithId.map((item) => {
+                        const status = statusConfig[item.displayStatus] || statusConfig.not_submitted;
+                        const stepCount = item.credentialType.instruction_config?.steps?.length || 0;
+                        const isGlobal = item.credentialType.scope === 'global';
+                        const needsAction = ['not_submitted', 'rejected', 'expired', 'expiring'].includes(item.displayStatus);
+                        const isAdminOnly = isAdminOnlyCredential(item.credentialType);
+
+                        return (
+                          <TableRow key={item.id} className="hover:bg-muted/50">
+                            <TableCell>
+                              <div>
+                                <div className="font-medium">{item.credentialType.name}</div>
+                                {stepCount > 0 && (
+                                  <p className="text-xs text-muted-foreground mt-0.5">{stepCount} steps</p>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={status.badgeVariant}>
+                                {status.label}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {isGlobal ? (
+                                <span className="text-muted-foreground">Global</span>
+                              ) : (
+                                <span className="text-muted-foreground">
+                                  {item.credentialType.broker?.name || 'Broker'}
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell>{formatDate(item.credential?.submitted_at)}</TableCell>
+                            <TableCell>
+                              {item.credential?.expires_at ? (
+                                <span className={item.daysUntilExpiration !== null && item.daysUntilExpiration <= 30 ? 'text-destructive font-medium' : ''}>
+                                  {formatDate(item.credential.expires_at)}
+                                </span>
+                              ) : item.credentialType.expiration_type === 'never' ? (
+                                'Never'
+                              ) : (
+                                '—'
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-1">
+                                <Button variant="ghost" size="sm" onClick={() => handleView(item)}>
+                                  <Eye className="w-4 h-4" />
+                                </Button>
+                                {needsAction && !isAdminOnly && (
+                                  <Button variant="ghost" size="sm" onClick={() => handleView(item)} title="Start">
+                                    <Upload className="w-4 h-4" />
+                                  </Button>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    )}
+                  </TableBody>
+                </Table>
+              </EnhancedTable>
+            </TabsContent>
+          </div>
+        </div>
+      </Tabs>
     </div>
   );
 }

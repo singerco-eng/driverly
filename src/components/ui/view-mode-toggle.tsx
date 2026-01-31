@@ -1,45 +1,11 @@
-
 import React from 'react';
-import { cva, type VariantProps } from "class-variance-authority"
-import { cn } from "@/lib/utils"
-import { Grid3X3, List } from 'lucide-react';
-import { toggleContainerVariants, toggleItemVariants } from "@/lib/design-system"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
+import { LayoutGrid, List } from 'lucide-react';
 
 export type ViewMode = 'card' | 'table';
 
-const viewModeToggleVariants = cva(
-  toggleContainerVariants({ variant: "view-mode" }),
-  {
-    variants: {
-      size: {
-        sm: "h-8",
-        default: "h-10",
-        lg: "h-12"
-      }
-    },
-    defaultVariants: {
-      size: "default"
-    }
-  }
-)
-
-const viewModeItemVariants = cva(
-  toggleItemVariants({ variant: "view-mode" }),
-  {
-    variants: {
-      size: {
-        sm: "text-xs px-2 py-1",
-        default: "text-sm px-3 py-1.5",
-        lg: "text-base px-4 py-2"
-      }
-    },
-    defaultVariants: {
-      size: "default"
-    }
-  }
-)
-
-interface ViewModeToggleProps extends VariantProps<typeof viewModeToggleVariants> {
+interface ViewModeToggleProps {
   viewMode: ViewMode;
   onViewModeChange: (mode: ViewMode) => void;
   cardLabel?: string;
@@ -55,36 +21,19 @@ export const ViewModeToggle: React.FC<ViewModeToggleProps> = ({
   tableLabel = 'Table',
   className = '',
   showLabels = true,
-  size = 'default'
 }) => {
   return (
-    <div 
-      className={cn(viewModeToggleVariants({ size }), className)}
-      role="tablist"
-      aria-orientation="horizontal"
-    >
-      <button
-        className={cn(viewModeItemVariants({ size }))}
-        data-state={viewMode === 'card' ? 'active' : 'inactive'}
-        onClick={() => onViewModeChange('card')}
-        role="tab"
-        aria-selected={viewMode === 'card'}
-        aria-label={cardLabel}
-      >
-        <Grid3X3 className="w-4 h-4" />
-        {showLabels && <span className="ml-1">{cardLabel}</span>}
-      </button>
-      <button
-        className={cn(viewModeItemVariants({ size }))}
-        data-state={viewMode === 'table' ? 'active' : 'inactive'}
-        onClick={() => onViewModeChange('table')}
-        role="tab"
-        aria-selected={viewMode === 'table'}
-        aria-label={tableLabel}
-      >
-        <List className="w-4 h-4" />
-        {showLabels && <span className="ml-1">{tableLabel}</span>}
-      </button>
-    </div>
+    <Tabs value={viewMode} onValueChange={(v) => onViewModeChange(v as ViewMode)} className={className}>
+      <TabsList>
+        <TabsTrigger value="card" className="gap-1.5">
+          <LayoutGrid className="w-4 h-4" />
+          {showLabels && cardLabel}
+        </TabsTrigger>
+        <TabsTrigger value="table" className="gap-1.5">
+          <List className="w-4 h-4" />
+          {showLabels && tableLabel}
+        </TabsTrigger>
+      </TabsList>
+    </Tabs>
   );
 };

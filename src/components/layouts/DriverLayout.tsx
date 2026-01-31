@@ -43,11 +43,10 @@ import { Badge } from '@/components/ui/badge';
 const navItems = [
   { path: '/driver', label: 'Dashboard', icon: LayoutDashboard, exact: true },
   { path: '/driver/profile', label: 'Profile', icon: User },
-  { path: '/driver/vehicles', label: 'Vehicles', icon: Car },
+  { path: '/driver/vehicles', label: 'My Vehicles', icon: Car },
   { path: '/driver/credentials', label: 'Credentials', icon: FileText },
   { path: '/driver/availability', label: 'Availability', icon: Calendar },
-  { path: '/driver/brokers', label: 'My Trip Sources', icon: Building2 },
-  { path: '/driver/settings/account', label: 'Settings', icon: Settings },
+  { path: '/driver/trip-sources', label: 'My Trip Sources', icon: Building2 },
 ];
 
 export default function DriverLayout() {

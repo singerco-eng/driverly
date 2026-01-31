@@ -35,7 +35,6 @@ import ApplicationStatus from '@/pages/driver/ApplicationStatus';
 import DriverDashboard from '@/pages/driver/Dashboard';
 import DriverAvailability from '@/pages/driver/Availability';
 import PaymentSettings from '@/pages/driver/PaymentSettings';
-import DriverComingSoon from '@/pages/driver/ComingSoon';
 import DriverProfile from '@/pages/driver/Profile';
 import AccountSettings from '@/pages/driver/AccountSettings';
 import DriverCredentials from '@/pages/driver/Credentials';
@@ -43,6 +42,7 @@ import CredentialDetailPage from '@/pages/driver/CredentialDetail';
 import DriverVehicles from '@/pages/driver/Vehicles';
 import DriverVehicleDetail from '@/pages/driver/VehicleDetail';
 import DriverVehicleCredentialDetail from '@/pages/driver/VehicleCredentialDetail';
+import TripSources from '@/pages/driver/TripSources';
 import { WebsiteLayout } from '@/components/website/WebsiteLayout';
 import HomePage from '@/pages/website/HomePage';
 import CredentialingPage from '@/pages/website/CredentialingPage';
@@ -135,15 +135,7 @@ function App() {
                 <Route path="credentials" element={<DriverCredentials />} />
                 <Route path="credentials/:id" element={<CredentialDetailPage />} />
                 <Route path="credentials/broker/:brokerId" element={<DriverCredentials />} />
-                <Route
-                  path="brokers"
-                  element={
-                    <DriverComingSoon
-                      title="Brokers"
-                      description="Request broker assignments to expand trip options."
-                    />
-                  }
-                />
+                <Route path="trip-sources" element={<TripSources />} />
                 <Route path="availability" element={<DriverAvailability />} />
                 <Route path="settings" element={<Navigate to="settings/account" replace />} />
                 <Route path="settings/payment" element={<DriverPaymentRoute />} />

@@ -225,6 +225,7 @@ export function useSubmitCredential() {
       queryClient.invalidateQueries({ queryKey: ['driver-credential-progress'] });
       queryClient.invalidateQueries({ queryKey: ['vehicle-credential-progress'] });
       queryClient.invalidateQueries({ queryKey: ['credential-progress'] });
+      queryClient.invalidateQueries({ queryKey: ['credential-history'] });
     },
     onError: (error: Error) => {
       toast({ title: 'Submission failed', description: error.message, variant: 'destructive' });

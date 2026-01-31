@@ -1,11 +1,13 @@
 import React, { useState } from "react";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { ViewModeToggle, ViewMode } from "@/components/ui/view-mode-toggle";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FilterBar, FilterConfig } from "@/components/ui/filter-bar";
 import { EnhancedTable, EnhancedTableProps } from "@/components/ui/table";
 import { EnhancedCardGrid, EnhancedCardGridProps } from "@/components/ui/enhanced-card-grid";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { LayoutGrid, List } from "lucide-react";
+
+export type ViewMode = 'card' | 'table';
 
 export interface EnhancedDataViewProps<T extends { id: string }> {
   // Header configuration
@@ -53,7 +55,7 @@ export function EnhancedDataView<T extends { id: string }>({
   actionLabel,
   onActionClick,
   actionIcon,
-  defaultViewMode = 'card',
+  defaultViewMode = 'table',
   cardLabel = 'Cards',
   tableLabel = 'Table',
   showViewModeToggle = true,
@@ -101,54 +103,62 @@ export function EnhancedDataView<T extends { id: string }>({
     ...cardProps,
     loading: coordinatedLoadingState
   } : cardProps;
+
+  // View toggle using Tabs pattern
+  const viewToggle = (
+    <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
+      <TabsList>
+        <TabsTrigger value="card" className="gap-1.5">
+          <LayoutGrid className="w-4 h-4" />
+          {cardLabel}
+        </TabsTrigger>
+        <TabsTrigger value="table" className="gap-1.5">
+          <List className="w-4 h-4" />
+          {tableLabel}
+        </TabsTrigger>
+      </TabsList>
+    </Tabs>
+  );
   
   return (
-    <Card className={cn("w-full", className)}>
-      <CardHeader className={cn("space-y-4", headerClassName)}>
-        {/* Title and action row */}
-        <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <h2 className="text-2xl font-bold tracking-tight">{title}</h2>
-            {description && (
-              <p className="text-muted-foreground">{description}</p>
-            )}
-          </div>
-          
-          <div className="flex items-center gap-3">
-            {/* View mode toggle */}
-            {showViewModeToggle && (
-              <ViewModeToggle
-                viewMode={viewMode}
-                onViewModeChange={setViewMode}
-                cardLabel={cardLabel}
-                tableLabel={tableLabel}
-              />
-            )}
-            
-            {/* Action button */}
-            {actionLabel && onActionClick && (
-              <Button onClick={onActionClick} className="gap-2">
-                {actionIcon}
-                {actionLabel}
-              </Button>
-            )}
-          </div>
+    <div className={cn("w-full space-y-4", className)}>
+      {/* Section header */}
+      <div className={cn("flex items-start justify-between", headerClassName)}>
+        <div className="space-y-1">
+          <h2 className="text-xl font-bold">{title}</h2>
+          {description && (
+            <p className="text-sm text-muted-foreground">{description}</p>
+          )}
         </div>
         
-        {/* Filter bar */}
-        {(filters.length > 0 || onSearchChange) && (
-          <FilterBar
-            searchValue={searchValue || ''}
-            onSearchChange={onSearchChange || (() => {})}
-            searchPlaceholder={searchPlaceholder}
-            filters={filters}
-            onClearAll={clearAllFilters}
-            showClearAll={true}
-          />
-        )}
-      </CardHeader>
+        <div className="flex items-center gap-3">
+          {/* View mode toggle */}
+          {showViewModeToggle && viewToggle}
+          
+          {/* Action button */}
+          {actionLabel && onActionClick && (
+            <Button onClick={onActionClick} className="gap-2">
+              {actionIcon}
+              {actionLabel}
+            </Button>
+          )}
+        </div>
+      </div>
       
-      <CardContent className={cn("space-y-4", contentClassName)}>
+      {/* Filter bar */}
+      {(filters.length > 0 || onSearchChange) && (
+        <FilterBar
+          searchValue={searchValue || ''}
+          onSearchChange={onSearchChange || (() => {})}
+          searchPlaceholder={searchPlaceholder}
+          filters={filters}
+          onClearAll={clearAllFilters}
+          showClearAll={true}
+        />
+      )}
+      
+      {/* Content */}
+      <div className={cn(contentClassName)}>
         {viewMode === 'table' ? (
           <EnhancedTable {...enhancedTableProps}>
             {tableProps.children}
@@ -156,8 +166,8 @@ export function EnhancedDataView<T extends { id: string }>({
         ) : (
           <EnhancedCardGrid {...enhancedCardProps} />
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 

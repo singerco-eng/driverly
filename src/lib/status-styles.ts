@@ -21,6 +21,6 @@ export const credentialStatusVariant: Record<CredentialDisplayStatus, BadgeProps
   pending_review: 'secondary',
   not_submitted: 'outline',
   expired: 'destructive',
-  expiring: 'secondary',
+  expiring: 'outline', // "Expiring Soon" uses outline per design system
   awaiting: 'secondary',
 };

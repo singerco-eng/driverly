@@ -8,7 +8,12 @@ import { AlertTriangle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDriverByUserId } from '@/hooks/useDrivers';
 import { useDriverAssignments } from '@/hooks/useVehicleAssignments';
-import { useDriverCredentials, useSubmitCredential } from '@/hooks/useCredentials';
+import { 
+  useDriverCredentials, 
+  useSubmitCredential,
+  useEnsureDriverCredential,
+  useEnsureVehicleCredential,
+} from '@/hooks/useCredentials';
 import * as credentialService from '@/services/credentials';
 import { CredentialDetailView } from '@/components/features/credentials/CredentialDetail';
 import { useToast } from '@/hooks/use-toast';
@@ -30,8 +35,10 @@ export default function CredentialDetailPage() {
   const { data: driverCredentials, isLoading: driverCredentialsLoading } = useDriverCredentials(driverId);
   const { data: assignments } = useDriverAssignments(driverId);
 
-  // Submit mutation
+  // Submit and ensure mutations
   const submitCredential = useSubmitCredential();
+  const ensureDriverCredential = useEnsureDriverCredential();
+  const ensureVehicleCredential = useEnsureVehicleCredential();
 
   const vehicleIds = useMemo(
     () => (assignments || []).map((assignment) => assignment.vehicle_id),
@@ -66,9 +73,9 @@ export default function CredentialDetailPage() {
     driverCredentialsLoading ||
     vehicleCredentialQueries.some((query) => query.isLoading);
 
-  // Handle submit
+  // Handle submit - ensures credential exists before submitting
   const handleSubmit = async () => {
-    if (!credentialData?.credential) {
+    if (!credentialData) {
       toast({
         title: 'Error',
         description: 'Credential not found',
@@ -77,11 +84,44 @@ export default function CredentialDetailPage() {
       return;
     }
 
-    const isVehicleCredential = 'vehicle_id' in credentialData.credential;
+    const isVehicleCredential = credentialData.credentialType.category === 'vehicle';
+    const companyId = profile?.company_id;
+    
+    if (!companyId) {
+      toast({
+        title: 'Error',
+        description: 'Company not found',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     try {
+      // Check if credential has an ID - if not, create it first
+      let credentialId = credentialData.credential?.id;
+      
+      if (!credentialId) {
+        if (isVehicleCredential && credentialData.credential && 'vehicle_id' in credentialData.credential) {
+          credentialId = await ensureVehicleCredential.mutateAsync({
+            vehicleId: credentialData.credential.vehicle_id!,
+            credentialTypeId: credentialData.credentialType.id,
+            companyId,
+          });
+        } else if (driverId) {
+          credentialId = await ensureDriverCredential.mutateAsync({
+            driverId,
+            credentialTypeId: credentialData.credentialType.id,
+            companyId,
+          });
+        }
+      }
+
+      if (!credentialId) {
+        throw new Error('Could not create credential');
+      }
+
       await submitCredential.mutateAsync({
-        credentialId: credentialData.credential.id,
+        credentialId,
         credentialTable: isVehicleCredential ? 'vehicle_credentials' : 'driver_credentials',
       });
 
@@ -101,7 +141,7 @@ export default function CredentialDetailPage() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="space-y-6">
+      <div className="max-w-4xl mx-auto space-y-6">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-12 w-full" />
         <Skeleton className="h-64 w-full" />
@@ -112,7 +152,7 @@ export default function CredentialDetailPage() {
   // Not found state
   if (!credentialData) {
     return (
-      <div className="space-y-6">
+      <div className="max-w-4xl mx-auto space-y-6">
         <Card className="p-12 text-center">
           <AlertTriangle className="w-12 h-12 mx-auto text-destructive mb-4" />
           <h3 className="text-lg font-medium mb-2">Credential not found</h3>
@@ -126,33 +166,41 @@ export default function CredentialDetailPage() {
   }
 
   const { credentialType, credential } = credentialData;
-  const isVehicleCredential = credential && 'vehicle_id' in credential;
+  const isVehicleCredential = credentialType.category === 'vehicle';
 
-  // Create a mock credential if none exists yet
-  const credentialInstance: DriverCredential | VehicleCredential = credential || {
-    id: '',
-    driver_id: driverId || '',
-    credential_type_id: credentialType.id,
-    company_id: profile?.company_id || '',
-    status: 'not_submitted' as const,
-    document_url: null,
-    document_urls: null,
-    signature_data: null,
-    form_data: null,
-    entered_date: null,
-    driver_expiration_date: null,
-    notes: null,
-    expires_at: null,
-    reviewed_at: null,
-    reviewed_by: null,
-    review_notes: null,
-    rejection_reason: null,
-    submission_version: 0,
-    grace_period_ends: null,
-    submitted_at: null,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  };
+  // Use credential if it has an ID, otherwise create a mock
+  // Note: A credential without an ID will be created on submit via ensureCredential
+  const hasValidCredential = credential && credential.id;
+  const credentialInstance: DriverCredential | VehicleCredential = hasValidCredential 
+    ? credential 
+    : {
+        id: '', // Empty string - will be created on submit
+        driver_id: driverId || '',
+        credential_type_id: credentialType.id,
+        company_id: profile?.company_id || '',
+        status: 'not_submitted' as const,
+        document_url: null,
+        document_urls: null,
+        signature_data: null,
+        form_data: null,
+        entered_date: null,
+        driver_expiration_date: null,
+        notes: null,
+        expires_at: null,
+        reviewed_at: null,
+        reviewed_by: null,
+        review_notes: null,
+        rejection_reason: null,
+        submission_version: 0,
+        grace_period_ends: null,
+        submitted_at: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        // Add vehicle_id for vehicle credentials
+        ...(isVehicleCredential && credential && 'vehicle_id' in credential 
+          ? { vehicle_id: credential.vehicle_id } 
+          : {}),
+      };
 
   return (
     <CredentialDetailView

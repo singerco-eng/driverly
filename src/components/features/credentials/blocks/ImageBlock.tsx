@@ -3,6 +3,7 @@ import type { ImageBlockContent } from '@/types/instructionBuilder';
 interface ImageBlockProps {
   content: ImageBlockContent;
   blockId: string;
+  readOnly?: boolean;
 }
 
 export function ImageBlock({ content }: ImageBlockProps) {
@@ -19,7 +20,8 @@ export function ImageBlock({ content }: ImageBlockProps) {
       <img
         src={content.url}
         alt={content.alt || 'Credential image'}
-        className="max-w-full rounded-lg border"
+        className="max-w-full max-h-80 object-contain rounded-lg border"
+        loading="lazy"
       />
       {content.caption && (
         <figcaption className="text-sm text-muted-foreground text-center">

@@ -1,7 +1,6 @@
-import { useEffect, useState } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import { useEffect, useState, useMemo } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft,
   Save,
   Eye,
   MoreVertical,
@@ -13,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
+import { DetailPageHeader } from '@/components/ui/DetailPageHeader';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,9 +30,12 @@ import { RequirementsSection } from '@/components/features/admin/credential-buil
 import { ExpirationSection } from '@/components/features/admin/credential-builder/ExpirationSection';
 import { SettingsSection } from '@/components/features/admin/credential-builder/SettingsSection';
 import { FullPagePreview } from '@/components/features/admin/credential-builder/FullPagePreview';
+import { AIGeneratorFullScreen } from '@/components/features/admin/credential-builder/AIGeneratorFullScreen';
 import type { CredentialType, CredentialTypeEdits } from '@/types/credential';
 import type { CredentialTypeInstructions } from '@/types/instructionBuilder';
 import { createEmptyInstructions } from '@/types/instructionBuilder';
+
+type EditorMode = 'ai' | 'preview' | 'edit';
 
 export default function CredentialTypeEditor() {
   const { id } = useParams<{ id: string }>();
@@ -46,8 +49,37 @@ export default function CredentialTypeEditor() {
     null,
   );
   const [hasInstructionChanges, setHasInstructionChanges] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
   const [edits, setEdits] = useState<CredentialTypeEdits>({});
+  
+  // Editor mode state - null means not yet determined
+  const [mode, setMode] = useState<EditorMode | null>(null);
+  const [modeInitialized, setModeInitialized] = useState(false);
+
+  // Determine if credential has existing instructions with actual content
+  const hasExistingInstructions = useMemo(() => {
+    if (!credentialType?.instruction_config) return false;
+    const config = credentialType.instruction_config;
+    // Must have steps array with at least one step that has blocks
+    if (!config.steps || !Array.isArray(config.steps) || config.steps.length === 0) {
+      return false;
+    }
+    // Check if any step has actual blocks (not just empty steps)
+    return config.steps.some(step => step.blocks && step.blocks.length > 0);
+  }, [credentialType]);
+
+  // Set initial mode based on whether there are existing instructions
+  useEffect(() => {
+    if (!credentialType || modeInitialized) return;
+    
+    console.log('Setting initial mode:', { hasExistingInstructions, instruction_config: credentialType.instruction_config });
+    
+    if (hasExistingInstructions) {
+      setMode('edit');
+    } else {
+      setMode('ai');
+    }
+    setModeInitialized(true);
+  }, [credentialType, hasExistingInstructions, modeInitialized]);
 
   useEffect(() => {
     if (!credentialType) return;
@@ -60,6 +92,12 @@ export default function CredentialTypeEditor() {
   const handleConfigChange = (config: CredentialTypeInstructions) => {
     setInstructionConfig(config);
     setHasInstructionChanges(true);
+  };
+
+  const handleAIApply = (config: CredentialTypeInstructions) => {
+    setInstructionConfig(config);
+    setHasInstructionChanges(true);
+    setMode('preview');
   };
 
   const handleSave = async () => {
@@ -113,17 +151,6 @@ export default function CredentialTypeEditor() {
     });
   };
 
-  // Full-page preview mode - render just the preview
-  if (showPreview && instructionConfig && credentialType) {
-    return (
-      <FullPagePreview
-        config={instructionConfig}
-        credentialName={credentialType.name}
-        onClose={() => setShowPreview(false)}
-      />
-    );
-  }
-
   // Loading state
   if (isLoading) {
     return (
@@ -148,14 +175,7 @@ export default function CredentialTypeEditor() {
   // Error state
   if (error || !credentialType) {
     return (
-      <div className="space-y-6">
-        <Link
-          to="/admin/settings/credentials"
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Credential Types
-        </Link>
+      <div className="p-6 max-w-4xl mx-auto">
         <Card className="p-12 text-center">
           <FileText className="w-12 h-12 mx-auto text-destructive mb-4" />
           <h3 className="text-lg font-medium mb-2">Credential type not found</h3>
@@ -168,141 +188,173 @@ export default function CredentialTypeEditor() {
     );
   }
 
+  // AI Generator Full Screen Mode
+  if (mode === 'ai') {
+    return (
+      <div className="fixed inset-0 z-50 bg-background">
+        <AIGeneratorFullScreen
+          credentialName={credentialType.name}
+          onApply={handleAIApply}
+          onManualBuild={() => setMode('edit')}
+          onBack={() => navigate('/admin/settings/credentials')}
+        />
+      </div>
+    );
+  }
+
+  // Full-page preview mode (from Preview button in edit mode)
+  if (mode === 'preview' && instructionConfig) {
+    return (
+      <FullPagePreview
+        config={instructionConfig}
+        credentialName={credentialType.name}
+        onClose={() => setMode('edit')}
+      />
+    );
+  }
+
+  // Edit mode (default after AI or for existing credentials)
   const hasChanges = hasInstructionChanges || Object.keys(edits).length > 0;
   const isSaving = updateConfig.isPending || updateCredentialType.isPending;
 
-  return (
-    <div className="space-y-6">
-      {/* Back link */}
-      <Link
-        to="/admin/settings/credentials"
-        className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Back to Credential Types
-      </Link>
+  // Build badges
+  const badges = (
+    <>
+      <Badge variant={credentialType.is_active ? 'default' : 'secondary'}>
+        {credentialType.is_active ? 'Active' : 'Inactive'}
+      </Badge>
+      {hasChanges && (
+        <Badge variant="secondary">
+          Unsaved
+        </Badge>
+      )}
+    </>
+  );
 
-      {/* Header row */}
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div className="flex items-start gap-4">
-          <div>
-            <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-2xl font-bold">{credentialType.name}</h1>
-              <Badge variant={credentialType.is_active ? 'default' : 'secondary'}>
-                {credentialType.is_active ? 'Active' : 'Inactive'}
-              </Badge>
-              {hasChanges && (
-                <Badge variant="secondary">
-                  Unsaved
-                </Badge>
-              )}
-            </div>
-            <p className="text-muted-foreground">
-              {credentialType.category === 'driver' ? 'Driver' : 'Vehicle'} Credential •{' '}
-              {credentialType.scope === 'global' ? 'Global' : credentialType.broker?.name}
-            </p>
-          </div>
-        </div>
+  // Build subtitle
+  const subtitle = `${credentialType.category === 'driver' ? 'Driver' : 'Vehicle'} Credential • ${credentialType.scope === 'global' ? 'Global' : credentialType.broker?.name}`;
 
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => setShowPreview(true)}>
-            <Eye className="w-4 h-4 mr-2" />
-            Preview
+  // Build actions
+  const actions = (
+    <>
+      <Button variant="outline" onClick={() => setMode('preview')}>
+        <Eye className="w-4 h-4 mr-2" />
+        Preview
+      </Button>
+      <Button onClick={handleSave} disabled={!hasChanges || isSaving}>
+        {isSaving ? (
+          <>
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            Saving...
+          </>
+        ) : (
+          <>
+            <Save className="w-4 h-4 mr-2" />
+            Save Changes
+          </>
+        )}
+      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="icon">
+            <MoreVertical className="w-4 h-4" />
           </Button>
-          <Button onClick={handleSave} disabled={!hasChanges || isSaving}>
-            {isSaving ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              <>
-                <Save className="w-4 h-4 mr-2" />
-                Save Changes
-              </>
-            )}
-          </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon">
-                <MoreVertical className="w-4 h-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem>Rename</DropdownMenuItem>
-              <DropdownMenuItem>Duplicate</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className={credentialType.is_active ? 'text-destructive' : ''}
-                onClick={async () => {
-                  try {
-                    await updateCredentialType.mutateAsync({
-                      id: credentialType.id,
-                      is_active: !credentialType.is_active,
-                    });
-                  } catch {
-                    // Error handled by mutation
-                  }
-                }}
-              >
-                {credentialType.is_active ? 'Deactivate' : 'Activate'}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <Tabs defaultValue="instructions" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="instructions">Instructions</TabsTrigger>
-          <TabsTrigger value="requirements">Requirements</TabsTrigger>
-          <TabsTrigger value="expiration">Expiration</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="instructions" className="space-y-0">
-          {instructionConfig && (
-            <InstructionBuilder
-              config={instructionConfig}
-              onChange={handleConfigChange}
-              credentialName={credentialType.name}
-            />
-          )}
-        </TabsContent>
-
-        <TabsContent value="requirements" className="space-y-6">
-          <RequirementsSection
-            credentialType={credentialType}
-            edits={edits}
-            onEditChange={handleEditChange}
-          />
-        </TabsContent>
-
-        <TabsContent value="expiration" className="space-y-6">
-          <ExpirationSection
-            credentialType={credentialType}
-            edits={edits}
-            onEditChange={handleEditChange}
-          />
-        </TabsContent>
-
-        <TabsContent value="settings" className="space-y-6">
-          <SettingsSection
-            credentialType={credentialType}
-            edits={edits}
-            onEditChange={handleEditChange}
-            instructionSettings={instructionConfig?.settings}
-            onInstructionSettingsChange={(updates) => {
-              if (instructionConfig) {
-                handleConfigChange({
-                  ...instructionConfig,
-                  settings: { ...instructionConfig.settings, ...updates },
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem>Rename</DropdownMenuItem>
+          <DropdownMenuItem>Duplicate</DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            className={credentialType.is_active ? 'text-destructive' : ''}
+            onClick={async () => {
+              try {
+                await updateCredentialType.mutateAsync({
+                  id: credentialType.id,
+                  is_active: !credentialType.is_active,
                 });
+              } catch {
+                // Error handled by mutation
               }
             }}
-          />
-        </TabsContent>
+          >
+            {credentialType.is_active ? 'Deactivate' : 'Activate'}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </>
+  );
+
+  // Tab list for header
+  const tabsList = (
+    <TabsList>
+      <TabsTrigger value="instructions">Instructions</TabsTrigger>
+      <TabsTrigger value="requirements">Requirements</TabsTrigger>
+      <TabsTrigger value="expiration">Expiration</TabsTrigger>
+      <TabsTrigger value="settings">Settings</TabsTrigger>
+    </TabsList>
+  );
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Tabs defaultValue="instructions">
+        {/* Full-width header with centered tabs */}
+        <DetailPageHeader
+          title={credentialType.name}
+          subtitle={subtitle}
+          badges={badges}
+          onBack={() => navigate('/admin/settings/credentials')}
+          backLabel="Back to Credential Types"
+          centerContent={tabsList}
+          actions={actions}
+        />
+
+        {/* Content area */}
+        <div className="p-6">
+          <div className="max-w-5xl mx-auto">
+            <TabsContent value="instructions" className="mt-0 space-y-0">
+              {instructionConfig && (
+                <InstructionBuilder
+                  config={instructionConfig}
+                  onChange={handleConfigChange}
+                  credentialName={credentialType.name}
+                />
+              )}
+            </TabsContent>
+
+            <TabsContent value="requirements" className="mt-0 space-y-6">
+              <RequirementsSection
+                credentialType={credentialType}
+                edits={edits}
+                onEditChange={handleEditChange}
+              />
+            </TabsContent>
+
+            <TabsContent value="expiration" className="mt-0 space-y-6">
+              <ExpirationSection
+                credentialType={credentialType}
+                edits={edits}
+                onEditChange={handleEditChange}
+              />
+            </TabsContent>
+
+            <TabsContent value="settings" className="mt-0 space-y-6">
+              <SettingsSection
+                credentialType={credentialType}
+                edits={edits}
+                onEditChange={handleEditChange}
+                instructionSettings={instructionConfig?.settings}
+                onInstructionSettingsChange={(updates) => {
+                  if (instructionConfig) {
+                    handleConfigChange({
+                      ...instructionConfig,
+                      settings: { ...instructionConfig.settings, ...updates },
+                    });
+                  }
+                }}
+              />
+            </TabsContent>
+          </div>
+        </div>
       </Tabs>
     </div>
   );

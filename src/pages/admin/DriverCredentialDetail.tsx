@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { CredentialDetailView } from '@/components/features/credentials/CredentialDetail';
+import { useSubmitCredential } from '@/hooks/useCredentials';
 import { useToast } from '@/hooks/use-toast';
 import type { CredentialType, DriverCredential } from '@/types/credential';
 
@@ -111,37 +112,31 @@ export default function DriverCredentialDetail() {
     },
   });
 
-  // Submit on behalf mutation
-  const submitMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase
-        .from('driver_credentials')
-        .update({
-          status: 'pending_review',
-          submitted_at: new Date().toISOString(),
-        })
-        .eq('id', credentialId);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
+  // Submit on behalf mutation - uses shared hook for proper version tracking
+  const submitCredential = useSubmitCredential();
+  
+  const handleSubmitOnBehalf = async () => {
+    if (!credentialId) return;
+    try {
+      await submitCredential.mutateAsync({
+        credentialId,
+        credentialTable: 'driver_credentials',
+      });
       toast({ title: 'Credential submitted for review' });
       queryClient.invalidateQueries({ queryKey: ['driver-credential'] });
-      queryClient.invalidateQueries({ queryKey: ['driver-credentials'] });
-    },
-    onError: (error: Error) => {
+    } catch (error) {
       toast({
         title: 'Submission failed',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Unknown error',
         variant: 'destructive',
       });
-    },
-  });
+    }
+  };
 
   // Loading state
   if (isLoading) {
     return (
-      <div className="space-y-6">
+      <div className="max-w-4xl mx-auto space-y-6">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-12 w-full" />
         <Skeleton className="h-64 w-full" />
@@ -152,7 +147,7 @@ export default function DriverCredentialDetail() {
   // Not found state
   if (!credential) {
     return (
-      <div className="space-y-6">
+      <div className="max-w-4xl mx-auto space-y-6">
         <Card className="p-12 text-center">
           <AlertTriangle className="w-12 h-12 mx-auto text-destructive mb-4" />
           <h3 className="text-lg font-medium mb-2">Credential not found</h3>
@@ -173,12 +168,12 @@ export default function DriverCredentialDetail() {
       mode="review"
       viewerRole="admin"
       onBack={() => navigate(backPath)}
-      onSubmit={() => submitMutation.mutate()}
+      onSubmit={handleSubmitOnBehalf}
       onApprove={(expirationDate, notes) =>
         approveMutation.mutate({ expirationDate, notes })
       }
       onReject={(reason) => rejectMutation.mutate(reason)}
-      isSubmitting={submitMutation.isPending}
+      isSubmitting={submitCredential.isPending}
       isApproving={approveMutation.isPending}
       isRejecting={rejectMutation.isPending}
     />

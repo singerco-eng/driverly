@@ -3,6 +3,7 @@ import type { ParagraphBlockContent } from '@/types/instructionBuilder';
 interface ParagraphBlockProps {
   content: ParagraphBlockContent;
   blockId: string;
+  readOnly?: boolean;
 }
 
 export function ParagraphBlock({ content }: ParagraphBlockProps) {

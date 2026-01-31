@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useDriver, useUpdateDriverStatus } from '@/hooks/useDrivers';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { UserAvatar } from '@/components/ui/user-avatar';
+import { DetailPageHeader } from '@/components/ui/DetailPageHeader';
 import { resolveAvatarUrl } from '@/services/profile';
 import {
   DropdownMenu,
@@ -15,7 +16,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-  ArrowLeft,
   Edit,
   MoreVertical,
   MessageSquare,
@@ -109,128 +109,139 @@ export default function DriverDetailPage() {
     );
   }
 
-  return (
-    <div className="space-y-6">
-      <Link
-        to="/admin/drivers"
-        className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+  // Build avatar for header
+  const avatar = (
+    <UserAvatar
+      src={avatarUrl}
+      fullName={driver.user.full_name}
+      email={driver.user.email}
+      size="md"
+    />
+  );
+
+  // Build badges
+  // Single status badge
+  const badges = (
+    <Badge variant={driverStatusVariant[driver.status]}>
+      {statusLabels[driver.status]}
+    </Badge>
+  );
+
+  // Build subtitle - includes employment type
+  const employmentLabel = driver.employment_type === '1099' ? '1099 Contractor' : 'W2 Employee';
+  const subtitle = `${driver.user.email}${driver.user.phone ? ` • ${driver.user.phone}` : ''} • ${employmentLabel}`;
+
+  // Build actions
+  const actions = (
+    <>
+      <Button variant="outline" className="gap-2">
+        <MessageSquare className="w-4 h-4" />
+        Message
+      </Button>
+      <Button
+        variant="outline"
+        className="gap-2"
+        disabled={!isAdmin}
+        onClick={() => setEditOpen(true)}
       >
-        <ArrowLeft className="w-4 h-4" />
-        Back to Drivers
-      </Link>
+        <Edit className="w-4 h-4" />
+        Edit
+      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="icon" disabled={!isAdmin}>
+            <MoreVertical className="w-4 h-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          {driver.status === 'active' && (
+            <DropdownMenuItem onClick={() => void handleStatusChange('inactive')}>
+              <XCircle className="w-4 h-4 mr-2" />
+              Set Inactive
+            </DropdownMenuItem>
+          )}
+          {driver.status === 'inactive' && (
+            <DropdownMenuItem onClick={() => void handleStatusChange('active')}>
+              <CheckCircle className="w-4 h-4 mr-2" />
+              Set Active
+            </DropdownMenuItem>
+          )}
+          {driver.status !== 'suspended' && (
+            <DropdownMenuItem
+              onClick={() => setSuspendOpen(true)}
+              className="text-destructive"
+            >
+              <AlertTriangle className="w-4 h-4 mr-2" />
+              Suspend Driver
+            </DropdownMenuItem>
+          )}
+          {driver.status === 'suspended' && (
+            <DropdownMenuItem onClick={() => void handleStatusChange('active')}>
+              <CheckCircle className="w-4 h-4 mr-2" />
+              Reactivate Driver
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onClick={() => void handleStatusChange('archived')}
+            className="text-destructive"
+          >
+            <Archive className="w-4 h-4 mr-2" />
+            Archive Driver
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </>
+  );
 
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div className="flex items-start gap-4">
-          <UserAvatar
-            src={avatarUrl}
-            fullName={driver.user.full_name}
-            email={driver.user.email}
-            size="lg"
-          />
+  // Tab list for header
+  const tabsList = (
+    <TabsList>
+      <TabsTrigger value="overview">Overview</TabsTrigger>
+      <TabsTrigger value="profile">Profile</TabsTrigger>
+      <TabsTrigger value="vehicles">Vehicles</TabsTrigger>
+      <TabsTrigger value="credentials">Credentials</TabsTrigger>
+      <TabsTrigger value="availability" disabled>
+        Availability
+      </TabsTrigger>
+    </TabsList>
+  );
 
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold">{driver.user.full_name}</h1>
-              <Badge variant={driverStatusVariant[driver.status]}>
-                {statusLabels[driver.status]}
-              </Badge>
-            </div>
-            <p className="text-muted-foreground">{driver.user.email}</p>
-            <p className="text-sm text-muted-foreground">{driver.user.phone || '—'}</p>
-            <Badge variant="secondary" className="mt-2">
-              {driver.employment_type.toUpperCase()}{' '}
-              {driver.employment_type === '1099' ? 'Contractor' : 'Employee'}
-            </Badge>
+  return (
+    <div className="min-h-screen bg-background">
+      <Tabs defaultValue="overview">
+        {/* Full-width header with centered tabs */}
+        <DetailPageHeader
+          title={driver.user.full_name}
+          subtitle={subtitle}
+          badges={badges}
+          avatar={avatar}
+          onBack={() => navigate('/admin/drivers')}
+          backLabel="Back to Drivers"
+          centerContent={tabsList}
+          actions={actions}
+        />
+
+        {/* Content area */}
+        <div className="p-6">
+          <div className="max-w-5xl mx-auto">
+            <TabsContent value="overview" className="mt-0">
+              <DriverOverviewTab driver={driver} canEdit={isAdmin} />
+            </TabsContent>
+
+            <TabsContent value="profile" className="mt-0">
+              <DriverProfileTab driver={driver} />
+            </TabsContent>
+
+            <TabsContent value="vehicles" className="mt-0">
+              <DriverVehiclesTab driver={driver} />
+            </TabsContent>
+
+            <TabsContent value="credentials" className="mt-0">
+              <DriverCredentialsTab companyId={driver.company_id} driverId={driver.id} />
+            </TabsContent>
           </div>
         </div>
-
-        <div className="flex items-center gap-2">
-          <Button variant="outline" className="gap-2">
-            <MessageSquare className="w-4 h-4" />
-            Message
-          </Button>
-          <Button
-            variant="outline"
-            className="gap-2"
-            disabled={!isAdmin}
-            onClick={() => setEditOpen(true)}
-          >
-            <Edit className="w-4 h-4" />
-            Edit
-          </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon" disabled={!isAdmin}>
-                <MoreVertical className="w-4 h-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {driver.status === 'active' && (
-                <DropdownMenuItem onClick={() => void handleStatusChange('inactive')}>
-                  <XCircle className="w-4 h-4 mr-2" />
-                  Set Inactive
-                </DropdownMenuItem>
-              )}
-              {driver.status === 'inactive' && (
-                <DropdownMenuItem onClick={() => void handleStatusChange('active')}>
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Set Active
-                </DropdownMenuItem>
-              )}
-              {driver.status !== 'suspended' && (
-                <DropdownMenuItem
-                  onClick={() => setSuspendOpen(true)}
-                  className="text-destructive"
-                >
-                  <AlertTriangle className="w-4 h-4 mr-2" />
-                  Suspend Driver
-                </DropdownMenuItem>
-              )}
-              {driver.status === 'suspended' && (
-                <DropdownMenuItem onClick={() => void handleStatusChange('active')}>
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Reactivate Driver
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => void handleStatusChange('archived')}
-                className="text-destructive"
-              >
-                <Archive className="w-4 h-4 mr-2" />
-                Archive Driver
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
-
-      <Tabs defaultValue="overview">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="profile">Profile</TabsTrigger>
-          <TabsTrigger value="vehicles">Vehicles</TabsTrigger>
-          <TabsTrigger value="credentials">Credentials</TabsTrigger>
-          <TabsTrigger value="availability" disabled>
-            Availability
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview" className="mt-6">
-          <DriverOverviewTab driver={driver} canEdit={isAdmin} />
-        </TabsContent>
-
-        <TabsContent value="profile" className="mt-6">
-          <DriverProfileTab driver={driver} />
-        </TabsContent>
-
-        <TabsContent value="vehicles" className="mt-6">
-          <DriverVehiclesTab driver={driver} />
-        </TabsContent>
-
-        <TabsContent value="credentials" className="mt-6">
-          <DriverCredentialsTab companyId={driver.company_id} driverId={driver.id} />
-        </TabsContent>
       </Tabs>
 
       <EditDriverModal open={editOpen} onOpenChange={setEditOpen} driver={driver} />

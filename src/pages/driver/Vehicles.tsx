@@ -1,12 +1,14 @@
 import { useMemo, useState } from 'react';
 import { useQueries, useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { EnhancedDataView } from '@/components/ui/enhanced-data-view';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { FilterBar } from '@/components/ui/filter-bar';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Car, Plus, Shield } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { EnhancedTable, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Car, Plus, Shield, LayoutGrid, List } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDriverByUserId } from '@/hooks/useDrivers';
 import {
@@ -199,6 +201,8 @@ export default function DriverVehicles() {
     }
   };
 
+  const vehicleCount = filteredVehicles.length;
+
   if (driverLoading) {
     return (
       <div className="space-y-6">
@@ -222,102 +226,158 @@ export default function DriverVehicles() {
 
   const loading = is1099 ? ownedLoading : assignedLoading;
 
-  return (
-    <div className="space-y-4">
-      <EnhancedDataView
-        title={is1099 ? 'My Vehicles' : 'My Assigned Vehicles'}
-        description={
-          is1099
-            ? `${filteredVehicles.length} vehicle${filteredVehicles.length !== 1 ? 's' : ''}`
-            : `${filteredVehicles.length} assigned vehicle${filteredVehicles.length !== 1 ? 's' : ''}`
-        }
-        actionLabel={is1099 ? 'Add Vehicle' : undefined}
-        onActionClick={is1099 ? () => setShowAdd(true) : undefined}
-        actionIcon={is1099 ? <Plus className="h-4 w-4" /> : undefined}
-        searchValue={filters.search || ''}
-        onSearchChange={(value) => setFilters((prev) => ({ ...prev, search: value }))}
-        searchPlaceholder="Search vehicles..."
-        tableProps={{
-          data: filteredVehicles,
-          loading,
-          children: (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Vehicle</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Plate</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Primary</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredVehicles.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">
-                      <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                        <Car className="w-8 h-8" />
-                        <p>No vehicles found</p>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredVehicles.map((vehicle) => (
-                    <TableRow
-                      key={vehicle.id}
-                      className="cursor-pointer"
-                      onClick={() => navigate(`/driver/vehicles/${vehicle.id}`)}
-                    >
-                      <TableCell>{vehicle.year} {vehicle.make} {vehicle.model}</TableCell>
-                      <TableCell>{vehicle.vehicle_type.replace('_', ' ')}</TableCell>
-                      <TableCell>{vehicle.license_plate}</TableCell>
-                      <TableCell>
-                        {vehicle.isUncredentialed ? (
-                          <Badge variant="destructive">Uncredentialed</Badge>
-                        ) : (
-                          <span className="capitalize">{vehicle.status}</span>
-                        )}
-                      </TableCell>
-                      <TableCell>{vehicle.assignment?.is_primary ? 'Yes' : 'No'}</TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          ),
-        }}
-        cardProps={{
-          data: filteredVehicles,
-          loading,
-          emptyState: (
-            <Card className="p-12 text-center">
-              <Car className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">No vehicles found</h3>
-              <p className="text-muted-foreground">
-                {filters.search ? 'Try adjusting your search.' : 'Vehicles will appear here once added.'}
-              </p>
-            </Card>
-          ),
-          renderCard: (vehicle) => {
-            const completion = calculateVehicleCompletion(vehicle);
-            return (
-              <VehicleCard
-                key={vehicle.id}
-                vehicle={vehicle}
-                completion={completion}
-                readOnly={!is1099}
-                onAction={handleAction}
-              />
-            );
-          },
-        }}
-      />
+  // View toggle in header
+  const viewToggle = (
+    <TabsList>
+      <TabsTrigger value="table" className="gap-1.5">
+        <List className="w-4 h-4" />
+        Table
+      </TabsTrigger>
+      <TabsTrigger value="cards" className="gap-1.5">
+        <LayoutGrid className="w-4 h-4" />
+        Cards
+      </TabsTrigger>
+    </TabsList>
+  );
 
-      {!is1099 && (
-        <Card className="p-4 text-sm text-muted-foreground">
-          Company vehicles are managed by your administrator. Contact admin if you need changes to your assignment.
-        </Card>
-      )}
+  return (
+    <>
+      <div className="min-h-screen bg-background">
+        <Tabs defaultValue="table">
+          {/* Full-width header */}
+          <div className="border-b bg-background">
+            <div className="px-6 py-4">
+              <div className="flex items-center justify-between">
+                {/* Left: title */}
+                <div className="flex-1">
+                  <h1 className="text-xl font-bold">{is1099 ? 'My Vehicles' : 'My Assigned Vehicles'}</h1>
+                  <p className="text-sm text-muted-foreground">
+                    {is1099
+                      ? `${vehicleCount} vehicle${vehicleCount !== 1 ? 's' : ''}`
+                      : `${vehicleCount} assigned vehicle${vehicleCount !== 1 ? 's' : ''}`}
+                  </p>
+                </div>
+
+                {/* Center: view toggle */}
+                <div className="flex items-center justify-center">
+                  {viewToggle}
+                </div>
+
+                {/* Right: action button */}
+                <div className="flex-1 flex justify-end">
+                  {is1099 && (
+                    <Button onClick={() => setShowAdd(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Vehicle
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Content area */}
+          <div className="p-6">
+            <div className="max-w-5xl mx-auto space-y-4">
+              {/* Filter bar */}
+              <FilterBar
+                searchValue={filters.search || ''}
+                onSearchChange={(value) => setFilters((prev) => ({ ...prev, search: value }))}
+                searchPlaceholder="Search vehicles..."
+                filters={[]}
+              />
+
+              {/* Cards view */}
+              <TabsContent value="cards" className="mt-0">
+                {loading ? (
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {[...Array(6)].map((_, i) => (
+                      <Skeleton key={i} className="h-48 rounded-lg" />
+                    ))}
+                  </div>
+                ) : filteredVehicles.length === 0 ? (
+                  <Card className="p-12 text-center">
+                    <Car className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-medium mb-2">No vehicles found</h3>
+                    <p className="text-muted-foreground">
+                      {filters.search ? 'Try adjusting your search.' : 'Vehicles will appear here once added.'}
+                    </p>
+                  </Card>
+                ) : (
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {filteredVehicles.map((vehicle) => {
+                      const completion = calculateVehicleCompletion(vehicle);
+                      return (
+                        <VehicleCard
+                          key={vehicle.id}
+                          vehicle={vehicle}
+                          completion={completion}
+                          readOnly={!is1099}
+                          onAction={handleAction}
+                        />
+                      );
+                    })}
+                  </div>
+                )}
+              </TabsContent>
+
+              {/* Table view */}
+              <TabsContent value="table" className="mt-0">
+                <EnhancedTable loading={loading} skeletonRows={5} skeletonColumns={5}>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Vehicle</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Plate</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Primary</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredVehicles.length === 0 && !loading ? (
+                        <TableRow>
+                          <TableCell colSpan={5} className="h-24 text-center">
+                            <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                              <Car className="w-8 h-8" />
+                              <p>No vehicles found</p>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        filteredVehicles.map((vehicle) => (
+                          <TableRow
+                            key={vehicle.id}
+                            className="cursor-pointer hover:bg-muted/50"
+                            onClick={() => navigate(`/driver/vehicles/${vehicle.id}`)}
+                          >
+                            <TableCell>{vehicle.year} {vehicle.make} {vehicle.model}</TableCell>
+                            <TableCell>{vehicle.vehicle_type.replace('_', ' ')}</TableCell>
+                            <TableCell>{vehicle.license_plate}</TableCell>
+                            <TableCell>
+                              <Badge variant={vehicle.status === 'active' ? 'default' : vehicle.status === 'retired' ? 'destructive' : 'secondary'}>
+                                {vehicle.status === 'active' ? 'Active' : vehicle.status === 'retired' ? 'Retired' : 'Inactive'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>{vehicle.assignment?.is_primary ? 'Yes' : 'No'}</TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </EnhancedTable>
+              </TabsContent>
+
+              {/* Helper note for W2 drivers */}
+              {!is1099 && (
+                <Card className="p-4 text-sm text-muted-foreground">
+                  Company vehicles are managed by your administrator. Contact admin if you need changes to your assignment.
+                </Card>
+              )}
+            </div>
+          </div>
+        </Tabs>
+      </div>
 
       {is1099 && (
         <AddVehicleWizard
@@ -358,6 +418,6 @@ export default function DriverVehicles() {
           missingCredentials={cannotActivateVehicle.missingCredentials || []}
         />
       )}
-    </div>
+    </>
   );
 }

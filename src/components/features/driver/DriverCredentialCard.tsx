@@ -97,50 +97,53 @@ export function DriverCredentialCard({
 
   return (
     <Card 
-      className="h-full min-h-[200px] flex flex-col hover:shadow-soft transition-all cursor-pointer group"
+      className="h-full flex flex-col hover:shadow-soft transition-all cursor-pointer group"
       onClick={() => onView(credential)}
     >
       <CardContent className="p-4 space-y-3 flex-1 flex flex-col">
-        {/* Header with icon, name, and status */}
-        <div className="flex items-start gap-3">
-          {/* Category Icon - DS compliant: primary for complete, muted for everything else */}
-          <div className={`
-            h-10 w-10 rounded-lg flex items-center justify-center shrink-0
-            ${isComplete ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}
-          `}>
-            <FileText className="h-5 w-5" />
-          </div>
-
-          {/* Name and Broker */}
-          <div className="flex-1 min-w-0">
-            <h3 className="font-semibold truncate group-hover:text-primary transition-colors">
-              {credential.credentialType.name}
-            </h3>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <CategoryIcon className="h-3.5 w-3.5" />
-              <span className="capitalize">{credential.credentialType.category}</span>
-              {credential.credentialType.broker?.name && (
-                <>
-                  <span className="text-border">•</span>
-                  <Building2 className="h-3.5 w-3.5" />
-                  <span className="truncate">{credential.credentialType.broker.name}</span>
-                </>
-              )}
-              {vehicleLabel && (
-                <>
-                  <span className="text-border">•</span>
-                  <Car className="h-3.5 w-3.5" />
-                  <span className="truncate">{vehicleLabel}</span>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Status Badge - uses DS variants from status-styles.ts */}
-          <Badge variant={badgeVariant} className="shrink-0">
+        {/* Header row with badge */}
+        <div className="flex items-center justify-between">
+          <Badge variant={badgeVariant}>
             <StatusIcon className="h-3 w-3 mr-1" />
             {status.label}
           </Badge>
+        </div>
+
+        {/* Centered icon and credential name */}
+        <div className="flex flex-col items-center text-center">
+          {/* Category Icon */}
+          <div className={`
+            h-12 w-12 rounded-lg flex items-center justify-center mb-2
+            ${isComplete ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}
+          `}>
+            <FileText className="h-6 w-6" />
+          </div>
+
+          {/* Credential Name */}
+          <h3 className="font-semibold group-hover:text-primary transition-colors">
+            {credential.credentialType.name}
+          </h3>
+
+          {/* Category and Broker info */}
+          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mt-1">
+            <CategoryIcon className="h-3.5 w-3.5" />
+            <span className="capitalize">{credential.credentialType.category}</span>
+            {credential.credentialType.broker?.name && (
+              <>
+                <span className="text-border">·</span>
+                <Building2 className="h-3.5 w-3.5" />
+                <span>{credential.credentialType.broker.name}</span>
+              </>
+            )}
+          </div>
+
+          {/* Vehicle label if applicable */}
+          {vehicleLabel && (
+            <div className="flex items-center gap-1.5 text-sm text-muted-foreground mt-1">
+              <Car className="h-3.5 w-3.5" />
+              <span>{vehicleLabel}</span>
+            </div>
+          )}
         </div>
 
         {/* Progress Bar (for in-progress credentials) */}
@@ -158,7 +161,7 @@ export function DriverCredentialCard({
         )}
 
         {/* Metadata Section */}
-        <div className="border-t pt-3 space-y-2 text-sm flex-1">
+        <div className="border-t pt-3 space-y-2 text-sm">
           {/* Submitted Date */}
           {credential.credential?.submitted_at && (
             <div className="flex items-center gap-2 text-muted-foreground">
@@ -205,7 +208,7 @@ export function DriverCredentialCard({
         {/* Spacer */}
         <div className="flex-1" />
 
-        {/* Action Button - always outline per DS, text changes based on state */}
+        {/* Action Button */}
         <Button 
           variant="outline"
           size="sm" 

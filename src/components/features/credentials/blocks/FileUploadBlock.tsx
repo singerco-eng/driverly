@@ -30,6 +30,10 @@ export function FileUploadBlock({
   const hasUploads = stepState.uploadedFiles.length > 0;
   // Filter out pending: prefixed files to get actual uploaded paths
   const uploadedPaths = stepState.uploadedFiles.filter(f => !f.startsWith('pending:'));
+  // Get pending file names (files selected but not yet uploaded to storage)
+  const pendingFiles = stepState.uploadedFiles
+    .filter(f => f.startsWith('pending:'))
+    .map(f => f.replace('pending:', ''));
 
   const handleFilesChange = useCallback(
     (files: File[]) => {
@@ -63,7 +67,7 @@ export function FileUploadBlock({
       </Label>
 
       {readOnly ? (
-        // Read-only mode for admin review - show uploaded documents
+        // Read-only mode for admin review - show uploaded documents only
         uploadedPaths.length > 0 ? (
           <DocumentPreview paths={uploadedPaths} layout="grid" maxPreviewHeight={200} />
         ) : hasUploads ? (
@@ -83,17 +87,41 @@ export function FileUploadBlock({
           File upload disabled
         </div>
       ) : (
-        <FileDropZone
-          files={localFiles}
-          onFilesChange={handleFilesChange}
-          accept={content.accept}
-          multiple={content.multiple}
-          maxSizeMB={content.maxSizeMB}
-          fileTypeHint={content.accept}
-          helpText={content.helpText}
-          onError={handleError}
-          compact
-        />
+        <div className="space-y-3">
+          {/* Show existing uploaded files if any */}
+          {uploadedPaths.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground">Current upload:</p>
+              <DocumentPreview paths={uploadedPaths} layout="grid" maxPreviewHeight={150} />
+            </div>
+          )}
+          
+          {/* Show pending files (selected but not yet uploaded to storage) */}
+          {uploadedPaths.length === 0 && pendingFiles.length > 0 && localFiles.length === 0 && (
+            <div className="p-4 border rounded-lg bg-muted/50">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <FileText className="w-4 h-4" />
+                <span>Previously selected: {pendingFiles.join(', ')}</span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Please re-upload the file to submit
+              </p>
+            </div>
+          )}
+          
+          {/* File upload zone */}
+          <FileDropZone
+            files={localFiles}
+            onFilesChange={handleFilesChange}
+            accept={content.accept}
+            multiple={content.multiple}
+            maxSizeMB={content.maxSizeMB}
+            fileTypeHint={content.accept}
+            helpText={uploadedPaths.length > 0 ? 'Upload new files to replace the current ones' : content.helpText}
+            onError={handleError}
+            compact
+          />
+        </div>
       )}
 
       {uploadError && (

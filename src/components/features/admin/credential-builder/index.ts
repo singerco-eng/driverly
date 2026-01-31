@@ -1,6 +1,7 @@
 export { InstructionBuilder } from './InstructionBuilder';
 export { RequirementsSection } from './RequirementsSection';
-export { AIGeneratorSheet } from './AIGeneratorSheet';
+export { AIGeneratorSheet } from './LegacyAIGeneratorSheet';
+export { AIGeneratorFullScreen } from './AIGeneratorFullScreen';
 export { ExpirationSection } from './ExpirationSection';
 export { SettingsSection } from './SettingsSection';
 export { StepAccordionItem } from './StepAccordionItem';

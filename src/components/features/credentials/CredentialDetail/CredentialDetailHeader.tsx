@@ -1,5 +1,6 @@
 import { ArrowLeft } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import type { CredentialStatus, CredentialType } from '@/types/credential';
 
 interface CredentialDetailHeaderProps {
@@ -14,6 +15,8 @@ interface CredentialDetailHeaderProps {
   actions?: React.ReactNode;
   /** Back link label - defaults based on credential type */
   backLabel?: string;
+  /** Content to display on the right side of the header (e.g., tabs) */
+  rightContent?: React.ReactNode;
 }
 
 /** Map status to native Badge variants per design system guidelines */
@@ -58,9 +61,9 @@ export function CredentialDetailHeader({
   showBackButton = true,
   actions,
   backLabel,
+  rightContent,
 }: CredentialDetailHeaderProps) {
   const isDriverCredential = credentialTable === 'driver_credentials';
-  const defaultBackLabel = isDriverCredential ? 'Back to Driver' : 'Back to Vehicle';
 
   // Calculate days until expiration
   const daysUntilExpiration = expiresAt
@@ -70,64 +73,70 @@ export function CredentialDetailHeader({
   const isExpired = daysUntilExpiration !== null && daysUntilExpiration < 0;
 
   return (
-    <div className="space-y-4">
-      {/* Back link - text style like driver detail page */}
-      {showBackButton && (
-        <button
-          onClick={onBack}
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          {backLabel || defaultBackLabel}
-        </button>
-      )}
-
-      {/* Header row - title + status + actions */}
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div className="space-y-1">
-          {/* Title with status badge inline */}
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-2xl font-bold">{credentialType.name}</h1>
-            <Badge variant={getStatusBadgeVariant(status)}>
-              {getStatusLabel(status)}
-            </Badge>
+    <div className="border-b bg-background">
+      <div className="px-6 py-4">
+        <div className="flex items-center justify-between">
+          {/* Left side: back button + title info */}
+          <div className="flex items-center gap-3 flex-1">
+            {showBackButton && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onBack}
+                aria-label={backLabel || 'Go back'}
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+            )}
+            <div>
+              {/* Title with status badge inline */}
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-bold">{credentialType.name}</h1>
+                <Badge variant={getStatusBadgeVariant(status)}>
+                  {getStatusLabel(status)}
+                </Badge>
+              </div>
+              {/* Subtitle: scope + date info */}
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span>{isDriverCredential ? 'Driver' : 'Vehicle'} Credential</span>
+                {submittedAt && (
+                  <>
+                    <span>·</span>
+                    <span>Submitted {new Date(submittedAt).toLocaleDateString()}</span>
+                  </>
+                )}
+                {expiresAt && (
+                  <>
+                    <span>·</span>
+                    <span className={isExpired ? 'text-destructive' : isExpiringSoon ? 'text-orange-600 dark:text-orange-400' : ''}>
+                      {isExpired
+                        ? `Expired ${Math.abs(daysUntilExpiration!)} days ago`
+                        : `Expires ${new Date(expiresAt).toLocaleDateString()}`}
+                    </span>
+                  </>
+                )}
+              </div>
+              {/* Broker info if applicable */}
+              {credentialType.broker && (
+                <p className="text-sm text-muted-foreground">
+                  Required by: <span className="font-medium">{credentialType.broker.name}</span>
+                </p>
+              )}
+            </div>
           </div>
 
-          {/* Subtitle: scope + date info, kept minimal */}
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span>{isDriverCredential ? 'Driver' : 'Vehicle'} Credential</span>
-            {submittedAt && (
-              <>
-                <span>·</span>
-                <span>Submitted {new Date(submittedAt).toLocaleDateString()}</span>
-              </>
-            )}
-            {expiresAt && (
-              <>
-                <span>·</span>
-                <span className={isExpired ? 'text-destructive' : isExpiringSoon ? 'text-orange-600 dark:text-orange-400' : ''}>
-                  {isExpired
-                    ? `Expired ${Math.abs(daysUntilExpiration!)} days ago`
-                    : `Expires ${new Date(expiresAt).toLocaleDateString()}`}
-                </span>
-              </>
-            )}
-          </div>
-
-          {/* Broker info if applicable */}
-          {credentialType.broker && (
-            <p className="text-sm text-muted-foreground">
-              Required by: <span className="font-medium">{credentialType.broker.name}</span>
-            </p>
+          {/* Center: tabs */}
+          {rightContent && (
+            <div className="flex items-center justify-center">
+              {rightContent}
+            </div>
           )}
-        </div>
 
-        {/* Actions in top-right like driver detail page */}
-        {actions && (
-          <div className="flex items-center gap-2 shrink-0">
+          {/* Right side: actions */}
+          <div className="flex items-center justify-end gap-3 flex-1">
             {actions}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

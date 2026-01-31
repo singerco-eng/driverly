@@ -1,6 +1,7 @@
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { FileText } from 'lucide-react';
+import { FileText, Eye, Calendar, Clock, ListChecks, Building2 } from 'lucide-react';
 import type { CredentialForReview, ReviewStatus } from '@/types/credentialReview';
 
 interface CredentialReviewCardProps {
@@ -68,59 +69,93 @@ export function CredentialReviewCard({
   const subjectLine = getSubjectLine(credential);
   const submittedDate = formatDate(credential.submittedAt);
   const expiresDate = formatDate(credential.expiresAt);
-  
-  // Count steps from instruction_config
   const stepCount = credential.credentialType.instruction_config?.steps?.length || 0;
+  const isComplete = credential.displayStatus === 'approved';
 
   return (
-    <Card 
-      className="hover:shadow-soft transition-all cursor-pointer group"
-      onClick={() => onView(credential)}
-    >
-      <CardContent className="p-4 space-y-3">
-        {/* Header row */}
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <FileText className="w-5 h-5 text-muted-foreground shrink-0" />
-            <div className="min-w-0">
-              <p className="font-medium truncate">{credential.credentialType.name}</p>
-              {subjectLine && (
-                <p className="text-xs text-muted-foreground truncate">{subjectLine}</p>
-              )}
+    <Card className="h-full flex flex-col hover:shadow-soft transition-all">
+      <CardContent className="p-4 space-y-3 flex-1 flex flex-col">
+        {/* Header row with badge */}
+        <div className="flex items-center justify-between">
+          <Badge variant={status.badgeVariant}>
+            {status.label}
+          </Badge>
+        </div>
+
+        {/* Centered icon and credential info */}
+        <div 
+          className="flex flex-col items-center text-center cursor-pointer"
+          onClick={() => onView(credential)}
+        >
+          {/* Credential Icon */}
+          <div className={`
+            h-12 w-12 rounded-lg flex items-center justify-center mb-2
+            ${isComplete ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}
+          `}>
+            <FileText className="h-6 w-6" />
+          </div>
+
+          {/* Credential Name */}
+          <h3 className="font-semibold">{credential.credentialType.name}</h3>
+
+          {/* Subject Line */}
+          {subjectLine && (
+            <p className="text-sm text-muted-foreground">{subjectLine}</p>
+          )}
+
+          {/* Broker info */}
+          {credential.credentialType.broker?.name && (
+            <div className="flex items-center gap-1.5 text-sm text-muted-foreground mt-1">
+              <Building2 className="h-3.5 w-3.5" />
+              <span>{credential.credentialType.broker.name}</span>
             </div>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            {credential.credentialType.broker?.name && (
-              <Badge variant="secondary" className="text-xs">
-                {credential.credentialType.broker.name}
-              </Badge>
-            )}
-            <Badge variant={status.badgeVariant}>
-              {status.label}
-            </Badge>
-          </div>
+          )}
         </div>
-        
-        {/* Metadata row */}
-        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+
+        {/* Metadata Section */}
+        <div className="border-t pt-3 space-y-2 text-sm">
+          {/* Submitted Date */}
           {submittedDate && (
-            <span>Submitted {submittedDate}</span>
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Calendar className="h-4 w-4 shrink-0" />
+              <span>Submitted {submittedDate}</span>
+            </div>
           )}
-          {submittedDate && stepCount > 0 && (
-            <span className="text-border">·</span>
-          )}
+
+          {/* Steps */}
           {stepCount > 0 && (
-            <span>{stepCount} steps</span>
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <ListChecks className="h-4 w-4 shrink-0" />
+              <span>{stepCount} steps</span>
+            </div>
           )}
+
+          {/* Expiration */}
           {expiresDate && (
-            <>
-              <span className="text-border">·</span>
-              <span className={credential.displayStatus === 'expiring' || credential.displayStatus === 'expired' ? 'text-destructive' : ''}>
-                Expires {expiresDate}
-              </span>
-            </>
+            <div className={`flex items-center gap-2 ${
+              credential.displayStatus === 'expiring' || credential.displayStatus === 'expired' 
+                ? 'text-destructive' 
+                : 'text-muted-foreground'
+            }`}>
+              <Clock className="h-4 w-4 shrink-0" />
+              <span>Expires {expiresDate}</span>
+            </div>
           )}
         </div>
+
+        {/* Spacer */}
+        <div className="flex-1" />
+
+        {/* View Button */}
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="w-full mt-auto"
+          onClick={() => onView(credential)}
+        >
+          <Eye className="h-4 w-4 mr-2" />
+          View Details
+        </Button>
       </CardContent>
     </Card>
   );

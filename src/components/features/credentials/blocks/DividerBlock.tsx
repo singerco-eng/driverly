@@ -5,13 +5,13 @@ import { cn } from '@/lib/utils';
 interface DividerBlockProps {
   content: DividerBlockContent;
   blockId: string;
+  readOnly?: boolean;
 }
 
 export function DividerBlock({ content }: DividerBlockProps) {
   return (
     <Separator
       className={cn(
-        'my-2',
         content.style === 'dashed' && 'border-dashed',
         content.style === 'dotted' && 'border-dotted'
       )}

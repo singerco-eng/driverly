@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, Send, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 
 interface StepNavigationProps {
   currentStepIndex: number;
@@ -10,6 +10,8 @@ interface StepNavigationProps {
   isSubmitting: boolean;
   disabled?: boolean;
   readOnly?: boolean;
+  submitLabel?: string;
+  simple?: boolean;
   onPrevious: () => void;
   onNext: () => void;
   onSubmit: () => void;
@@ -23,70 +25,72 @@ export function StepNavigation({
   isLastStep,
   isSubmitting,
   disabled,
-  readOnly,
+  readOnly = false,
+  submitLabel,
+  simple = false,
   onPrevious,
   onNext,
   onSubmit,
 }: StepNavigationProps) {
+  if (readOnly) return null;
+
+  if (simple) {
+    return (
+      <div className="flex justify-end pt-4">
+        <Button
+          onClick={onSubmit}
+          disabled={disabled || !canGoNext || isSubmitting}
+          size="default"
+        >
+          {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+          {submitLabel || 'Submit for Review'}
+        </Button>
+      </div>
+    );
+  }
+
   const isSingleStep = totalSteps === 1;
 
   return (
-    <div className="flex items-center justify-between pt-4 mt-4 border-t">
-      {/* Left: Previous button or placeholder (hidden for single step) */}
-      {!isSingleStep && (
-        <div className="w-24">
-          {canGoPrevious && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onPrevious}
-              disabled={disabled || isSubmitting}
-            >
-              <ChevronLeft className="w-4 h-4 mr-1" />
-              Back
-            </Button>
-          )}
-        </div>
-      )}
+    <div className="flex items-center justify-between pt-3 mt-2 border-t">
+      {/* Previous Button */}
+      <div className="w-24">
+        {canGoPrevious && (
+          <Button
+            variant="outline"
+            onClick={onPrevious}
+            disabled={disabled}
+            size="sm"
+          >
+            <ChevronLeft className="w-4 h-4 mr-1" />
+            Previous
+          </Button>
+        )}
+      </div>
 
-      {/* Center: Step counter (hidden for single step) */}
+      {/* Step Counter - hide for single step */}
       {!isSingleStep && (
         <span className="text-xs text-muted-foreground">
           {currentStepIndex + 1} of {totalSteps}
         </span>
       )}
 
-      {/* Spacer for single step to push button to right */}
-      {isSingleStep && <div className="flex-1" />}
-
-      {/* Right: Next/Submit button */}
-      <div className={isSingleStep ? '' : 'w-24 flex justify-end'}>
+      {/* Next/Submit Button */}
+      <div className="w-24 flex justify-end">
         {isLastStep ? (
-          readOnly ? null : (
-            <Button
-              size="sm"
-              onClick={onSubmit}
-              disabled={disabled || !canGoNext || isSubmitting}
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                  Submitting
-                </>
-              ) : (
-                <>
-                  Submit
-                  <Send className="w-4 h-4 ml-1" />
-                </>
-              )}
-            </Button>
-          )
+          <Button
+            onClick={onSubmit}
+            disabled={disabled || !canGoNext || isSubmitting}
+            size="sm"
+          >
+            {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            {submitLabel || 'Submit'}
+          </Button>
         ) : (
           <Button
-            variant={readOnly ? 'ghost' : 'default'}
-            size="sm"
             onClick={onNext}
-            disabled={disabled || (!readOnly && !canGoNext) || isSubmitting}
+            disabled={disabled || !canGoNext}
+            size="sm"
           >
             Next
             <ChevronRight className="w-4 h-4 ml-1" />

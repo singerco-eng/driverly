@@ -10,10 +10,11 @@ Features for driver self-service portal.
 | DR-002 | Profile Management | ✅ Spec Complete |
 | DR-003 | Vehicle Management | ✅ Spec Complete |
 | DR-004 | Credential Submission | ✅ Spec Complete |
-| DR-005 | Availability Calendar | 🔴 Not Started |
-| DR-006 | Trip Dashboard | 🔴 Not Started |
-| DR-007 | Payment Dashboard | 🔴 Not Started |
-| DR-008 | Messaging | 🔴 Not Started |
+| DR-005 | Trip Sources | ✅ Spec Complete |
+| DR-006 | Availability Calendar | 🔴 Not Started |
+| DR-007 | Trip Dashboard | 🔴 Not Started |
+| DR-008 | Payment Dashboard | 🔴 Not Started |
+| DR-009 | Messaging | 🔴 Not Started |
 
 ## Scope
 
@@ -21,6 +22,7 @@ Drivers manage their own:
 - Profile and personal information
 - Vehicles (if 1099 / own vehicle)
 - Credentials and documentation
+- Trip source assignments (request, join, view eligibility)
 - Availability schedule
 - Trip acceptance/rejection
 - View payments and earnings

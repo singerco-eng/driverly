@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useVehicle, useUpdateVehicleStatus } from '@/hooks/useVehicles';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
+import { DetailPageHeader } from '@/components/ui/DetailPageHeader';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,7 +14,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-  ArrowLeft,
   Edit,
   MoreVertical,
   CheckCircle,
@@ -27,11 +27,13 @@ import { VehicleCredentialsTab } from '@/components/features/admin/VehicleCreden
 import { EditVehicleModal } from '@/components/features/admin/EditVehicleModal';
 import { useAuth } from '@/contexts/AuthContext';
 import type { VehicleStatus } from '@/types/vehicle';
+import { vehicleStatusVariant } from '@/lib/status-styles';
 
-const statusStyles: Record<VehicleStatus, string> = {
-  active: 'bg-green-500/20 text-green-600 border-green-500/30',
-  inactive: 'bg-gray-500/20 text-gray-600 border-gray-400/30',
-  retired: 'bg-red-500/20 text-red-600 border-red-500/30',
+/** Status labels for display */
+const statusLabels: Record<VehicleStatus, string> = {
+  active: 'Active',
+  inactive: 'Inactive',
+  retired: 'Retired',
 };
 
 export default function VehicleDetailPage() {
@@ -68,94 +70,101 @@ export default function VehicleDetailPage() {
     );
   }
 
-  return (
-    <div className="space-y-6">
-      <Link
-        to="/admin/vehicles"
-        className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+  // Single status badge using standard variants
+  const badges = (
+    <Badge variant={vehicleStatusVariant[vehicle.status]}>
+      {statusLabels[vehicle.status]}
+    </Badge>
+  );
+
+  // Build subtitle - includes ownership info
+  const subtitle = `${vehicle.license_plate} • ${vehicle.vehicle_type.replace('_', ' ')} • ${vehicle.ownership} owned`;
+
+  // Build actions
+  const actions = (
+    <>
+      <Button
+        variant="outline"
+        className="gap-2"
+        disabled={!isAdmin}
+        onClick={() => setEditOpen(true)}
       >
-        <ArrowLeft className="w-4 h-4" />
-        Back to Vehicles
-      </Link>
-
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold">
-              {vehicle.make} {vehicle.model} {vehicle.year}
-            </h1>
-            <Badge variant="outline" className={statusStyles[vehicle.status]}>
-              {vehicle.status}
-            </Badge>
-          </div>
-          <p className="text-muted-foreground">{vehicle.license_plate}</p>
-          <Badge variant="secondary" className="mt-2 capitalize">
-            {vehicle.ownership} owned · {vehicle.vehicle_type.replace('_', ' ')}
-          </Badge>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            className="gap-2"
-            disabled={!isAdmin}
-            onClick={() => setEditOpen(true)}
-          >
-            <Edit className="w-4 h-4" />
-            Edit
+        <Edit className="w-4 h-4" />
+        Edit
+      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="icon" disabled={!isAdmin}>
+            <MoreVertical className="w-4 h-4" />
           </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon" disabled={!isAdmin}>
-                <MoreVertical className="w-4 h-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {vehicle.status === 'active' && (
-                <DropdownMenuItem onClick={() => handleStatusChange('inactive')}>
-                  <XCircle className="w-4 h-4 mr-2" />
-                  Set Inactive
-                </DropdownMenuItem>
-              )}
-              {vehicle.status === 'inactive' && (
-                <DropdownMenuItem onClick={() => handleStatusChange('active')}>
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Set Active
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => handleStatusChange('retired')}
-                className="text-destructive"
-              >
-                <Archive className="w-4 h-4 mr-2" />
-                Retire Vehicle
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          {vehicle.status === 'active' && (
+            <DropdownMenuItem onClick={() => handleStatusChange('inactive')}>
+              <XCircle className="w-4 h-4 mr-2" />
+              Set Inactive
+            </DropdownMenuItem>
+          )}
+          {vehicle.status === 'inactive' && (
+            <DropdownMenuItem onClick={() => handleStatusChange('active')}>
+              <CheckCircle className="w-4 h-4 mr-2" />
+              Set Active
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onClick={() => handleStatusChange('retired')}
+            className="text-destructive"
+          >
+            <Archive className="w-4 h-4 mr-2" />
+            Retire Vehicle
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </>
+  );
 
+  // Tab list for header
+  const tabsList = (
+    <TabsList>
+      <TabsTrigger value="overview">Overview</TabsTrigger>
+      <TabsTrigger value="details">Details</TabsTrigger>
+      <TabsTrigger value="credentials">Credentials</TabsTrigger>
+      <TabsTrigger value="assignments">Assignments</TabsTrigger>
+    </TabsList>
+  );
+
+  return (
+    <div className="min-h-screen bg-background">
       <Tabs defaultValue="overview">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="details">Details</TabsTrigger>
-          <TabsTrigger value="credentials">Credentials</TabsTrigger>
-          <TabsTrigger value="assignments">Assignments</TabsTrigger>
-        </TabsList>
+        {/* Full-width header with centered tabs */}
+        <DetailPageHeader
+          title={`${vehicle.make} ${vehicle.model} ${vehicle.year}`}
+          subtitle={subtitle}
+          badges={badges}
+          onBack={() => navigate('/admin/vehicles')}
+          backLabel="Back to Vehicles"
+          centerContent={tabsList}
+          actions={actions}
+        />
 
-        <TabsContent value="overview" className="mt-6">
-          <VehicleOverviewTab vehicle={vehicle} canEdit={isAdmin} />
-        </TabsContent>
-        <TabsContent value="details" className="mt-6">
-          <VehicleDetailsTab vehicle={vehicle} />
-        </TabsContent>
-        <TabsContent value="credentials" className="mt-6">
-          <VehicleCredentialsTab companyId={vehicle.company_id} vehicleId={vehicle.id} />
-        </TabsContent>
-        <TabsContent value="assignments" className="mt-6">
-          <VehicleAssignmentsTab vehicle={vehicle} />
-        </TabsContent>
+        {/* Content area */}
+        <div className="p-6">
+          <div className="max-w-5xl mx-auto">
+            <TabsContent value="overview" className="mt-0">
+              <VehicleOverviewTab vehicle={vehicle} canEdit={isAdmin} />
+            </TabsContent>
+            <TabsContent value="details" className="mt-0">
+              <VehicleDetailsTab vehicle={vehicle} />
+            </TabsContent>
+            <TabsContent value="credentials" className="mt-0">
+              <VehicleCredentialsTab companyId={vehicle.company_id} vehicleId={vehicle.id} />
+            </TabsContent>
+            <TabsContent value="assignments" className="mt-0">
+              <VehicleAssignmentsTab vehicle={vehicle} />
+            </TabsContent>
+          </div>
+        </div>
       </Tabs>
 
       <EditVehicleModal open={editOpen} onOpenChange={setEditOpen} vehicle={vehicle} />

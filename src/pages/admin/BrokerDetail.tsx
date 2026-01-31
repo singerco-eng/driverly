@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   useApproveAssignment,
@@ -19,7 +19,8 @@ import { cardVariants } from '@/lib/design-system';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
-import { FilterBar } from '@/components/ui/filter-bar';
+import { EnhancedDataView } from '@/components/ui/enhanced-data-view';
+import { DetailPageHeader } from '@/components/ui/DetailPageHeader';
 import {
   EnhancedTable,
   Table,
@@ -37,7 +38,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-  ArrowLeft,
   Building2,
   CheckCircle,
   MoreVertical,
@@ -50,6 +50,9 @@ import {
   Lock,
   UserPlus,
   Zap,
+  Eye,
+  Calendar,
+  Briefcase as BriefcaseIcon,
 } from 'lucide-react';
 import AssignDriversModal from '@/components/features/admin/AssignDriversModal';
 import BrokerFormModal from '@/components/features/admin/BrokerFormModal';
@@ -178,85 +181,95 @@ export default function BrokerDetail() {
     );
   }
 
-  return (
-    <div className="space-y-6">
-      <Link
-        to="/admin/brokers"
-        className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Back to Trip Sources
-      </Link>
+  // Build avatar/logo for header
+  const avatar = (
+    <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center shrink-0">
+      {broker.logo_url ? (
+        <img src={broker.logo_url} alt={broker.name} className="w-10 h-10 object-contain" />
+      ) : (
+        <Building2 className="w-6 h-6 text-muted-foreground" />
+      )}
+    </div>
+  );
 
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div className="flex items-start gap-4">
-          <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center">
-            {broker.logo_url ? (
-              <img src={broker.logo_url} alt={broker.name} className="w-12 h-12 object-contain" />
-            ) : (
-              <Building2 className="w-7 h-7 text-muted-foreground" />
-            )}
-          </div>
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold">{broker.name}</h1>
-              <Badge variant={statusVariant[broker.status]}>
-                {broker.status}
-              </Badge>
-            </div>
-            <div className="flex items-center gap-2 text-muted-foreground">
-              {sourceTypeIcons[broker.source_type]}
-              <span>{getSourceTypeLabel(broker.source_type)}</span>
-              {broker.contact_email && <span>• {broker.contact_email}</span>}
-            </div>
-            {broker.code && <Badge variant="secondary" className="mt-2">{broker.code}</Badge>}
-          </div>
-        </div>
+  // Build badges
+  // Single status badge
+  const badges = (
+    <Badge variant={statusVariant[broker.status]}>
+      {broker.status}
+    </Badge>
+  );
 
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => setEditOpen(true)}>
-            <Pencil className="w-4 h-4 mr-2" />
-            Edit
+  // Build subtitle - includes broker code if present
+  const subtitle = `${getSourceTypeLabel(broker.source_type)}${broker.code ? ` • ${broker.code}` : ''}${broker.contact_email ? ` • ${broker.contact_email}` : ''}`;
+
+  // Build actions
+  const actions = (
+    <>
+      <Button variant="outline" onClick={() => setEditOpen(true)}>
+        <Pencil className="w-4 h-4 mr-2" />
+        Edit
+      </Button>
+      <Button onClick={() => setAssignOpen(true)}>Assign Drivers</Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="icon" disabled={!isAdmin}>
+            <MoreVertical className="w-4 h-4" />
           </Button>
-          <Button onClick={() => setAssignOpen(true)}>Assign Drivers</Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon" disabled={!isAdmin}>
-                <MoreVertical className="w-4 h-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {broker.status === 'active' && (
-                <DropdownMenuItem onClick={() => handleStatusChange('inactive')}>
-                  <XCircle className="w-4 h-4 mr-2" />
-                  Set Inactive
-                </DropdownMenuItem>
-              )}
-              {broker.status === 'inactive' && (
-                <DropdownMenuItem onClick={() => handleStatusChange('active')}>
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Set Active
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setAssignOpen(true)}>
-                <Users className="w-4 h-4 mr-2" />
-                Assign Drivers
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          {broker.status === 'active' && (
+            <DropdownMenuItem onClick={() => handleStatusChange('inactive')}>
+              <XCircle className="w-4 h-4 mr-2" />
+              Set Inactive
+            </DropdownMenuItem>
+          )}
+          {broker.status === 'inactive' && (
+            <DropdownMenuItem onClick={() => handleStatusChange('active')}>
+              <CheckCircle className="w-4 h-4 mr-2" />
+              Set Active
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => setAssignOpen(true)}>
+            <Users className="w-4 h-4 mr-2" />
+            Assign Drivers
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </>
+  );
 
+  // Tab list for header
+  const tabsList = (
+    <TabsList>
+      <TabsTrigger value="overview">Overview</TabsTrigger>
+      <TabsTrigger value="drivers">Drivers</TabsTrigger>
+      <TabsTrigger value="credentials">Credentials</TabsTrigger>
+      <TabsTrigger value="rates">Rates</TabsTrigger>
+    </TabsList>
+  );
+
+  return (
+    <div className="min-h-screen bg-background">
       <Tabs defaultValue="overview">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="drivers">Drivers</TabsTrigger>
-          <TabsTrigger value="credentials">Credentials</TabsTrigger>
-          <TabsTrigger value="rates">Rates</TabsTrigger>
-        </TabsList>
+        {/* Full-width header with centered tabs */}
+        <DetailPageHeader
+          title={broker.name}
+          subtitle={subtitle}
+          badges={badges}
+          avatar={avatar}
+          onBack={() => navigate('/admin/brokers')}
+          backLabel="Back to Trip Sources"
+          centerContent={tabsList}
+          actions={actions}
+        />
 
-        <TabsContent value="overview" className="mt-6 space-y-6">
+        {/* Content area */}
+        <div className="p-6">
+          <div className="max-w-5xl mx-auto">
+
+        <TabsContent value="overview" className="mt-0 space-y-6">
           {/* DS-compliant stat cards using cardVariants({ variant: "stats" }) */}
           <div className="grid gap-4 md:grid-cols-3">
             <Card className={cn(cardVariants({ variant: 'stats', padding: 'none' }))}>
@@ -396,20 +409,14 @@ export default function BrokerDetail() {
           </div>
         </TabsContent>
 
-        <TabsContent value="drivers" className="mt-6 space-y-4">
-          <div>
-            <h3 className="text-lg font-medium">Driver Assignments</h3>
-            <p className="text-sm text-muted-foreground">
-              {filteredAssignments.length} {filteredAssignments.length === 1 ? 'assignment' : 'assignments'}
-            </p>
-          </div>
-
-          {/* DS-compliant FilterBar */}
-          <FilterBar
+        <TabsContent value="drivers" className="mt-0 space-y-4">
+          <EnhancedDataView
+            title="Driver Assignments"
+            description="Manage drivers assigned to this trip source"
+            defaultViewMode="table"
             searchValue={driverSearch}
             onSearchChange={setDriverSearch}
             searchPlaceholder="Search by name or email..."
-            searchLabel="Search"
             filters={[
               {
                 value: driverStatusFilter,
@@ -424,70 +431,85 @@ export default function BrokerDetail() {
                 ],
               },
             ]}
-            onClearAll={handleClearDriverFilters}
-            showClearAll
+            tableProps={{
+              data: filteredAssignments,
+              loading: assignmentsLoading,
+              children: (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Driver</TableHead>
+                      <TableHead>Employment Type</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Requested</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredAssignments.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="h-24 text-center">
+                          <div className="flex flex-col items-center gap-2">
+                            <Users className="w-8 h-8 text-muted-foreground" />
+                            <p className="text-muted-foreground">
+                              {driverSearch || driverStatusFilter !== 'all'
+                                ? 'No matching assignments found'
+                                : 'No drivers assigned yet'}
+                            </p>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredAssignments.map((assignment) => (
+                        <DriverAssignmentRow
+                          key={assignment.id}
+                          assignment={assignment}
+                          onApprove={() => approveAssignment.mutate(assignment.id)}
+                          onDeny={() => denyAssignment.mutate({ assignmentId: assignment.id })}
+                          onRemove={() => removeAssignment.mutate({ assignmentId: assignment.id })}
+                          isApproving={approveAssignment.isPending}
+                          isDenying={denyAssignment.isPending}
+                          isRemoving={removeAssignment.isPending}
+                          onView={() => navigate(`/admin/drivers/${assignment.driver_id}`)}
+                        />
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              ),
+            }}
+            cardProps={{
+              data: filteredAssignments,
+              loading: assignmentsLoading,
+              emptyState: (
+                <Card className="p-12 text-center">
+                  <Users className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No drivers assigned</h3>
+                  <p className="text-muted-foreground">
+                    {driverSearch || driverStatusFilter !== 'all'
+                      ? 'No matching assignments found'
+                      : 'Assign drivers to this trip source to get started.'}
+                  </p>
+                </Card>
+              ),
+              renderCard: (assignment) => (
+                <DriverAssignmentCard
+                  key={assignment.id}
+                  assignment={assignment}
+                  onApprove={() => approveAssignment.mutate(assignment.id)}
+                  onDeny={() => denyAssignment.mutate({ assignmentId: assignment.id })}
+                  onRemove={() => removeAssignment.mutate({ assignmentId: assignment.id })}
+                  isApproving={approveAssignment.isPending}
+                  isDenying={denyAssignment.isPending}
+                  isRemoving={removeAssignment.isPending}
+                  onView={() => navigate(`/admin/drivers/${assignment.driver_id}`)}
+                />
+              ),
+            }}
           />
-
-          {/* DS-compliant EnhancedTable with loading state */}
-          <EnhancedTable
-            loading={assignmentsLoading}
-            skeletonRows={3}
-            skeletonColumns={5}
-          >
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Driver</TableHead>
-                  <TableHead>Employment Type</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Requested</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredAssignments.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">
-                      <div className="flex flex-col items-center gap-2">
-                        <Users className="w-8 h-8 text-muted-foreground" />
-                        <p className="text-muted-foreground">
-                          {driverSearch || driverStatusFilter !== 'all'
-                            ? 'No matching assignments found'
-                            : 'No drivers assigned yet'}
-                        </p>
-                        {!driverSearch && driverStatusFilter === 'all' && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="mt-2"
-                            onClick={() => setAssignOpen(true)}
-                          >
-                            Assign Drivers
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredAssignments.map((assignment) => (
-                    <DriverAssignmentRow
-                      key={assignment.id}
-                      assignment={assignment}
-                      onApprove={() => approveAssignment.mutate(assignment.id)}
-                      onDeny={() => denyAssignment.mutate({ assignmentId: assignment.id })}
-                      onRemove={() => removeAssignment.mutate({ assignmentId: assignment.id })}
-                      isApproving={approveAssignment.isPending}
-                      isDenying={denyAssignment.isPending}
-                      isRemoving={removeAssignment.isPending}
-                    />
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </EnhancedTable>
         </TabsContent>
 
-        <TabsContent value="credentials" className="mt-6 space-y-4">
+        <TabsContent value="credentials" className="mt-0 space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-lg font-medium">Required Credentials</h3>
@@ -543,7 +565,7 @@ export default function BrokerDetail() {
           </EnhancedTable>
         </TabsContent>
 
-        <TabsContent value="rates" className="mt-6 space-y-6">
+        <TabsContent value="rates" className="mt-0 space-y-6">
           <div>
             <h3 className="text-lg font-medium">Current Rates</h3>
             <p className="text-sm text-muted-foreground">
@@ -631,6 +653,8 @@ export default function BrokerDetail() {
             )}
           </div>
         </TabsContent>
+          </div>
+        </div>
       </Tabs>
 
       <AssignDriversModal broker={broker} open={assignOpen} onOpenChange={setAssignOpen} />
@@ -653,6 +677,7 @@ function DriverAssignmentRow({
   onApprove,
   onDeny,
   onRemove,
+  onView,
   isApproving,
   isDenying,
   isRemoving,
@@ -661,6 +686,7 @@ function DriverAssignmentRow({
   onApprove: () => void;
   onDeny: () => void;
   onRemove: () => void;
+  onView: () => void;
   isApproving: boolean;
   isDenying: boolean;
   isRemoving: boolean;
@@ -685,9 +711,9 @@ function DriverAssignmentRow({
         </div>
       </TableCell>
       <TableCell>
-        <Badge variant="secondary" className="uppercase">
+        <span className="text-muted-foreground uppercase text-sm">
           {assignment.driver?.employment_type || '—'}
-        </Badge>
+        </span>
       </TableCell>
       <TableCell>
         <Badge variant={assignmentStatusVariant[assignment.status]}>
@@ -701,40 +727,139 @@ function DriverAssignmentRow({
         <div className="text-xs text-muted-foreground">by {assignment.requested_by}</div>
       </TableCell>
       <TableCell className="text-right">
-        <div className="flex items-center justify-end gap-2">
+        <div className="flex items-center justify-end gap-1">
+          <Button variant="ghost" size="sm" onClick={onView}>
+            <Eye className="w-4 h-4" />
+          </Button>
           {assignment.status === 'pending' && (
             <>
-              <Button
-                size="sm"
-                onClick={onApprove}
-                disabled={isApproving}
-              >
-                {isApproving ? 'Approving...' : 'Approve'}
+              <Button variant="ghost" size="sm" onClick={onDeny} disabled={isDenying}>
+                <XCircle className="w-4 h-4 text-destructive" />
               </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={onDeny}
-                disabled={isDenying}
-              >
-                Deny
+              <Button variant="ghost" size="sm" onClick={onApprove} disabled={isApproving}>
+                <CheckCircle className="w-4 h-4 text-primary" />
               </Button>
             </>
           )}
           {assignment.status === 'assigned' && (
             <Button
+              variant="ghost"
               size="sm"
-              variant="outline"
-              className="text-destructive hover:text-destructive"
               onClick={onRemove}
               disabled={isRemoving}
             >
-              <Trash2 className="w-4 h-4 mr-1" />
-              Remove
+              <Trash2 className="w-4 h-4 text-destructive" />
             </Button>
           )}
         </div>
       </TableCell>
     </TableRow>
+  );
+}
+
+// Card component for driver assignments
+function DriverAssignmentCard({
+  assignment,
+  onApprove,
+  onDeny,
+  onRemove,
+  onView,
+  isApproving,
+  isDenying,
+  isRemoving,
+}: {
+  assignment: DriverBrokerAssignment;
+  onApprove: () => void;
+  onDeny: () => void;
+  onRemove: () => void;
+  onView: () => void;
+  isApproving: boolean;
+  isDenying: boolean;
+  isRemoving: boolean;
+}) {
+  const statusLabels: Record<AssignmentStatus, string> = {
+    assigned: 'Assigned',
+    pending: 'Pending',
+    removed: 'Removed',
+  };
+
+  return (
+    <Card className="h-full flex flex-col hover:shadow-soft transition-all">
+      <CardContent className="p-4 space-y-3 flex-1 flex flex-col">
+        {/* Header row with badge */}
+        <div className="flex items-center justify-between">
+          <Badge variant={assignmentStatusVariant[assignment.status]}>
+            {statusLabels[assignment.status]}
+          </Badge>
+        </div>
+
+        {/* Centered avatar and driver info */}
+        <div className="flex flex-col items-center text-center cursor-pointer" onClick={onView}>
+          {/* Avatar */}
+          <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center mb-2">
+            <span className="text-primary text-lg font-semibold">
+              {assignment.driver?.user?.full_name?.charAt(0).toUpperCase() || '?'}
+            </span>
+          </div>
+
+          {/* Driver Name */}
+          <h3 className="font-semibold">{assignment.driver?.user?.full_name || 'Unknown Driver'}</h3>
+
+          {/* Email */}
+          <p className="text-sm text-muted-foreground">{assignment.driver?.user?.email || '—'}</p>
+        </div>
+
+        {/* Metadata Section */}
+        <div className="border-t pt-3 space-y-2 text-sm">
+          {/* Employment Type */}
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <BriefcaseIcon className="h-4 w-4 shrink-0" />
+            <span className="uppercase">{assignment.driver?.employment_type || '—'}</span>
+          </div>
+
+          {/* Requested Date */}
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Calendar className="h-4 w-4 shrink-0" />
+            <span>Requested {new Date(assignment.requested_at).toLocaleDateString()}</span>
+          </div>
+        </div>
+
+        {/* Spacer */}
+        <div className="flex-1" />
+
+        {/* Actions */}
+        {assignment.status === 'pending' ? (
+          <div className="flex gap-2 mt-auto">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex-1"
+              onClick={onDeny}
+              disabled={isDenying}
+            >
+              Deny
+            </Button>
+            <Button 
+              size="sm" 
+              className="flex-1"
+              onClick={onApprove}
+              disabled={isApproving}
+            >
+              Approve
+            </Button>
+          </div>
+        ) : (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="w-full mt-auto"
+            onClick={onView}
+          >
+            <Eye className="h-4 w-4 mr-2" />
+            View Details
+          </Button>
+        )}
+      </CardContent>
+    </Card>
   );
 }

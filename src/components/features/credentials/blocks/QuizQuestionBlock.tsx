@@ -28,6 +28,7 @@ export function QuizQuestionBlock({
   const [showFeedback, setShowFeedback] = useState(false);
   const currentAnswer = stepState.quizAnswers[blockId];
   const isDisabled = disabled || readOnly;
+  const feedbackVisible = readOnly ? currentAnswer !== undefined && currentAnswer !== null && currentAnswer !== '' : showFeedback;
   
   // Check if answer is correct
   const isCorrect = (() => {
@@ -72,7 +73,7 @@ export function QuizQuestionBlock({
   };
 
   return (
-    <div className="space-y-4 p-4 border rounded-lg">
+    <div className="space-y-3 p-4 border rounded-lg">
       <div className="flex items-start gap-3">
         <CircleHelp className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
         <div className="flex-1">
@@ -81,7 +82,7 @@ export function QuizQuestionBlock({
             {content.required && <span className="text-destructive ml-1">*</span>}
           </h4>
         </div>
-        {showFeedback && isCorrect !== null && (
+        {feedbackVisible && isCorrect !== null && (
           isCorrect ? (
             <Check className="w-4 h-4 text-muted-foreground" />
           ) : (
@@ -102,8 +103,8 @@ export function QuizQuestionBlock({
               key={option.id}
               className={cn(
                 'flex items-center space-x-2 p-2 rounded-lg transition-colors',
-                showFeedback && option.isCorrect && 'bg-green-500/10',
-                showFeedback && currentAnswer === option.id && !option.isCorrect && 'bg-red-500/10'
+                feedbackVisible && option.isCorrect && 'bg-green-500/10',
+                feedbackVisible && currentAnswer === option.id && !option.isCorrect && 'bg-red-500/10'
               )}
             >
               <RadioGroupItem value={option.id} id={option.id} />
@@ -125,8 +126,8 @@ export function QuizQuestionBlock({
           <div
             className={cn(
               'flex items-center space-x-2 p-2 rounded-lg transition-colors',
-              showFeedback && content.correctAnswer === 'true' && 'bg-green-500/10',
-              showFeedback && currentAnswer === 'true' && content.correctAnswer !== 'true' && 'bg-red-500/10'
+              feedbackVisible && content.correctAnswer === 'true' && 'bg-green-500/10',
+              feedbackVisible && currentAnswer === 'true' && content.correctAnswer !== 'true' && 'bg-red-500/10'
             )}
           >
             <RadioGroupItem value="true" id={`${blockId}-true`} />
@@ -135,8 +136,8 @@ export function QuizQuestionBlock({
           <div
             className={cn(
               'flex items-center space-x-2 p-2 rounded-lg transition-colors',
-              showFeedback && content.correctAnswer === 'false' && 'bg-green-500/10',
-              showFeedback && currentAnswer === 'false' && content.correctAnswer !== 'false' && 'bg-red-500/10'
+              feedbackVisible && content.correctAnswer === 'false' && 'bg-green-500/10',
+              feedbackVisible && currentAnswer === 'false' && content.correctAnswer !== 'false' && 'bg-red-500/10'
             )}
           >
             <RadioGroupItem value="false" id={`${blockId}-false`} />
@@ -146,7 +147,15 @@ export function QuizQuestionBlock({
       )}
 
       {/* Text Answer */}
-      {content.questionType === 'text' && (
+      {content.questionType === 'text' && readOnly ? (
+        <p className="text-sm py-2 px-3 bg-muted/50 rounded-md">
+          {currentAnswer ? (
+            currentAnswer
+          ) : (
+            <span className="text-muted-foreground">No answer provided</span>
+          )}
+        </p>
+      ) : content.questionType === 'text' && (
         <Input
           value={currentAnswer || ''}
           onChange={(e) => handleAnswerChange(e.target.value)}
@@ -156,7 +165,7 @@ export function QuizQuestionBlock({
       )}
 
       {/* Feedback */}
-      {showFeedback && content.explanation && (
+      {feedbackVisible && content.explanation && (
         <div
           className={cn(
             'p-3 rounded-lg text-sm',

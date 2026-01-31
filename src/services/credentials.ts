@@ -360,7 +360,7 @@ export async function submitCredential(
   const { error } = await supabase
     .from(credentialTable)
     .update({
-      status: 'pending',
+      status: 'pending_review',
       submitted_at: new Date().toISOString(),
       submission_version: nextVersion,
     })
@@ -369,6 +369,10 @@ export async function submitCredential(
   if (error) throw error;
 }
 
+/**
+ * Get submission history for a credential
+ * Returns all past submissions with their review outcomes
+ */
 export async function getCredentialHistory(
   credentialId: string,
   credentialTable: 'driver_credentials' | 'vehicle_credentials',
@@ -381,7 +385,7 @@ export async function getCredentialHistory(
     .order('submitted_at', { ascending: false });
 
   if (error) throw error;
-  return data as CredentialSubmissionHistory[];
+  return (data || []) as CredentialSubmissionHistory[];
 }
 
 function mergeCredentialsWithTypes(

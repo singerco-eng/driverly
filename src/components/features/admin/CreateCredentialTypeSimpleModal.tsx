@@ -71,7 +71,7 @@ export default function CreateCredentialTypeSimpleModal({
       category: 'driver',
       scope: 'global',
       broker_id: null,
-      template_id: 'document_upload',
+      template_id: null, // No template - AI will generate or user will build manually
     },
   });
 
@@ -85,7 +85,7 @@ export default function CreateCredentialTypeSimpleModal({
         companyId,
         data: {
           ...data,
-          template_id: 'document_upload',
+          template_id: null, // No template - start fresh with AI or manual builder
         },
         createdBy: user.id,
       });

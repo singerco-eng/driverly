@@ -2,6 +2,8 @@ import type { ChecklistBlockContent } from '@/types/instructionBuilder';
 import type { StepState } from '@/types/credentialProgress';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import { CheckCircle2, Circle } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface ChecklistBlockProps {
   content: ChecklistBlockContent;
@@ -45,39 +47,53 @@ export function ChecklistBlock({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {content.title && (
-        <h4 className="font-medium text-sm">
+        <Label className="text-sm font-medium">
           {content.title}
-        </h4>
+          {content.requireAllChecked && <span className="text-destructive ml-1">*</span>}
+        </Label>
       )}
       
-      <div className="space-y-2">
+      <div className="space-y-3">
         {items.map((item) => {
           const isChecked = stepState.checklistStates[item.id] ?? false;
           return (
-            <div key={item.id} className="flex items-start gap-3">
-              <Checkbox
-                id={item.id}
-                checked={isChecked}
-                onCheckedChange={(checked) => handleCheck(item.id, !!checked)}
-                disabled={isDisabled}
-              />
-              <Label
-                htmlFor={item.id}
-                className="text-sm leading-relaxed cursor-pointer"
-              >
+            <Label
+              key={item.id}
+              htmlFor={item.id}
+              className={cn(
+                'flex items-start gap-3 p-3 rounded-lg border border-border/50 transition-colors',
+                !readOnly && 'cursor-pointer hover:bg-muted/30',
+                isChecked && 'bg-muted/30 border-primary/30'
+              )}
+            >
+              {readOnly ? (
+                isChecked ? (
+                  <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5 shrink-0" />
+                ) : (
+                  <Circle className="w-5 h-5 text-muted-foreground mt-0.5 shrink-0" />
+                )
+              ) : (
+                <Checkbox
+                  id={item.id}
+                  checked={isChecked}
+                  onCheckedChange={(checked) => handleCheck(item.id, !!checked)}
+                  disabled={isDisabled}
+                  className="mt-0.5"
+                />
+              )}
+              <span className="text-sm leading-relaxed">
                 {item.text}
-                {item.required && <span className="text-destructive ml-1">*</span>}
-              </Label>
-            </div>
+              </span>
+            </Label>
           );
         })}
       </div>
 
       {!readOnly && content.requireAllChecked && !allChecked && (
         <p className="text-xs text-muted-foreground">
-          ⓘ You must check all items to continue
+          You must check all items to continue
         </p>
       )}
     </div>

@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDriverByUserId } from '@/hooks/useDrivers';
 import { useCompany } from '@/hooks/useCompanies';
@@ -27,20 +28,39 @@ export default function DriverDashboard() {
 
   if (isLoading) {
     return (
-      <div className="max-w-5xl mx-auto space-y-4">
-        <Card className="p-6 text-center text-muted-foreground">
-          Loading dashboard...
-        </Card>
+      <div className="min-h-screen bg-background">
+        <div className="border-b bg-background">
+          <div className="px-6 py-4">
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-4 w-64 mt-2" />
+          </div>
+        </div>
+        <div className="p-6">
+          <div className="max-w-5xl mx-auto">
+            <Card className="p-6 text-center text-muted-foreground">
+              Loading dashboard...
+            </Card>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (!driver) {
     return (
-      <div className="max-w-3xl mx-auto space-y-4">
-        <Card className="p-6 text-center text-muted-foreground">
-          We couldn't find your driver profile yet.
-        </Card>
+      <div className="min-h-screen bg-background">
+        <div className="border-b bg-background">
+          <div className="px-6 py-4">
+            <h1 className="text-xl font-bold">Dashboard</h1>
+          </div>
+        </div>
+        <div className="p-6">
+          <div className="max-w-5xl mx-auto">
+            <Card className="p-6 text-center text-muted-foreground">
+              We couldn't find your driver profile yet.
+            </Card>
+          </div>
+        </div>
       </div>
     );
   }
@@ -54,63 +74,73 @@ export default function DriverDashboard() {
   const showChecklist = onboardingStatus && !onboardingStatus.isComplete;
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
-      {/* Page Header */}
-      <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-bold">
-          {greeting}, {driver.user?.full_name || 'Driver'}!
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          {company?.name ? `Welcome to ${company.name}.` : 'Welcome back to your driver portal.'}
-        </p>
+    <div className="min-h-screen bg-background">
+      {/* Full-width header */}
+      <div className="border-b bg-background">
+        <div className="px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <h1 className="text-xl font-bold">
+                {greeting}, {driver.user?.full_name || 'Driver'}!
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                {company?.name ? `Welcome to ${company.name}.` : 'Welcome back to your driver portal.'}
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Status Toggle */}
-      {onboardingStatus && (
-        <DriverStatusToggle
-          driverId={driver.id}
-          currentStatus={driver.status}
-          canActivate={canActivate}
-          blockers={blockers}
-        />
-      )}
+      {/* Content area */}
+      <div className="p-6">
+        <div className="max-w-5xl mx-auto space-y-6">
+          {/* Status Toggle */}
+          {onboardingStatus && (
+            <DriverStatusToggle
+              driverId={driver.id}
+              currentStatus={driver.status}
+              canActivate={canActivate}
+              blockers={blockers}
+            />
+          )}
 
-      {/* Welcome Box - dismissible with "don't show again" */}
-      <WelcomeBox 
-        driverName={driver.user?.full_name} 
-        employmentType={driver.employment_type}
-      />
+          {/* Welcome Box - dismissible with "don't show again" */}
+          <WelcomeBox 
+            driverName={driver.user?.full_name} 
+            employmentType={driver.employment_type}
+          />
 
-      {/* Getting Started Checklist */}
-      {showChecklist && onboardingStatus && (
-        <GettingStartedChecklist onboardingStatus={onboardingStatus} />
-      )}
+          {/* Getting Started Checklist */}
+          {showChecklist && onboardingStatus && (
+            <GettingStartedChecklist onboardingStatus={onboardingStatus} />
+          )}
 
-      {/* Ready to Drive Card */}
-      {!showChecklist && canActivate && driver.status !== 'active' && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-muted-foreground" />
-              <CardTitle className="text-base">Ready to drive</CardTitle>
-            </div>
-            <CardDescription>You've completed all required steps.</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-muted-foreground">
-              Toggle your status to Active to start receiving trips.
-            </p>
-            <Button
-              onClick={() => toggleMutation.mutate({ driverId: driver.id, active: true })}
-              disabled={!canActivate || toggleMutation.isPending}
-              variant="outline"
-            >
-              {toggleMutation.isPending ? 'Updating...' : 'Go Active'}
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-
+          {/* Ready to Drive Card */}
+          {!showChecklist && canActivate && driver.status !== 'active' && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-muted-foreground" />
+                  <CardTitle className="text-base">Ready to drive</CardTitle>
+                </div>
+                <CardDescription>You've completed all required steps.</CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-muted-foreground">
+                  Toggle your status to Active to start receiving trips.
+                </p>
+                <Button
+                  onClick={() => toggleMutation.mutate({ driverId: driver.id, active: true })}
+                  disabled={!canActivate || toggleMutation.isPending}
+                  variant="outline"
+                >
+                  {toggleMutation.isPending ? 'Updating...' : 'Go Active'}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

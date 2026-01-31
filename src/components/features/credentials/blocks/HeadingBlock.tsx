@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 interface HeadingBlockProps {
   content: HeadingBlockContent;
   blockId: string;
+  readOnly?: boolean;
 }
 
 const levelStyles = {

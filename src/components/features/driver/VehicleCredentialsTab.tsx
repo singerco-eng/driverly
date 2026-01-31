@@ -35,6 +35,7 @@ function formatDate(value: string | null | undefined) {
 
 // Extended type with placeholder tracking for unsubmitted credentials
 interface CredentialWithPlaceholder extends CredentialWithDisplayStatus {
+  id: string; // Required for EnhancedDataView
   _isPlaceholder?: boolean;
   _credentialTypeId?: string;
 }
@@ -47,10 +48,12 @@ export function VehicleCredentialsTab({ companyId, vehicleId }: VehicleCredentia
   const { data: rawCredentials = [], isLoading, error } = useVehicleCredentials(vehicleId);
   const ensureCredential = useEnsureVehicleCredential();
 
-  // Add placeholder tracking for navigation
+  // Add placeholder tracking for navigation and id for EnhancedDataView
   const credentials: CredentialWithPlaceholder[] = useMemo(() => {
     return rawCredentials.map((c) => ({
       ...c,
+      // Use credential id if exists, otherwise use credentialType id
+      id: c.credential?.id || c.credentialType.id,
       _isPlaceholder: !c.credential?.id,
       _credentialTypeId: c.credentialType.id,
     }));
@@ -104,7 +107,7 @@ export function VehicleCredentialsTab({ companyId, vehicleId }: VehicleCredentia
       <EnhancedDataView
         title="Vehicle Credentials"
         description="Manage credentials for this vehicle"
-        defaultViewMode="card"
+        defaultViewMode="table"
         cardLabel="Cards"
         tableLabel="Table"
         showViewModeToggle={true}
@@ -165,7 +168,7 @@ export function VehicleCredentialsTab({ companyId, vehicleId }: VehicleCredentia
                     const stepCount = credential.credentialType.instruction_config?.steps?.length || 0;
 
                     return (
-                      <TableRow key={credential.credentialType.id}>
+                      <TableRow key={credential.id}>
                         <TableCell>
                           <div>
                             <div className="font-medium">{credential.credentialType.name}</div>
@@ -232,7 +235,7 @@ export function VehicleCredentialsTab({ companyId, vehicleId }: VehicleCredentia
           ),
           renderCard: (credential) => (
             <DriverCredentialCard
-              key={credential.credentialType.id}
+              key={credential.id}
               credential={credential}
               onView={handleView}
             />

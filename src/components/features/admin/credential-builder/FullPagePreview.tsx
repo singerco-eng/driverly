@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { ArrowLeft, RotateCcw, Circle } from 'lucide-react';
+import { ArrowLeft, Circle, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,11 +36,6 @@ export function FullPagePreview({
     []
   );
 
-  // Reset preview state
-  const handleReset = useCallback(() => {
-    setPreviewProgress(createEmptyProgressData());
-  }, []);
-
   // Handle mock submit
   const handleSubmit = useCallback(() => {
     console.log('Preview submit - would submit credential');
@@ -74,22 +69,20 @@ export function FullPagePreview({
                 </p>
               </div>
             </div>
-            {hasSteps && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleReset}
-              >
-                <RotateCcw className="w-4 h-4 mr-2" />
-                Reset
-              </Button>
-            )}
+            <Button
+              size="sm"
+              onClick={onClose}
+            >
+              <Pencil className="w-4 h-4 mr-2" />
+              Edit
+            </Button>
           </div>
         </div>
       </div>
 
-      {/* Content - full width like driver view */}
-      <div className="p-6">
+      {/* Content - constrained width like driver credential detail */}
+      <div className="p-6 pb-24">
+        <div className="max-w-4xl mx-auto">
         {!hasSteps ? (
           <Card>
             <CardContent className="py-16 text-center">
@@ -114,16 +107,18 @@ export function FullPagePreview({
             isSubmitting={false}
           />
         )}
+        </div>
       </div>
 
-      {/* Footer notice */}
-      <div className="fixed bottom-0 left-0 right-0 bg-muted/80 backdrop-blur border-t">
-        <div className="px-6 py-3 flex items-center justify-between">
+      {/* Footer notice - starts after sidebar on desktop, matches sidebar footer height */}
+      <div className="fixed bottom-0 left-0 md:left-64 right-0 bg-muted/95 backdrop-blur border-t z-10">
+        <div className="px-6 py-4 flex items-center justify-between min-h-[60px]">
           <p className="text-sm text-muted-foreground">
-            Preview mode — Progress is not saved
+            Preview mode — This is how drivers will see this credential
           </p>
-          <Button variant="outline" size="sm" onClick={onClose}>
-            Exit Preview
+          <Button size="sm" onClick={onClose}>
+            <Pencil className="w-4 h-4 mr-2" />
+            Edit Credential
           </Button>
         </div>
       </div>

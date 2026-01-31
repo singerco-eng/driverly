@@ -142,7 +142,7 @@ CREATE POLICY "Super admins view all billing events"
 
 INSERT INTO billing_plans (name, slug, description, price_monthly_cents, price_annual_cents, operator_limit, display_order, is_contact_sales) VALUES
 ('Free', 'free', 'Get started with basic features', 0, 0, 4, 0, false),
-('Starter', 'starter', 'For small transportation companies', 5900, 49000, 15, 1, false),
+('Starter', 'starter', 'For small transportation companies', 5900, 49000, 20, 1, false),
 ('Growth', 'growth', 'For growing fleets', 14900, 124000, 50, 2, false),
 ('Scale', 'scale', 'For large operations', 34900, 290000, NULL, 3, false),
 ('Enterprise', 'enterprise', 'Custom solutions for enterprises', 0, 0, NULL, 4, true);

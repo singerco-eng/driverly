@@ -56,6 +56,115 @@ export async function getBroker(id: string): Promise<Broker> {
   return data as Broker;
 }
 
+// ============ Driver Trip Sources ============
+
+export async function getDriverBrokers(
+  driverId: string,
+  companyId: string,
+): Promise<{ brokers: Broker[]; assignments: DriverBrokerAssignment[] }> {
+  const { data: brokers, error: brokerError } = await supabase
+    .from('brokers')
+    .select('*')
+    .eq('company_id', companyId)
+    .eq('status', 'active')
+    .order('name');
+
+  if (brokerError) throw brokerError;
+
+  const { data: assignments, error: assignmentError } = await supabase
+    .from('driver_broker_assignments')
+    .select('*')
+    .eq('driver_id', driverId)
+    .in('status', ['pending', 'assigned'])
+    .order('requested_at', { ascending: false });
+
+  if (assignmentError) throw assignmentError;
+
+  return {
+    brokers: (brokers || []) as Broker[],
+    assignments: (assignments || []) as DriverBrokerAssignment[],
+  };
+}
+
+export async function getDriverAssignments(driverId: string): Promise<DriverBrokerAssignment[]> {
+  const { data, error } = await supabase
+    .from('driver_broker_assignments')
+    .select('*')
+    .eq('driver_id', driverId)
+    .in('status', ['pending', 'assigned'])
+    .order('requested_at', { ascending: false });
+
+  if (error) throw error;
+  return (data || []) as DriverBrokerAssignment[];
+}
+
+export async function requestBrokerAssignment(
+  driverId: string,
+  brokerId: string,
+  companyId: string,
+): Promise<DriverBrokerAssignment> {
+  const { data, error } = await supabase
+    .from('driver_broker_assignments')
+    .insert({
+      driver_id: driverId,
+      broker_id: brokerId,
+      company_id: companyId,
+      status: 'pending',
+      requested_by: 'driver',
+      requested_at: new Date().toISOString(),
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as DriverBrokerAssignment;
+}
+
+export async function autoJoinBroker(
+  driverId: string,
+  brokerId: string,
+  companyId: string,
+): Promise<DriverBrokerAssignment> {
+  const { data, error } = await supabase
+    .from('driver_broker_assignments')
+    .insert({
+      driver_id: driverId,
+      broker_id: brokerId,
+      company_id: companyId,
+      status: 'assigned',
+      requested_by: 'driver',
+      requested_at: new Date().toISOString(),
+      approved_at: new Date().toISOString(),
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as DriverBrokerAssignment;
+}
+
+export async function cancelBrokerRequest(assignmentId: string): Promise<void> {
+  const { error } = await supabase
+    .from('driver_broker_assignments')
+    .delete()
+    .eq('id', assignmentId);
+
+  if (error) throw error;
+}
+
+export async function canDriverJoinBroker(
+  driverId: string,
+  brokerId: string,
+): Promise<{ can_join: boolean; join_mode: 'auto_signup' | 'request' | 'admin_only' | 'not_eligible'; reason: string }> {
+  const { data, error } = await supabase.rpc('can_driver_join_broker', {
+    p_driver_id: driverId,
+    p_broker_id: brokerId,
+  });
+
+  if (error) throw error;
+  return data[0];
+}
+
 export async function createBroker(
   companyId: string,
   formData: BrokerFormData,

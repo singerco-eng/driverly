@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FileText, Eye, Check, X, ShieldCheck } from 'lucide-react';
+import { FileText, Eye, Check, X, ShieldCheck, Calendar, Clock, ListChecks, Building2 } from 'lucide-react';
 import { EnhancedDataView } from '@/components/ui/enhanced-data-view';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,6 @@ import { useDriverCredentialsForAdmin } from '@/hooks/useCredentialReview';
 import { useAdminEnsureDriverCredential } from '@/hooks/useCredentials';
 import type { CredentialForReview, ReviewStatus } from '@/types/credentialReview';
 import { isAdminOnlyCredential } from '@/lib/credentialRequirements';
-import { cn } from '@/lib/utils';
 
 interface DriverCredentialsTabProps {
   companyId: string;
@@ -132,53 +131,92 @@ export function DriverCredentialsTab({ companyId, driverId }: DriverCredentialsT
   const handleReject = (credential: CredentialForReview) => handleCredentialAction(credential, 'reject');
   const handleVerify = (credential: CredentialForReview) => handleCredentialAction(credential, 'verify');
 
-  // Render credential card for card view - simplified per DS guidelines
+  // Render credential card for card view - standardized pattern
   const renderCredentialCard = (credential: CredentialForReview) => {
     const status = statusConfig[credential.displayStatus] || statusConfig.pending_review;
     const stepCount = credential.credentialType.instruction_config?.steps?.length || 0;
+    const isComplete = credential.displayStatus === 'approved';
 
     return (
       <Card 
         key={credential.id} 
-        className="hover:shadow-soft transition-all cursor-pointer group"
-        onClick={() => handleView(credential)}
+        className="h-full flex flex-col hover:shadow-soft transition-all"
       >
-        <CardContent className="p-4 space-y-3">
-          {/* Header row */}
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <FileText className="w-5 h-5 text-muted-foreground shrink-0" />
-              <div className="min-w-0">
-                <p className="font-medium truncate">{credential.credentialType.name}</p>
-                {credential.credentialType.broker?.name && (
-                  <p className="text-xs text-muted-foreground">{credential.credentialType.broker.name}</p>
-                )}
-              </div>
-            </div>
+        <CardContent className="p-4 space-y-3 flex-1 flex flex-col">
+          {/* Header row with badge */}
+          <div className="flex items-center justify-between">
             <Badge variant={status.badgeVariant}>
               {status.label}
             </Badge>
           </div>
-          {/* Metadata row */}
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            {credential.submittedAt && (
-              <span>Submitted {formatDate(credential.submittedAt)}</span>
-            )}
-            {credential.submittedAt && stepCount > 0 && (
-              <span className="text-border">·</span>
-            )}
-            {stepCount > 0 && (
-              <span>{stepCount} steps</span>
-            )}
-            {credential.expiresAt && (
-              <>
-                <span className="text-border">·</span>
-                <span className={credential.isExpiringSoon ? 'text-destructive' : ''}>
-                  Expires {formatDate(credential.expiresAt)}
-                </span>
-              </>
+
+          {/* Centered icon and credential info */}
+          <div 
+            className="flex flex-col items-center text-center cursor-pointer"
+            onClick={() => handleView(credential)}
+          >
+            {/* Credential Icon */}
+            <div className={`
+              h-12 w-12 rounded-lg flex items-center justify-center mb-2
+              ${isComplete ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}
+            `}>
+              <FileText className="h-6 w-6" />
+            </div>
+
+            {/* Credential Name */}
+            <h3 className="font-semibold">{credential.credentialType.name}</h3>
+
+            {/* Broker info */}
+            {credential.credentialType.broker?.name && (
+              <div className="flex items-center gap-1.5 text-sm text-muted-foreground mt-1">
+                <Building2 className="h-3.5 w-3.5" />
+                <span>{credential.credentialType.broker.name}</span>
+              </div>
             )}
           </div>
+
+          {/* Metadata Section */}
+          <div className="border-t pt-3 space-y-2 text-sm">
+            {/* Submitted Date */}
+            {credential.submittedAt && (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Calendar className="h-4 w-4 shrink-0" />
+                <span>Submitted {formatDate(credential.submittedAt)}</span>
+              </div>
+            )}
+
+            {/* Steps */}
+            {stepCount > 0 && (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <ListChecks className="h-4 w-4 shrink-0" />
+                <span>{stepCount} step{stepCount !== 1 ? 's' : ''}</span>
+              </div>
+            )}
+
+            {/* Expiration */}
+            {credential.expiresAt && (
+              <div className={`flex items-center gap-2 ${
+                credential.isExpiringSoon ? 'text-destructive' : 'text-muted-foreground'
+              }`}>
+                <Clock className="h-4 w-4 shrink-0" />
+                <span>Expires {formatDate(credential.expiresAt)}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Spacer */}
+          <div className="flex-1" />
+
+          {/* View Button */}
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="w-full mt-auto"
+            onClick={() => handleView(credential)}
+          >
+            <Eye className="h-4 w-4 mr-2" />
+            View Details
+          </Button>
         </CardContent>
       </Card>
     );
@@ -189,7 +227,7 @@ export function DriverCredentialsTab({ companyId, driverId }: DriverCredentialsT
       <EnhancedDataView
         title="Driver Credentials"
         description="Manage and review credentials for this driver"
-        defaultViewMode="card"
+        defaultViewMode="table"
         cardLabel="Cards"
         tableLabel="Table"
         showViewModeToggle={true}

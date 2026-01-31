@@ -100,14 +100,43 @@ export function AdminDriverCard({ driver, onAction }: AdminDriverCardProps): JSX
     : null;
 
   return (
-    <Card className="h-full min-h-[280px] flex flex-col hover:shadow-soft transition-all">
+    <Card className="h-full flex flex-col hover:shadow-soft transition-all">
       <CardContent className="p-4 space-y-3 flex-1 flex flex-col">
-        {/* Header with photo, driver info, and actions */}
-        <div className="flex items-start gap-4">
+        {/* Header row with badge and actions */}
+        <div className="flex items-center justify-between">
+          <Badge variant={statusConfig.badgeVariant}>
+            {statusConfig.label}
+          </Badge>
+          {/* Actions Menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Driver actions">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => onAction?.('view', driver)}>
+                <Eye className="h-4 w-4 mr-2" />
+                View Details
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onAction?.('edit', driver)}>
+                <Pencil className="h-4 w-4 mr-2" />
+                Edit Driver
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => onAction?.('vehicles', driver)}>
+                <Car className="h-4 w-4 mr-2" />
+                Manage Vehicles
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {/* Avatar and name centered */}
+        <div className="flex flex-col items-center text-center cursor-pointer" onClick={handleClick}>
           {/* Driver Avatar */}
           <div 
-            className="h-16 w-16 flex-shrink-0 rounded-full border bg-muted/20 flex items-center justify-center overflow-hidden cursor-pointer relative"
-            onClick={handleClick}
+            className="h-16 w-16 rounded-full border bg-muted/20 flex items-center justify-center overflow-hidden relative mb-2"
           >
             {/* Show skeleton while loading */}
             {avatarLoading && avatarUrl && (
@@ -133,41 +162,8 @@ export function AdminDriverCard({ driver, onAction }: AdminDriverCardProps): JSX
           </div>
 
           {/* Driver Info */}
-          <div className="flex-1 min-w-0 space-y-1 cursor-pointer" onClick={handleClick}>
-            <div className="flex items-start justify-between gap-2 min-w-0">
-              <div className="min-w-0">
-                <h3 className="text-base font-semibold truncate">{driver.user.full_name}</h3>
-                <p className="text-sm text-muted-foreground truncate">{driver.user.email}</p>
-              </div>
-              <Badge variant={statusConfig.badgeVariant} className="shrink-0">
-                {statusConfig.label}
-              </Badge>
-            </div>
-          </div>
-
-          {/* Actions Menu */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" aria-label="Driver actions">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onAction?.('view', driver)}>
-                <Eye className="h-4 w-4 mr-2" />
-                View Details
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onAction?.('edit', driver)}>
-                <Pencil className="h-4 w-4 mr-2" />
-                Edit Driver
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => onAction?.('vehicles', driver)}>
-                <Car className="h-4 w-4 mr-2" />
-                Manage Vehicles
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <h3 className="text-base font-semibold">{driver.user.full_name}</h3>
+          <p className="text-sm text-muted-foreground">{driver.user.email}</p>
         </div>
 
         {/* Metadata Section */}

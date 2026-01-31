@@ -17,6 +17,7 @@ interface LegacyCredentialViewProps {
   }) => void;
   disabled?: boolean;
   isSubmitting?: boolean;
+  submitLabel?: string;
 }
 
 /**
@@ -29,6 +30,7 @@ export function LegacyCredentialView({
   onSubmit,
   disabled = false,
   isSubmitting = false,
+  submitLabel = 'Submit for Review',
 }: LegacyCredentialViewProps) {
   const [notes, setNotes] = useState(credential.notes || '');
   const [formData, setFormData] = useState<Record<string, string>>(
@@ -249,10 +251,10 @@ export function LegacyCredentialView({
         </CardContent>
       </Card>
 
-      {/* Submit button */}
-      {credential.status === 'not_submitted' && (
+      {/* Submit button - always shown when not disabled (drivers can always submit new versions) */}
+      {!disabled && (
         <div className="flex justify-end">
-          <Button onClick={handleSubmit} disabled={disabled || isSubmitting}>
+          <Button onClick={handleSubmit} disabled={isSubmitting}>
             {isSubmitting ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -261,7 +263,7 @@ export function LegacyCredentialView({
             ) : (
               <>
                 <Send className="w-4 h-4 mr-2" />
-                Submit for Review
+                {submitLabel}
               </>
             )}
           </Button>

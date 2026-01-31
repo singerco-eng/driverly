@@ -63,7 +63,7 @@
 
 ```
 Old: 15 drivers AND 15 vehicles (30 total possible)
-New: 15 operators (drivers + vehicles combined)
+New: 20 operators (drivers + vehicles combined)
 ```
 
 **Database impact:**

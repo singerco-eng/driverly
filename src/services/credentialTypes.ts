@@ -124,9 +124,10 @@ export async function createCredentialTypeSimple(
   data: CreateCredentialTypeSimple,
   createdBy: string,
 ): Promise<string> {
-  const template = data.template_id ? getTemplateById(data.template_id) : getDefaultTemplate();
+  // Only apply template if explicitly provided - null means no template (AI-first flow)
+  const template = data.template_id ? getTemplateById(data.template_id) : null;
   const instructionConfig = template?.config ?? null;
-  const requiresDriverAction = template?.id !== 'admin_verified';
+  const requiresDriverAction = template ? template.id !== 'admin_verified' : true;
   const submissionType = deriveSubmissionType(instructionConfig, requiresDriverAction);
 
   const { data: created, error } = await supabase

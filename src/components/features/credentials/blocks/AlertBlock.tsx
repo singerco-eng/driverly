@@ -5,33 +5,43 @@ import { Info, AlertTriangle, CheckCircle2, AlertCircle } from 'lucide-react';
 interface AlertBlockProps {
   content: AlertBlockContent;
   blockId: string;
+  readOnly?: boolean;
 }
 
-const variantConfig = {
-  info: {
-    icon: Info,
-    alertVariant: 'default' as const,
-  },
-  warning: {
-    icon: AlertTriangle,
-    alertVariant: 'default' as const,
-  },
-  success: {
-    icon: CheckCircle2,
-    alertVariant: 'default' as const,
-  },
-  error: {
-    icon: AlertCircle,
-    alertVariant: 'destructive' as const,
-  },
-};
+/** Map AlertBlock variants to DS Alert variants */
+function getAlertVariant(variant: AlertBlockContent['variant']): 'default' | 'destructive' | 'warning' {
+  switch (variant) {
+    case 'error':
+      return 'destructive';
+    case 'warning':
+      return 'warning';
+    case 'info':
+    case 'success':
+    default:
+      return 'default';
+  }
+}
+
+/** Get icon for variant */
+function getIcon(variant: AlertBlockContent['variant']) {
+  switch (variant) {
+    case 'error':
+      return AlertCircle;
+    case 'warning':
+      return AlertTriangle;
+    case 'success':
+      return CheckCircle2;
+    case 'info':
+    default:
+      return Info;
+  }
+}
 
 export function AlertBlock({ content }: AlertBlockProps) {
-  const config = variantConfig[content.variant] ?? variantConfig.info;
-  const Icon = config.icon;
+  const Icon = getIcon(content.variant);
 
   return (
-    <Alert variant={config.alertVariant}>
+    <Alert variant={getAlertVariant(content.variant)}>
       <Icon className="h-4 w-4" />
       {content.title && <AlertTitle>{content.title}</AlertTitle>}
       {content.message && <AlertDescription>{content.message}</AlertDescription>}

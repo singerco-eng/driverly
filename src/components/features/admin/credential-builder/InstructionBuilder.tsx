@@ -20,7 +20,7 @@ import { Plus, Layers, Sparkles } from 'lucide-react';
 import { StepAccordionItem } from './StepAccordionItem';
 import { AddStepSheet } from './AddStepSheet';
 import { BlockEditorSheet } from './BlockEditorSheet';
-import { AIGeneratorSheet } from './AIGeneratorSheet';
+import { AIGeneratorSheet } from './LegacyAIGeneratorSheet';
 import type {
   CredentialTypeInstructions,
   InstructionStep,
@@ -39,7 +39,7 @@ interface InstructionBuilderProps {
   readOnly?: boolean;
 }
 
-export function InstructionBuilder({ config, onChange, credentialName = '', hideAIButton = false, readOnly = false }: InstructionBuilderProps) {
+export function InstructionBuilder({ config, onChange, credentialName = '', hideAIButton = true, readOnly = false }: InstructionBuilderProps) {
   const [expandedStepId, setExpandedStepId] = useState<string | null>(
     config.steps[0]?.id ?? null
   );

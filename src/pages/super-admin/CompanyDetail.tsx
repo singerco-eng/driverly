@@ -1,11 +1,12 @@
 import { useState, type ElementType } from 'react';
-import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useCompanyDetail } from '@/hooks/useCompanies';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DetailPageHeader } from '@/components/ui/DetailPageHeader';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,7 +15,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-  ArrowLeft,
   Users,
   Car,
   Calendar,
@@ -99,93 +99,103 @@ export default function CompanyDetail() {
     );
   }
 
-  return (
-    <div className="p-6 space-y-6">
-      {/* Back link */}
-      <Link
-        to="/super-admin/companies"
-        className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
-      >
-        <ArrowLeft className="w-4 h-4 mr-1" />
-        Back to Companies
-      </Link>
+  // Build avatar/logo for header
+  const avatar = (
+    <div
+      className="w-12 h-12 rounded-xl flex items-center justify-center text-white text-xl font-bold shadow-soft shrink-0"
+      style={{ backgroundColor: company.primary_color }}
+    >
+      {company.logo_url ? (
+        <img src={company.logo_url} alt={company.name} className="w-full h-full object-cover rounded-xl" />
+      ) : (
+        company.name.charAt(0).toUpperCase()
+      )}
+    </div>
+  );
 
-      {/* Simple Text Header with Company Info */}
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-4">
-          <div
-            className="w-16 h-16 rounded-xl flex items-center justify-center text-white text-2xl font-bold shadow-soft"
-            style={{ backgroundColor: company.primary_color }}
-          >
-            {company.logo_url ? (
-              <img src={company.logo_url} alt={company.name} className="w-full h-full object-cover rounded-xl" />
-            ) : (
-              company.name.charAt(0).toUpperCase()
-            )}
-          </div>
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-bold">{company.name}</h1>
-              <Badge variant={getStatusVariant(company.status)}>{company.status}</Badge>
-            </div>
-            <p className="text-muted-foreground">/{company.slug}</p>
-          </div>
-        </div>
+  // Build badges
+  const badges = (
+    <Badge variant={getStatusVariant(company.status)}>{company.status}</Badge>
+  );
 
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => setShowEditModal(true)} className="gap-2">
-            <Pencil className="w-4 h-4" />
-            Edit
+  // Build subtitle
+  const subtitle = `/${company.slug}`;
+
+  // Build actions
+  const actions = (
+    <>
+      <Button variant="outline" onClick={() => setShowEditModal(true)} className="gap-2">
+        <Pencil className="w-4 h-4" />
+        Edit
+      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="icon">
+            <MoreHorizontal className="w-4 h-4" />
           </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon">
-                <MoreHorizontal className="w-4 h-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setShowEditModal(true)}>
-                <Pencil className="w-4 h-4 mr-2" />
-                Edit Company
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => setShowEditModal(true)}>
+            <Pencil className="w-4 h-4 mr-2" />
+            Edit Company
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          {company.status === 'active' ? (
+            <>
+              <DropdownMenuItem onClick={() => setStatusAction('deactivate')}>
+                <Power className="w-4 h-4 mr-2" />
+                Deactivate Company
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              {company.status === 'active' ? (
-                <>
-                  <DropdownMenuItem onClick={() => setStatusAction('deactivate')}>
-                    <Power className="w-4 h-4 mr-2" />
-                    Deactivate Company
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => setStatusAction('suspend')}
-                    className="text-destructive focus:text-destructive"
-                  >
-                    <AlertTriangle className="w-4 h-4 mr-2" />
-                    Suspend Company
-                  </DropdownMenuItem>
-                </>
-              ) : (
-                <DropdownMenuItem onClick={() => setStatusAction('reactivate')}>
-                  <Power className="w-4 h-4 mr-2" />
-                  Reactivate Company
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
+              <DropdownMenuItem
+                onClick={() => setStatusAction('suspend')}
+                className="text-destructive focus:text-destructive"
+              >
+                <AlertTriangle className="w-4 h-4 mr-2" />
+                Suspend Company
+              </DropdownMenuItem>
+            </>
+          ) : (
+            <DropdownMenuItem onClick={() => setStatusAction('reactivate')}>
+              <Power className="w-4 h-4 mr-2" />
+              Reactivate Company
+            </DropdownMenuItem>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </>
+  );
 
-      {/* Tabs Content */}
-      <Tabs key={activeTab} defaultValue={activeTab} className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="info">Company Info</TabsTrigger>
-          <TabsTrigger value="admins">Admins</TabsTrigger>
-          <TabsTrigger value="invitations">Invitations</TabsTrigger>
-          <TabsTrigger value="features">Features</TabsTrigger>
-          <TabsTrigger value="billing">Billing</TabsTrigger>
-        </TabsList>
+  // Tab list for header
+  const tabsList = (
+    <TabsList>
+      <TabsTrigger value="overview">Overview</TabsTrigger>
+      <TabsTrigger value="info">Company Info</TabsTrigger>
+      <TabsTrigger value="admins">Admins</TabsTrigger>
+      <TabsTrigger value="invitations">Invitations</TabsTrigger>
+      <TabsTrigger value="features">Features</TabsTrigger>
+      <TabsTrigger value="billing">Billing</TabsTrigger>
+    </TabsList>
+  );
 
-        <TabsContent value="overview" className="space-y-6">
+  return (
+    <div className="min-h-screen bg-background">
+      <Tabs key={activeTab} defaultValue={activeTab}>
+        {/* Full-width header with centered tabs */}
+        <DetailPageHeader
+          title={company.name}
+          subtitle={subtitle}
+          badges={badges}
+          avatar={avatar}
+          onBack={() => navigate('/super-admin/companies')}
+          backLabel="Back to Companies"
+          centerContent={tabsList}
+          actions={actions}
+        />
+
+        {/* Content area */}
+        <div className="p-6">
+          <div className="max-w-5xl mx-auto space-y-6">
+        <TabsContent value="overview" className="mt-0 space-y-6">
           {/* Stats Grid */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             <StatCard icon={Users} label="Admins" value={company.admin_count} />
@@ -240,25 +250,27 @@ export default function CompanyDetail() {
           )}
         </TabsContent>
 
-        <TabsContent value="info">
+        <TabsContent value="info" className="mt-0">
           <CompanyInfoTab company={company} />
         </TabsContent>
 
-        <TabsContent value="admins">
+        <TabsContent value="admins" className="mt-0">
           <CompanyAdminsTab companyId={company.id} companyName={company.name} />
         </TabsContent>
 
-        <TabsContent value="invitations">
+        <TabsContent value="invitations" className="mt-0">
           <CompanyInvitationsTab companyId={company.id} companyName={company.name} />
         </TabsContent>
 
-        <TabsContent value="features">
+        <TabsContent value="features" className="mt-0">
           <CompanyFeaturesTab companyId={company.id} companyName={company.name} />
         </TabsContent>
 
-        <TabsContent value="billing">
+        <TabsContent value="billing" className="mt-0">
           <CompanyBillingTab companyId={company.id} />
         </TabsContent>
+          </div>
+        </div>
       </Tabs>
 
       <EditCompanyModal company={company} open={showEditModal} onOpenChange={setShowEditModal} />

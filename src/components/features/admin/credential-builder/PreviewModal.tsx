@@ -100,6 +100,7 @@ export function PreviewModal({
                 onSubmit={handleSubmit}
                 disabled={false}
                 isSubmitting={false}
+                credentialName={credentialName}
               />
             )}
           </div>

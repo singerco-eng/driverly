@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DetailPageHeader } from '@/components/ui/DetailPageHeader';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,7 +13,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-  ArrowLeft,
   Edit,
   MoreVertical,
   CheckCircle,
@@ -49,6 +49,7 @@ const statusConfig: Record<VehicleStatus, {
 export default function DriverVehicleDetail() {
   const { vehicleId } = useParams<{ vehicleId: string }>();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const { user, profile } = useAuth();
   const { data: driver, isLoading: driverLoading } = useDriverByUserId(user?.id);
   const { data: vehicle, isLoading: vehicleLoading } = useDriverVehicle(vehicleId);
@@ -128,152 +129,146 @@ export default function DriverVehicleDetail() {
     return (
       <div className="text-center py-12">
         <h2 className="text-lg font-semibold text-destructive">Vehicle not found</h2>
-        <Button variant="outline" className="mt-4" asChild>
-          <Link to="/driver/vehicles">Back to Vehicles</Link>
+        <Button variant="outline" className="mt-4" onClick={() => navigate('/driver/vehicles')}>
+          Back to Vehicles
         </Button>
       </div>
     );
   }
 
-  return (
-    <div className="space-y-6">
-      {/* Back Link */}
-      <Link
-        to="/driver/vehicles"
-        className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Back to Vehicles
-      </Link>
+  // Single status badge - always show vehicle status
+  const badges = (
+    <Badge variant={statusConfig[vehicle.status].badgeVariant}>
+      {statusConfig[vehicle.status].label}
+    </Badge>
+  );
 
-      {/* Hero Image */}
-      <div className="relative aspect-video max-h-64 bg-muted/20 rounded-lg overflow-hidden flex items-center justify-center">
-        {heroPhotoLoading && heroPhotoUrl && (
-          <Skeleton className="absolute inset-0 h-full w-full" />
-        )}
-        {heroPhotoUrl && (
-          <img
-            src={heroPhotoUrl}
-            alt="Vehicle"
-            className={`h-full w-full object-cover transition-opacity ${heroPhotoLoading ? 'opacity-0' : 'opacity-100'}`}
-            onLoad={() => setHeroPhotoLoading(false)}
-            onError={() => setHeroPhotoLoading(false)}
-          />
-        )}
-        {!heroPhotoUrl && !heroPhotoLoading && (
-          <Camera className="h-10 w-10 text-muted-foreground" />
-        )}
-      </div>
+  // Build subtitle - includes primary designation if applicable
+  const subtitle = `${vehicle.vehicle_type.replace('_', ' ')} • ${vehicle.license_plate} • ${vehicle.license_state}${vehicle.assignment?.is_primary ? ' • Primary Vehicle' : ''}`;
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold">
-              {vehicle.year} {vehicle.make} {vehicle.model}
-            </h1>
-            {isUncredentialed ? (
-              <Badge variant="destructive">Uncredentialed</Badge>
-            ) : (
-              <Badge variant={statusConfig[vehicle.status].badgeVariant}>
-                {statusConfig[vehicle.status].label}
-              </Badge>
-            )}
-          </div>
-          <p className="text-muted-foreground">
-            {vehicle.vehicle_type.replace('_', ' ')} • {vehicle.license_plate} • {vehicle.license_state}
-          </p>
-          <div className="flex items-center gap-2 mt-2">
-            {vehicle.assignment?.is_primary && (
-              <Badge variant="secondary" className="gap-1">
-                <Star className="h-3 w-3" />
-                Primary Vehicle
-              </Badge>
-            )}
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex items-center gap-2">
-          {is1099 ? (
-            <>
-              <Button variant="outline" className="gap-2" onClick={() => setEditOpen(true)}>
-                <Edit className="w-4 h-4" />
-                Edit
-              </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="icon">
-                    <MoreVertical className="w-4 h-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {!vehicle.assignment?.is_primary && driver && (
-                    <DropdownMenuItem
-                      onClick={() => setPrimary.mutate({ driverId: driver.id, vehicleId: vehicle.id })}
-                    >
-                      <Star className="w-4 h-4 mr-2" />
-                      Set Primary
-                    </DropdownMenuItem>
-                  )}
-                  {vehicle.status === 'inactive' ? (
-                    <DropdownMenuItem onClick={handleSetActive}>
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                      Set Active
-                    </DropdownMenuItem>
-                  ) : (
-                    <DropdownMenuItem onClick={() => setInactiveOpen(true)}>
-                      <XCircle className="w-4 h-4 mr-2" />
-                      Set Inactive
-                    </DropdownMenuItem>
-                  )}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() => setRetireOpen(true)}
-                    className="text-destructive"
-                  >
-                    <Archive className="w-4 h-4 mr-2" />
-                    Retire Vehicle
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </>
+  // Build actions
+  const actions = is1099 ? (
+    <>
+      <Button variant="outline" className="gap-2" onClick={() => setEditOpen(true)}>
+        <Edit className="w-4 h-4" />
+        Edit
+      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="icon">
+            <MoreVertical className="w-4 h-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          {!vehicle.assignment?.is_primary && driver && (
+            <DropdownMenuItem
+              onClick={() => setPrimary.mutate({ driverId: driver.id, vehicleId: vehicle.id })}
+            >
+              <Star className="w-4 h-4 mr-2" />
+              Set Primary
+            </DropdownMenuItem>
+          )}
+          {vehicle.status === 'inactive' ? (
+            <DropdownMenuItem onClick={handleSetActive}>
+              <CheckCircle className="w-4 h-4 mr-2" />
+              Set Active
+            </DropdownMenuItem>
           ) : (
-            <Button variant="outline" onClick={() => setPhotosOpen(true)}>
-              Update Photos
-            </Button>
+            <DropdownMenuItem onClick={() => setInactiveOpen(true)}>
+              <XCircle className="w-4 h-4 mr-2" />
+              Set Inactive
+            </DropdownMenuItem>
           )}
-        </div>
-      </div>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onClick={() => setRetireOpen(true)}
+            className="text-destructive"
+          >
+            <Archive className="w-4 h-4 mr-2" />
+            Retire Vehicle
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </>
+  ) : (
+    <Button variant="outline" onClick={() => setPhotosOpen(true)}>
+      Update Photos
+    </Button>
+  );
 
-      {/* Tabs */}
+  // Tab list for header
+  const tabsList = (
+    <TabsList>
+      <TabsTrigger value="overview">Overview</TabsTrigger>
+      <TabsTrigger value="details">Details</TabsTrigger>
+      <TabsTrigger value="credentials">Credentials</TabsTrigger>
+    </TabsList>
+  );
+
+  // Hero image component
+  const heroImage = (
+    <div className="relative aspect-video max-h-48 bg-muted/20 rounded-lg overflow-hidden flex items-center justify-center">
+      {heroPhotoLoading && heroPhotoUrl && (
+        <Skeleton className="absolute inset-0 h-full w-full" />
+      )}
+      {heroPhotoUrl && (
+        <img
+          src={heroPhotoUrl}
+          alt="Vehicle"
+          className={`h-full w-full object-cover transition-opacity ${heroPhotoLoading ? 'opacity-0' : 'opacity-100'}`}
+          onLoad={() => setHeroPhotoLoading(false)}
+          onError={() => setHeroPhotoLoading(false)}
+        />
+      )}
+      {!heroPhotoUrl && !heroPhotoLoading && (
+        <Camera className="h-10 w-10 text-muted-foreground" />
+      )}
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-background">
       <Tabs defaultValue={defaultTab}>
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="details">Details</TabsTrigger>
-          <TabsTrigger value="credentials">Credentials</TabsTrigger>
-        </TabsList>
+        {/* Full-width header with centered tabs */}
+        <DetailPageHeader
+          title={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
+          subtitle={subtitle}
+          badges={badges}
+          onBack={() => navigate('/driver/vehicles')}
+          backLabel="Back to Vehicles"
+          centerContent={tabsList}
+          actions={actions}
+        />
 
-        <TabsContent value="overview" className="mt-6">
-          <VehicleOverviewTab
-            vehicle={vehicle}
-            driver={driver}
-            companyId={profile?.company_id}
-            onUpdatePhotos={() => setPhotosOpen(true)}
-            is1099={is1099}
-          />
-        </TabsContent>
-        <TabsContent value="details" className="mt-6">
-          <VehicleDetailsTab vehicle={vehicle} />
-        </TabsContent>
-        <TabsContent value="credentials" className="mt-6">
-          {profile?.company_id && (
-            <VehicleCredentialsTab
-              companyId={profile.company_id}
-              vehicleId={vehicle.id}
-            />
-          )}
-        </TabsContent>
+        {/* Content area */}
+        <div className="p-6">
+          <div className="max-w-4xl mx-auto space-y-6">
+            {/* Hero Image */}
+            {heroImage}
+
+            {/* Tab content */}
+            <TabsContent value="overview" className="mt-0">
+              <VehicleOverviewTab
+                vehicle={vehicle}
+                driver={driver}
+                companyId={profile?.company_id}
+                onUpdatePhotos={() => setPhotosOpen(true)}
+                is1099={is1099}
+              />
+            </TabsContent>
+            <TabsContent value="details" className="mt-0">
+              <VehicleDetailsTab vehicle={vehicle} />
+            </TabsContent>
+            <TabsContent value="credentials" className="mt-0">
+              {profile?.company_id && (
+                <VehicleCredentialsTab
+                  companyId={profile.company_id}
+                  vehicleId={vehicle.id}
+                />
+              )}
+            </TabsContent>
+          </div>
+        </div>
       </Tabs>
 
       {/* Modals */}

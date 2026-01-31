@@ -160,7 +160,7 @@ export function VehicleOverviewTab({
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-base">Broker Eligibility</CardTitle>
           <Button size="sm" variant="ghost" asChild>
-            <Link to="/driver/brokers">View All Brokers</Link>
+            <Link to="/driver/trip-sources">View Trip Sources</Link>
           </Button>
         </CardHeader>
         <CardContent className="space-y-2 text-sm">

@@ -20,6 +20,7 @@ import {
   MoreHorizontal,
   Star,
   Image as ImageIcon,
+  Pencil,
 } from 'lucide-react';
 
 export type VehicleCardAction =
@@ -87,63 +88,18 @@ export default function VehicleCard({ vehicle, readOnly, onAction }: VehicleCard
   const isPrimary = vehicle.assignment?.is_primary;
 
   return (
-    <Card className="h-full min-h-[280px] flex flex-col hover:shadow-soft transition-all">
+    <Card className="h-full flex flex-col hover:shadow-soft transition-all">
       <CardContent className="p-4 space-y-3 flex-1 flex flex-col">
-        {/* Header with photo, vehicle info, and actions */}
-        <div className="flex items-start gap-4">
-          {/* Vehicle Photo */}
-          <div className="h-16 w-20 flex-shrink-0 rounded-md border bg-muted/20 flex items-center justify-center overflow-hidden relative">
-            {/* Show skeleton while loading */}
-            {photoLoading && photoUrl && (
-              <Skeleton className="absolute inset-0 h-full w-full" />
-            )}
-            {/* Render image (hidden while loading via opacity) */}
-            {photoUrl && !photoError && (
-              <img 
-                src={photoUrl} 
-                alt="Vehicle" 
-                className={`h-full w-full object-cover transition-opacity ${photoLoading ? 'opacity-0' : 'opacity-100'}`}
-                onLoad={() => setPhotoLoading(false)}
-                onError={() => {
-                  setPhotoError(true);
-                  setPhotoLoading(false);
-                }}
-              />
-            )}
-            {/* Show placeholder if no photo or error */}
-            {(!photoUrl || photoError) && !photoLoading && (
-              <ImageIcon className="h-6 w-6 text-muted-foreground" />
-            )}
-          </div>
-
-          {/* Vehicle Info */}
-          <div className="flex-1 space-y-1">
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <h3 className="text-base font-semibold">
-                  {vehicle.year} {vehicle.make} {vehicle.model}
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  {vehicle.vehicle_type.replace('_', ' ')} • {vehicle.license_plate} • {vehicle.license_state}
-                </p>
-              </div>
-              <div className="flex flex-col items-end gap-1">
-                {vehicle.isUncredentialed ? (
-                  <Badge variant="destructive">Uncredentialed</Badge>
-                ) : (
-                  <Badge variant={vehicleStatus.badgeVariant}>
-                    {vehicleStatus.label}
-                  </Badge>
-                )}
-              </div>
-            </div>
-          </div>
-
+        {/* Header row with single status badge and actions */}
+        <div className="flex items-center justify-between">
+          <Badge variant={vehicleStatus.badgeVariant}>
+            {vehicleStatus.label}
+          </Badge>
           {/* Actions Menu */}
           {!readOnly && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" aria-label="Vehicle actions">
+                <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Vehicle actions">
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -159,6 +115,7 @@ export default function VehicleCard({ vehicle, readOnly, onAction }: VehicleCard
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuItem onClick={() => onAction?.('edit', vehicle)}>
+                  <Pencil className="h-4 w-4 mr-2" />
                   Edit Vehicle
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
@@ -179,28 +136,59 @@ export default function VehicleCard({ vehicle, readOnly, onAction }: VehicleCard
           )}
         </div>
 
-        {/* Metadata Section - matching admin card style */}
-        <div className="border-t pt-3 space-y-2 text-sm">
-          {/* Primary/Secondary */}
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Star className="h-4 w-4 flex-shrink-0" />
-            <span>{isPrimary ? 'Primary Vehicle' : 'Secondary Vehicle'}</span>
+        {/* Centered photo and vehicle info */}
+        <Link to={`/driver/vehicles/${vehicle.id}`} className="flex flex-col items-center text-center">
+          {/* Vehicle Photo */}
+          <div className="h-20 w-28 rounded-md border bg-muted/20 flex items-center justify-center overflow-hidden relative mb-2">
+            {/* Show skeleton while loading */}
+            {photoLoading && photoUrl && (
+              <Skeleton className="absolute inset-0 h-full w-full" />
+            )}
+            {/* Render image (hidden while loading via opacity) */}
+            {photoUrl && !photoError && (
+              <img 
+                src={photoUrl} 
+                alt="Vehicle" 
+                className={`h-full w-full object-cover transition-opacity ${photoLoading ? 'opacity-0' : 'opacity-100'}`}
+                onLoad={() => setPhotoLoading(false)}
+                onError={() => {
+                  setPhotoError(true);
+                  setPhotoLoading(false);
+                }}
+              />
+            )}
+            {/* Show placeholder if no photo or error */}
+            {(!photoUrl || photoError) && !photoLoading && (
+              <ImageIcon className="h-8 w-8 text-muted-foreground" />
+            )}
           </div>
 
+          {/* Vehicle Info */}
+          <h3 className="text-base font-semibold">
+            {vehicle.year} {vehicle.make} {vehicle.model}
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            {vehicle.vehicle_type.replace('_', ' ')} · {vehicle.license_plate} · {vehicle.license_state}
+            {isPrimary && ' · Primary'}
+          </p>
+        </Link>
+
+        {/* Metadata Section */}
+        <div className="border-t pt-3 space-y-2 text-sm">
           {/* Capacity Info */}
           <div className="flex items-center gap-2 text-muted-foreground">
             <Car className="h-4 w-4 flex-shrink-0" />
             <span>
               {vehicle.seat_capacity ?? 4} seats
-              {vehicle.wheelchair_capacity ? ` • ${vehicle.wheelchair_capacity} wheelchair` : ''}
-              {vehicle.stretcher_capacity ? ` • ${vehicle.stretcher_capacity} stretcher` : ''}
+              {vehicle.wheelchair_capacity ? ` · ${vehicle.wheelchair_capacity} wheelchair` : ''}
+              {vehicle.stretcher_capacity ? ` · ${vehicle.stretcher_capacity} stretcher` : ''}
             </span>
           </div>
 
           {/* Fleet Number - only show if exists */}
           {vehicle.fleet_number && (
             <div className="flex items-center gap-2 text-muted-foreground">
-              <Car className="h-4 w-4 flex-shrink-0" />
+              <Star className="h-4 w-4 flex-shrink-0" />
               <span>Fleet #{vehicle.fleet_number}</span>
             </div>
           )}

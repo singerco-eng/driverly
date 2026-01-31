@@ -1,11 +1,13 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { EnhancedDataView } from '@/components/ui/enhanced-data-view';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Users, Plus, Eye } from 'lucide-react';
+import { FilterBar } from '@/components/ui/filter-bar';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { EnhancedTable, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Users, Plus, Eye, LayoutGrid, List } from 'lucide-react';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCompany } from '@/hooks/useCompanies';
@@ -68,6 +70,26 @@ export default function DriversPage() {
   const [filters, setFilters] = useState<DriverFilters>({});
   const { data: drivers, isLoading } = useDrivers(filters);
 
+  const statusFilter = (filters.status ?? 'all') as DriverStatus | 'all';
+  const employmentFilter = (filters.employmentType ?? 'all') as EmploymentType | 'all';
+
+  const driverCount = drivers?.length ?? 0;
+
+  const handleAddDriver = async () => {
+    const link = company?.slug
+      ? `${window.location.origin}/apply/${company.slug}`
+      : null;
+    if (link) {
+      await navigator.clipboard.writeText(link);
+    }
+    toast({
+      title: 'Share application link',
+      description: link
+        ? 'Link copied to clipboard.'
+        : 'Company link not available yet.',
+    });
+  };
+
   const handleCardAction = (action: AdminDriverCardAction, driver: DriverWithUser) => {
     if (action === 'view') {
       navigate(`/admin/drivers/${driver.id}`);
@@ -78,151 +100,184 @@ export default function DriversPage() {
     }
   };
 
-  const statusFilter = (filters.status ?? 'all') as DriverStatus | 'all';
-  const employmentFilter = (filters.employmentType ?? 'all') as EmploymentType | 'all';
-
-  const description = useMemo(() => {
-    const count = drivers?.length ?? 0;
-    return `Manage drivers · ${count} ${count === 1 ? 'driver' : 'drivers'}`;
-  }, [drivers?.length]);
+  // View toggle in header
+  const viewToggle = (
+    <TabsList>
+      <TabsTrigger value="table" className="gap-1.5">
+        <List className="w-4 h-4" />
+        Table
+      </TabsTrigger>
+      <TabsTrigger value="cards" className="gap-1.5">
+        <LayoutGrid className="w-4 h-4" />
+        Cards
+      </TabsTrigger>
+    </TabsList>
+  );
 
   return (
-    <EnhancedDataView
-      title="Drivers"
-      description={description}
-      actionLabel={isAdmin ? 'Add Driver' : undefined}
-      actionIcon={<Plus className="w-4 h-4" />}
-      onActionClick={
-        isAdmin
-          ? async () => {
-              const link = company?.slug
-                ? `${window.location.origin}/apply/${company.slug}`
-                : null;
-              if (link) {
-                await navigator.clipboard.writeText(link);
-              }
-              toast({
-                title: 'Share application link',
-                description: link
-                  ? 'Link copied to clipboard.'
-                  : 'Company link not available yet.',
-              });
-            }
-          : undefined
-      }
-      searchValue={filters.search || ''}
-      onSearchChange={(value) => setFilters((prev) => ({ ...prev, search: value }))}
-      searchPlaceholder="Search by name or email..."
-      filters={[
-        {
-          value: statusFilter,
-          onValueChange: (value) =>
-            setFilters((prev) => ({ ...prev, status: value as DriverStatus | 'all' })),
-          label: 'Status',
-          placeholder: 'All Status',
-          options: [
-            { value: 'all', label: 'All Status' },
-            { value: 'active', label: 'Active' },
-            { value: 'inactive', label: 'Inactive' },
-            { value: 'suspended', label: 'Suspended' },
-            { value: 'archived', label: 'Archived' },
-          ],
-        },
-        {
-          value: employmentFilter,
-          onValueChange: (value) =>
-            setFilters((prev) => ({ ...prev, employmentType: value as EmploymentType | 'all' })),
-          label: 'Type',
-          placeholder: 'All Types',
-          options: [
-            { value: 'all', label: 'All Types' },
-            { value: 'w2', label: 'W2' },
-            { value: '1099', label: '1099' },
-          ],
-        },
-      ]}
-      tableProps={{
-        data: drivers || [],
-        loading: isLoading,
-        children: (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Driver</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Last Active</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {(drivers || []).length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center">
-                    <div className="flex flex-col items-center gap-2">
-                      <Users className="w-8 h-8 text-muted-foreground" />
-                      <p className="text-muted-foreground">No drivers found</p>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                (drivers || []).map((driver) => (
-                  <TableRow
-                    key={driver.id}
-                    className="cursor-pointer hover:bg-muted/50"
-                  >
-                    <TableCell onClick={() => navigate(`/admin/drivers/${driver.id}`)}>
-                      <div className="flex items-center gap-3">
-                        <DriverAvatar avatarPath={driver.user.avatar_url} name={driver.user.full_name} />
-                        <div>
-                          <div className="font-medium">{driver.user.full_name}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {driver.user.email}
+    <div className="min-h-screen bg-background">
+      <Tabs defaultValue="table">
+        {/* Full-width header */}
+        <div className="border-b bg-background">
+          <div className="px-6 py-4">
+            <div className="flex items-center justify-between">
+              {/* Left: title */}
+              <div className="flex-1">
+                <h1 className="text-xl font-bold">Drivers</h1>
+                <p className="text-sm text-muted-foreground">
+                  Manage drivers · {driverCount} {driverCount === 1 ? 'driver' : 'drivers'}
+                </p>
+              </div>
+
+              {/* Center: view toggle */}
+              <div className="flex items-center justify-center">
+                {viewToggle}
+              </div>
+
+              {/* Right: action button */}
+              <div className="flex-1 flex justify-end">
+                {isAdmin && (
+                  <Button onClick={handleAddDriver}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Driver
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Content area */}
+        <div className="p-6">
+          <div className="max-w-5xl mx-auto space-y-4">
+            {/* Filter bar */}
+            <FilterBar
+              searchValue={filters.search || ''}
+              onSearchChange={(value) => setFilters((prev) => ({ ...prev, search: value }))}
+              searchPlaceholder="Search by name or email..."
+              filters={[
+                {
+                  value: statusFilter,
+                  onValueChange: (value) =>
+                    setFilters((prev) => ({ ...prev, status: value as DriverStatus | 'all' })),
+                  label: 'Status',
+                  placeholder: 'All Status',
+                  options: [
+                    { value: 'all', label: 'All Status' },
+                    { value: 'active', label: 'Active' },
+                    { value: 'inactive', label: 'Inactive' },
+                    { value: 'suspended', label: 'Suspended' },
+                    { value: 'archived', label: 'Archived' },
+                  ],
+                },
+                {
+                  value: employmentFilter,
+                  onValueChange: (value) =>
+                    setFilters((prev) => ({ ...prev, employmentType: value as EmploymentType | 'all' })),
+                  label: 'Type',
+                  placeholder: 'All Types',
+                  options: [
+                    { value: 'all', label: 'All Types' },
+                    { value: 'w2', label: 'W2' },
+                    { value: '1099', label: '1099' },
+                  ],
+                },
+              ]}
+            />
+
+            {/* Table view */}
+            <TabsContent value="table" className="mt-0">
+              <EnhancedTable loading={isLoading} skeletonRows={5} skeletonColumns={5}>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Driver</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Last Active</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(drivers || []).length === 0 && !isLoading ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="h-24 text-center">
+                          <div className="flex flex-col items-center gap-2">
+                            <Users className="w-8 h-8 text-muted-foreground" />
+                            <p className="text-muted-foreground">No drivers found</p>
                           </div>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell onClick={() => navigate(`/admin/drivers/${driver.id}`)}>
-                      <Badge variant={driverStatusVariant[driver.status]}>
-                        {statusLabels[driver.status]}
-                      </Badge>
-                    </TableCell>
-                    <TableCell onClick={() => navigate(`/admin/drivers/${driver.id}`)}>
-                      <Badge variant="secondary">{driver.employment_type.toUpperCase()}</Badge>
-                    </TableCell>
-                    <TableCell onClick={() => navigate(`/admin/drivers/${driver.id}`)}>
-                      {driver.last_active_at
-                        ? new Date(driver.last_active_at).toLocaleDateString()
-                        : '—'}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="sm" onClick={() => navigate(`/admin/drivers/${driver.id}`)}>
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      (drivers || []).map((driver) => (
+                        <TableRow
+                          key={driver.id}
+                          className="cursor-pointer hover:bg-muted/50"
+                        >
+                          <TableCell onClick={() => navigate(`/admin/drivers/${driver.id}`)}>
+                            <div className="flex items-center gap-3">
+                              <DriverAvatar avatarPath={driver.user.avatar_url} name={driver.user.full_name} />
+                              <div>
+                                <div className="font-medium">{driver.user.full_name}</div>
+                                <div className="text-sm text-muted-foreground">
+                                  {driver.user.email}
+                                </div>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell onClick={() => navigate(`/admin/drivers/${driver.id}`)}>
+                            <Badge variant={driverStatusVariant[driver.status]}>
+                              {statusLabels[driver.status]}
+                            </Badge>
+                          </TableCell>
+                          <TableCell onClick={() => navigate(`/admin/drivers/${driver.id}`)}>
+                            <Badge variant="secondary">{driver.employment_type.toUpperCase()}</Badge>
+                          </TableCell>
+                          <TableCell onClick={() => navigate(`/admin/drivers/${driver.id}`)}>
+                            {driver.last_active_at
+                              ? new Date(driver.last_active_at).toLocaleDateString()
+                              : '—'}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button variant="ghost" size="sm" onClick={() => navigate(`/admin/drivers/${driver.id}`)}>
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </EnhancedTable>
+            </TabsContent>
+
+            {/* Cards view */}
+            <TabsContent value="cards" className="mt-0">
+              {isLoading ? (
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {[...Array(6)].map((_, i) => (
+                    <Skeleton key={i} className="h-48 rounded-lg" />
+                  ))}
+                </div>
+              ) : (drivers || []).length === 0 ? (
+                <Card className="p-12 text-center">
+                  <Users className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No drivers found</h3>
+                  <p className="text-muted-foreground">
+                    {filters.search ? 'Try adjusting your search or filters.' : 'Drivers will appear here.'}
+                  </p>
+                </Card>
+              ) : (
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {(drivers || []).map((driver) => (
+                    <AdminDriverCard key={driver.id} driver={driver} onAction={handleCardAction} />
+                  ))}
+                </div>
               )}
-            </TableBody>
-          </Table>
-        ),
-      }}
-      cardProps={{
-        data: drivers || [],
-        loading: isLoading,
-        emptyState: (
-          <Card className="p-12 text-center">
-            <Users className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium mb-2">No drivers found</h3>
-            <p className="text-muted-foreground">
-              {filters.search ? 'Try adjusting your search or filters.' : 'Drivers will appear here.'}
-            </p>
-          </Card>
-        ),
-        renderCard: (driver) => (
-          <AdminDriverCard key={driver.id} driver={driver} onAction={handleCardAction} />
-        ),
-      }}
-    />
+            </TabsContent>
+          </div>
+        </div>
+      </Tabs>
+    </div>
   );
 }

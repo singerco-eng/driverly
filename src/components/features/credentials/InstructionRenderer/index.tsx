@@ -1,18 +1,27 @@
-import { useState, useMemo, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { StepProgress } from './StepProgress';
-import { StepNavigation } from './StepNavigation';
+import { useMemo, useCallback, useRef, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Loader2 } from 'lucide-react';
 import { BlockRenderer } from '../blocks/BlockRenderer';
-import type { CredentialTypeInstructions, InstructionStep } from '@/types/instructionBuilder';
+import type {
+  ChecklistBlockContent,
+  CredentialTypeInstructions,
+  ExternalLinkBlockContent,
+  FileUploadBlockContent,
+  FormFieldBlockContent,
+  HeadingBlockContent,
+  InstructionStep,
+  QuizQuestionBlockContent,
+  SignaturePadBlockContent,
+  VideoBlockContent,
+} from '@/types/instructionBuilder';
 import type { StepProgressData, StepState } from '@/types/credentialProgress';
 import {
   createEmptyProgressData,
-  createEmptyStepState,
   getStepState,
   updateStepState as updateStepStateHelper,
   markStepCompleted,
 } from '@/types/credentialProgress';
+import type { SectionProgress } from '../CredentialProgressIndicator';
 
 interface InstructionRendererProps {
   config: CredentialTypeInstructions;
@@ -23,6 +32,12 @@ interface InstructionRendererProps {
   isSubmitting?: boolean;
   /** Read-only mode for admin review - shows submitted data without edit capability */
   readOnly?: boolean;
+  /** Custom label for the submit button */
+  submitLabel?: string;
+  /** Callback to receive section progress info for external progress indicator */
+  onSectionInfoChange?: (sections: SectionProgress[]) => void;
+  /** Callback to receive ref map for scrolling to sections */
+  onSectionRefsReady?: (refs: Map<string, HTMLElement>) => void;
 }
 
 /**
@@ -37,218 +52,197 @@ export function InstructionRenderer({
   disabled = false,
   isSubmitting = false,
   readOnly = false,
+  submitLabel,
+  onSectionInfoChange,
+  onSectionRefsReady,
 }: InstructionRendererProps) {
   // Use external progress or create empty
   const progressData = externalProgressData ?? createEmptyProgressData();
-  
-  // Track current step index
-  const [currentStepIndex, setCurrentStepIndex] = useState(() => {
-    // Find the first incomplete step or start at 0
-    const firstIncomplete = config.steps.findIndex(
-      (step) => !progressData.steps[step.id]?.completed
-    );
-    return firstIncomplete === -1 ? 0 : firstIncomplete;
-  });
 
-  const currentStep = config.steps[currentStepIndex];
-  const currentStepState = currentStep
-    ? getStepState(progressData, currentStep.id)
-    : createEmptyStepState();
+  // Check if ALL required steps can proceed (for submit button)
+  const canSubmit = useMemo(() => {
+    return config.steps.every((step) => {
+      if (!step.required) return true;
+      const stepState = getStepState(progressData, step.id);
+      return isSectionComplete(step, stepState);
+    });
+  }, [config.steps, progressData]);
 
-  // Check if current step can proceed
-  const canProceed = useMemo(() => {
-    if (!currentStep) return false;
-    
-    // Check all required blocks in current step
-    for (const block of currentStep.blocks) {
-      switch (block.type) {
-        case 'form_field': {
-          const content = block.content as { key: string; required: boolean };
-          if (content.required && !currentStepState.formData[content.key]) {
-            return false;
-          }
-          break;
-        }
-        case 'file_upload': {
-          const content = block.content as { required: boolean };
-          if (content.required && currentStepState.uploadedFiles.length === 0) {
-            return false;
-          }
-          break;
-        }
-        case 'signature_pad': {
-          const content = block.content as { required: boolean };
-          if (content.required && !currentStepState.signatureData) {
-            return false;
-          }
-          break;
-        }
-        case 'checklist': {
-          const content = block.content as { requireAllChecked: boolean; items: { id: string }[] };
-          if (content.requireAllChecked) {
-            const allChecked = content.items.every(
-              (item) => currentStepState.checklistStates[item.id]
-            );
-            if (!allChecked) return false;
-          }
-          break;
-        }
-        case 'external_link': {
-          const content = block.content as { requireVisit: boolean };
-          if (content.requireVisit && !currentStepState.externalLinksVisited.includes(block.id)) {
-            return false;
-          }
-          break;
-        }
-        case 'video': {
-          const content = block.content as { requireWatch: boolean };
-          if (content.requireWatch && !currentStepState.videosWatched[block.id]) {
-            return false;
-          }
-          break;
-        }
-        case 'quiz_question': {
-          const content = block.content as { required: boolean };
-          if (content.required && !currentStepState.quizAnswers[block.id]) {
-            return false;
-          }
-          break;
-        }
-      }
+  // Extract section info with labels from first heading block
+  const sectionInfo: SectionProgress[] = useMemo(() => {
+    return config.steps.map((step, index) => {
+      // Find first heading block to use as label
+      const headingBlock = step.blocks.find(b => b.type === 'heading');
+      const label = headingBlock 
+        ? (headingBlock.content as HeadingBlockContent).text 
+        : `Section ${index + 1}`;
+      const isComplete = isSectionComplete(step, getStepState(progressData, step.id));
+      return {
+        id: step.id,
+        label,
+        isComplete,
+        isRequired: step.required,
+      };
+    });
+  }, [config.steps, progressData]);
+
+  // Refs for scrolling to sections
+  const sectionRefs = useRef<Map<string, HTMLElement>>(new Map());
+
+  // Notify parent of section info changes
+  useEffect(() => {
+    onSectionInfoChange?.(sectionInfo);
+  }, [sectionInfo, onSectionInfoChange]);
+
+  // Notify parent when refs are ready
+  useEffect(() => {
+    if (sectionRefs.current.size > 0) {
+      onSectionRefsReady?.(sectionRefs.current);
     }
-    
-    return true;
-  }, [currentStep, currentStepState]);
+  }, [config.steps.length, onSectionRefsReady]);
+
 
   // Handle step state changes
   const handleStepStateChange = useCallback(
-    (updates: Partial<StepState>) => {
-      if (disabled || !currentStep) return;
-
-      const newProgressData = updateStepStateHelper(progressData, currentStep.id, updates);
-      onProgressChange(newProgressData, currentStep.id);
+    (stepId: string, updates: Partial<StepState>) => {
+      if (disabled || readOnly) return;
+      const newProgressData = updateStepStateHelper(progressData, stepId, updates);
+      onProgressChange(newProgressData, stepId);
     },
-    [disabled, currentStep, progressData, onProgressChange]
+    [disabled, readOnly, progressData, onProgressChange]
   );
 
-  // Navigate to previous step
-  const handlePrevious = useCallback(() => {
-    if (currentStepIndex > 0) {
-      const newIndex = currentStepIndex - 1;
-      setCurrentStepIndex(newIndex);
-      onProgressChange(progressData, config.steps[newIndex].id);
-    }
-  }, [currentStepIndex, progressData, config.steps, onProgressChange]);
-
-  // Navigate to next step
-  const handleNext = useCallback(() => {
-    if (!currentStep || !canProceed) return;
-
-    // Mark current step as completed
-    const newProgressData = markStepCompleted(progressData, currentStep.id);
-    
-    if (currentStepIndex < config.steps.length - 1) {
-      const newIndex = currentStepIndex + 1;
-      setCurrentStepIndex(newIndex);
-      onProgressChange(newProgressData, config.steps[newIndex].id);
-    }
-  }, [currentStep, canProceed, progressData, currentStepIndex, config.steps, onProgressChange]);
-
-  // Handle step click from progress pills
-  const handleStepClick = useCallback(
-    (index: number) => {
-      setCurrentStepIndex(index);
-      onProgressChange(progressData, config.steps[index].id);
-    },
-    [progressData, config.steps, onProgressChange]
-  );
-
-  // Handle final submit
+  // Handle submit
   const handleSubmit = useCallback(() => {
-    if (!currentStep || !canProceed) return;
+    if (!canSubmit) return;
 
-    // Mark final step as completed
-    const newProgressData = markStepCompleted(progressData, currentStep.id);
-    onProgressChange(newProgressData, currentStep.id);
-    
-    // Trigger submission
+    // Mark all steps as completed
+    let newProgressData = progressData;
+    config.steps.forEach((step) => {
+      newProgressData = markStepCompleted(newProgressData, step.id);
+    });
+    onProgressChange(newProgressData, config.steps[config.steps.length - 1]?.id ?? '');
+
     onSubmit();
-  }, [currentStep, canProceed, progressData, onProgressChange, onSubmit]);
+  }, [canSubmit, progressData, config.steps, onProgressChange, onSubmit]);
 
   // No steps
   if (config.steps.length === 0) {
     return (
-      <Card className="p-8 text-center">
-        <p className="text-muted-foreground">
-          No instructions configured for this credential.
-        </p>
-      </Card>
+      <div className="py-8 text-center text-muted-foreground">
+        No instructions configured for this credential.
+      </div>
     );
   }
 
-  const isLastStep = currentStepIndex === config.steps.length - 1;
-  const canGoPrevious = currentStepIndex > 0;
-
   return (
-    <div className="space-y-4">
-      {/* Step Progress */}
-      <StepProgress
-        steps={config.steps}
-        currentStepIndex={currentStepIndex}
-        progressData={progressData}
-        showProgressBar={config.settings.showProgressBar}
-        onStepClick={handleStepClick}
-      />
-
-      {/* Current Step Content */}
-      {currentStep && (
-        <Card className="border-border/50">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">{currentStep.title}</CardTitle>
-              {currentStep.required && (
-                <Badge variant="outline" className="text-xs font-normal">Required</Badge>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {currentStep.blocks.length === 0 ? (
-              <p className="text-muted-foreground text-center py-4 text-sm">
-                No content in this step
+    <div className="space-y-10">
+      {/* Soft Section Groups - each section feels like a distinct step */}
+      {config.steps.map((step) => (
+        <section
+          key={step.id}
+          ref={(el) => {
+            if (el) sectionRefs.current.set(step.id, el);
+          }}
+          className="bg-card/50 border border-border/40 rounded-xl p-8 shadow-sm scroll-mt-24"
+        >
+          <div className="space-y-6">
+            {step.blocks.length === 0 ? (
+              <p className="text-muted-foreground text-sm">
+                No content in this section.
               </p>
             ) : (
-              currentStep.blocks.map((block) => (
+              step.blocks.map((block) => (
                 <BlockRenderer
                   key={block.id}
                   block={block}
-                  stepState={currentStepState}
-                  onStateChange={handleStepStateChange}
+                  stepState={getStepState(progressData, step.id)}
+                  onStateChange={(updates) => handleStepStateChange(step.id, updates)}
                   disabled={disabled || readOnly}
                   readOnly={readOnly}
                 />
               ))
             )}
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        </section>
+      ))}
 
-      {/* Step Navigation */}
-      <StepNavigation
-        currentStepIndex={currentStepIndex}
-        totalSteps={config.steps.length}
-        canGoNext={canProceed}
-        canGoPrevious={canGoPrevious}
-        isLastStep={isLastStep}
-        isSubmitting={isSubmitting}
-        disabled={disabled}
-        readOnly={readOnly}
-        onPrevious={handlePrevious}
-        onNext={handleNext}
-        onSubmit={handleSubmit}
-      />
+      {/* Submit Button */}
+      {!readOnly && (
+        <div className="flex justify-end pt-4">
+          <Button
+            onClick={handleSubmit}
+            disabled={disabled || !canSubmit || isSubmitting}
+            size="default"
+          >
+            {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            {submitLabel || 'Submit for Review'}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
 
 export { StepProgress } from './StepProgress';
 export { StepNavigation } from './StepNavigation';
+
+function isSectionComplete(step: InstructionStep, stepState: StepState): boolean {
+  for (const block of step.blocks) {
+    switch (block.type) {
+      case 'form_field': {
+        const content = block.content as FormFieldBlockContent;
+        if (content.required && !stepState.formData[content.key]) {
+          return false;
+        }
+        break;
+      }
+      case 'file_upload': {
+        const content = block.content as FileUploadBlockContent;
+        if (content.required && stepState.uploadedFiles.length === 0) {
+          return false;
+        }
+        break;
+      }
+      case 'signature_pad': {
+        const content = block.content as SignaturePadBlockContent;
+        if (content.required && !stepState.signatureData) {
+          return false;
+        }
+        break;
+      }
+      case 'checklist': {
+        const content = block.content as ChecklistBlockContent;
+        if (content.requireAllChecked) {
+          const allChecked = content.items.every(
+            (item) => stepState.checklistStates[item.id]
+          );
+          if (!allChecked) return false;
+        }
+        break;
+      }
+      case 'external_link': {
+        const content = block.content as ExternalLinkBlockContent;
+        if (content.requireVisit && !stepState.externalLinksVisited.includes(block.id)) {
+          return false;
+        }
+        break;
+      }
+      case 'video': {
+        const content = block.content as VideoBlockContent;
+        if (content.requireWatch && !stepState.videosWatched[block.id]) {
+          return false;
+        }
+        break;
+      }
+      case 'quiz_question': {
+        const content = block.content as QuizQuestionBlockContent;
+        if (content.required && !stepState.quizAnswers[block.id]) {
+          return false;
+        }
+        break;
+      }
+    }
+  }
+  return true;
+}

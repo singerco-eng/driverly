@@ -193,7 +193,6 @@ export function WebsiteLayout() {
               <ul className="space-y-2">
                 <li><Link to="/website/credentialing" className="text-sm text-gray-400 hover:text-white transition-colors">Credentialing</Link></li>
                 <li><Link to="/website/pricing" className="text-sm text-gray-400 hover:text-white transition-colors">Pricing</Link></li>
-                <li><span className="text-sm text-gray-600">Mobile App <span className="text-amber-500/60">Soon</span></span></li>
               </ul>
             </div>
 

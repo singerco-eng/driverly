@@ -88,60 +88,17 @@ export function AdminVehicleCard({ vehicle, onAction }: AdminVehicleCardProps): 
   };
 
   return (
-    <Card className="h-full min-h-[280px] flex flex-col hover:shadow-soft transition-all">
+    <Card className="h-full flex flex-col hover:shadow-soft transition-all">
       <CardContent className="p-4 space-y-3 flex-1 flex flex-col">
-        {/* Header with photo, vehicle info, and actions */}
-        <div className="flex items-start gap-4">
-          {/* Vehicle Photo */}
-          <div 
-            className="h-16 w-20 flex-shrink-0 rounded-md border bg-muted/20 flex items-center justify-center overflow-hidden cursor-pointer relative"
-            onClick={handleClick}
-          >
-            {/* Show skeleton while loading */}
-            {photoLoading && photoUrl && (
-              <Skeleton className="absolute inset-0 h-full w-full" />
-            )}
-            {/* Render image (hidden while loading via opacity) */}
-            {photoUrl && !photoError && (
-              <img 
-                src={photoUrl} 
-                alt="Vehicle" 
-                className={`h-full w-full object-cover transition-opacity ${photoLoading ? 'opacity-0' : 'opacity-100'}`}
-                onLoad={() => setPhotoLoading(false)}
-                onError={() => {
-                  setPhotoError(true);
-                  setPhotoLoading(false);
-                }}
-              />
-            )}
-            {/* Show placeholder if no photo or error */}
-            {(!photoUrl || photoError) && !photoLoading && (
-              <ImageIcon className="h-6 w-6 text-muted-foreground" />
-            )}
-          </div>
-
-          {/* Vehicle Info */}
-          <div className="flex-1 space-y-1 cursor-pointer" onClick={handleClick}>
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <h3 className="text-base font-semibold">
-                  {vehicle.year} {vehicle.make} {vehicle.model}
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  {vehicle.vehicle_type.replace('_', ' ')} • {vehicle.license_plate}
-                  {vehicle.license_state ? ` • ${vehicle.license_state}` : ''}
-                </p>
-              </div>
-              <Badge variant={statusConfig.badgeVariant}>
-                {statusConfig.label}
-              </Badge>
-            </div>
-          </div>
-
+        {/* Header row with badge and actions */}
+        <div className="flex items-center justify-between">
+          <Badge variant={statusConfig.badgeVariant}>
+            {statusConfig.label}
+          </Badge>
           {/* Actions Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" aria-label="Vehicle actions">
+              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Vehicle actions">
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -163,7 +120,44 @@ export function AdminVehicleCard({ vehicle, onAction }: AdminVehicleCardProps): 
           </DropdownMenu>
         </div>
 
-        {/* Metadata Section - Always 4 rows for consistent height */}
+        {/* Centered photo and vehicle info */}
+        <div className="flex flex-col items-center text-center cursor-pointer" onClick={handleClick}>
+          {/* Vehicle Photo */}
+          <div className="h-20 w-28 rounded-md border bg-muted/20 flex items-center justify-center overflow-hidden relative mb-2">
+            {/* Show skeleton while loading */}
+            {photoLoading && photoUrl && (
+              <Skeleton className="absolute inset-0 h-full w-full" />
+            )}
+            {/* Render image (hidden while loading via opacity) */}
+            {photoUrl && !photoError && (
+              <img 
+                src={photoUrl} 
+                alt="Vehicle" 
+                className={`h-full w-full object-cover transition-opacity ${photoLoading ? 'opacity-0' : 'opacity-100'}`}
+                onLoad={() => setPhotoLoading(false)}
+                onError={() => {
+                  setPhotoError(true);
+                  setPhotoLoading(false);
+                }}
+              />
+            )}
+            {/* Show placeholder if no photo or error */}
+            {(!photoUrl || photoError) && !photoLoading && (
+              <ImageIcon className="h-8 w-8 text-muted-foreground" />
+            )}
+          </div>
+
+          {/* Vehicle Info */}
+          <h3 className="text-base font-semibold">
+            {vehicle.year} {vehicle.make} {vehicle.model}
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            {vehicle.vehicle_type.replace('_', ' ')} · {vehicle.license_plate}
+            {vehicle.license_state ? ` · ${vehicle.license_state}` : ''}
+          </p>
+        </div>
+
+        {/* Metadata Section */}
         <div className="border-t pt-3 space-y-2 text-sm">
           {/* Ownership */}
           <div className="flex items-center gap-2 text-muted-foreground">
@@ -184,7 +178,7 @@ export function AdminVehicleCard({ vehicle, onAction }: AdminVehicleCardProps): 
           <div className="flex items-center gap-2 text-muted-foreground">
             <Users className="h-4 w-4 flex-shrink-0" />
             <span>
-              {assignedDriverName ? `Assigned to: ${assignedDriverName}` : 'Not assigned'}
+              {assignedDriverName ? `Assigned: ${assignedDriverName}` : 'Not assigned'}
             </span>
           </div>
 
@@ -193,8 +187,8 @@ export function AdminVehicleCard({ vehicle, onAction }: AdminVehicleCardProps): 
             <Car className="h-4 w-4 flex-shrink-0" />
             <span>
               {vehicle.seat_capacity ?? 4} seats
-              {vehicle.wheelchair_capacity ? ` • ${vehicle.wheelchair_capacity} wheelchair` : ''}
-              {vehicle.stretcher_capacity ? ` • ${vehicle.stretcher_capacity} stretcher` : ''}
+              {vehicle.wheelchair_capacity ? ` · ${vehicle.wheelchair_capacity} wheelchair` : ''}
+              {vehicle.stretcher_capacity ? ` · ${vehicle.stretcher_capacity} stretcher` : ''}
             </span>
           </div>
 

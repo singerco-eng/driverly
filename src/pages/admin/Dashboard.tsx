@@ -14,42 +14,54 @@ export default function AdminDashboard() {
   const isLoading = driversLoading || vehiclesLoading;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-        <p className="text-muted-foreground">Overview of your fleet operations.</p>
+    <div className="min-h-screen bg-background">
+      {/* Full-width header */}
+      <div className="border-b bg-background">
+        <div className="px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <h1 className="text-xl font-bold">Admin Dashboard</h1>
+              <p className="text-sm text-muted-foreground">Overview of your fleet operations.</p>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {billingEnabled && <UsageBanner usage={usage} />}
+      {/* Content area */}
+      <div className="p-6">
+        <div className="max-w-5xl mx-auto space-y-6">
+          {billingEnabled && <UsageBanner usage={usage} />}
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Drivers</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-semibold">
-              {isLoading ? '—' : drivers?.length ?? 0}
-            </div>
-            <p className="text-sm text-muted-foreground mt-2">
-              Total drivers in your company
-            </p>
-          </CardContent>
-        </Card>
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Drivers</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-semibold">
+                  {isLoading ? '—' : drivers?.length ?? 0}
+                </div>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Total drivers in your company
+                </p>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Vehicles</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-semibold">
-              {isLoading ? '—' : vehicles?.length ?? 0}
-            </div>
-            <p className="text-sm text-muted-foreground mt-2">
-              Total vehicles in your fleet
-            </p>
-          </CardContent>
-        </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Vehicles</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-semibold">
+                  {isLoading ? '—' : vehicles?.length ?? 0}
+                </div>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Total vehicles in your fleet
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
     </div>
   );

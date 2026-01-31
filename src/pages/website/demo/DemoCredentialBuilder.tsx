@@ -3,10 +3,13 @@
  * 
  * This renders the REAL credential builder with an INLINE slideout panel
  * that stays within the demo container (no portals).
+ * 
+ * IMPORTANT: All modals/overlays must be rendered inline (not portaled)
+ * so they stay within the demo container on mobile.
  */
 
-import { useState, useRef, useEffect } from 'react';
-import { ArrowLeft, Save, Eye, Sparkles, Wand2, Loader2, Layers, X } from 'lucide-react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { ArrowLeft, Save, Eye, Sparkles, Wand2, Loader2, Layers, X, RotateCcw, Circle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -18,12 +21,14 @@ import { cn } from '@/lib/utils';
 import { InstructionBuilder } from '@/components/features/admin/credential-builder/InstructionBuilder';
 import { RequirementsSection } from '@/components/features/admin/credential-builder/RequirementsSection';
 import { SettingsSection } from '@/components/features/admin/credential-builder/SettingsSection';
-import { PreviewModal } from '@/components/features/admin/credential-builder/PreviewModal';
+import { InstructionRenderer } from '@/components/features/credentials/InstructionRenderer';
 
 // Import types
 import type { CredentialTypeInstructions, InstructionSettings } from '@/types/instructionBuilder';
 import { createEmptyInstructions } from '@/types/instructionBuilder';
 import type { CredentialTypeEdits } from '@/types/credential';
+import type { StepProgressData } from '@/types/credentialProgress';
+import { createEmptyProgressData } from '@/types/credentialProgress';
 
 // Import mock data
 import {
@@ -123,7 +128,7 @@ export default function DemoCredentialBuilder({ embedded = false }: DemoCredenti
   const handleApply = () => {
     setInstructionConfig(mockGeneratedConfig);
     setStage('builder');
-    setShowSheet(false); // Close the AI sheet
+    // Sheet closes automatically since showSheet = stage !== 'builder' && sheetReady
   };
 
   const handleOpenAISheet = () => {
@@ -347,13 +352,134 @@ export default function DemoCredentialBuilder({ embedded = false }: DemoCredenti
         </div>
       </div>
 
-      {/* Preview Modal - uses real component */}
-      <PreviewModal
+      {/* Inline Preview Panel - NO portal, stays in demo container */}
+      <InlinePreviewPanel
         open={showPreview}
         onOpenChange={setShowPreview}
         config={instructionConfig}
         credentialName={mockCredentialType.name}
       />
     </div>
+  );
+}
+
+/**
+ * Inline Preview Panel - renders within the demo container (no portals)
+ * This ensures the preview stays within the demo on mobile view.
+ */
+function InlinePreviewPanel({
+  open,
+  onOpenChange,
+  config,
+  credentialName,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  config: CredentialTypeInstructions;
+  credentialName: string;
+}) {
+  // Local progress state for preview (not persisted)
+  const [previewProgress, setPreviewProgress] = useState<StepProgressData>(
+    createEmptyProgressData()
+  );
+
+  // Handle progress changes in preview
+  const handleProgressChange = useCallback(
+    (data: StepProgressData, _currentStepId: string) => {
+      setPreviewProgress(data);
+    },
+    []
+  );
+
+  // Reset preview state
+  const handleReset = useCallback(() => {
+    setPreviewProgress(createEmptyProgressData());
+  }, []);
+
+  // Handle mock submit
+  const handleSubmit = useCallback(() => {
+    console.log('Preview submit - would submit credential');
+  }, []);
+
+  const hasSteps = config.steps.length > 0;
+
+  if (!open) return null;
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div 
+        className="absolute inset-0 bg-black/80 z-[60] animate-in fade-in duration-200"
+        onClick={() => onOpenChange(false)}
+      />
+      
+      {/* Panel */}
+      <div className="absolute inset-4 bg-background rounded-lg border shadow-2xl z-[70] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        {/* Header */}
+        <div className="px-6 pt-6 pb-4 border-b flex items-start justify-between shrink-0">
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-semibold">{credentialName}</h2>
+              <Badge variant="outline">Preview</Badge>
+            </div>
+            <p className="text-sm text-muted-foreground mt-1">
+              This is how drivers will see this credential. Interactions work but are not saved.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {hasSteps && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleReset}
+                className="shrink-0"
+              >
+                <RotateCcw className="w-4 h-4 mr-2" />
+                Reset
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 shrink-0"
+              onClick={() => onOpenChange(false)}
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-auto p-6">
+          {!hasSteps ? (
+            <div className="py-16 text-center">
+              <Circle className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium mb-2">No Steps Yet</h3>
+              <p className="text-muted-foreground">
+                Add steps to your credential to see a preview here.
+              </p>
+            </div>
+          ) : (
+            <InstructionRenderer
+              config={config}
+              progressData={previewProgress}
+              onProgressChange={handleProgressChange}
+              onSubmit={handleSubmit}
+              disabled={false}
+              isSubmitting={false}
+            credentialName={credentialName}
+            />
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 border-t bg-muted/30 flex items-center justify-between shrink-0">
+          <p className="text-xs text-muted-foreground">
+            Preview mode — Progress is not saved
+          </p>
+          <Button onClick={() => onOpenChange(false)}>Close Preview</Button>
+        </div>
+      </div>
+    </>
   );
 }

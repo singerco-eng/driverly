@@ -75,29 +75,32 @@ export function VideoBlock({
         </h4>
       )}
       
-      <div className="relative aspect-video rounded-lg overflow-hidden bg-black">
-        {!hasStarted ? (
-          <button
-            onClick={handlePlay}
-            disabled={isDisabled}
-            className={cn(
-              'w-full h-full flex flex-col items-center justify-center gap-3 bg-muted/80',
-              !isDisabled && 'hover:bg-muted/60 cursor-pointer transition-colors'
-            )}
-          >
-            <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center">
-              <Play className="w-8 h-8 text-primary-foreground ml-1" />
-            </div>
-            <span className="text-sm text-muted-foreground">Click to play</span>
-          </button>
-        ) : (
-          <iframe
-            src={embedUrl}
-            className="w-full h-full"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
-        )}
+      <div className="relative rounded-lg overflow-hidden bg-black max-h-80">
+        <div className="aspect-video">
+          {!hasStarted ? (
+            <button
+              onClick={handlePlay}
+              disabled={isDisabled}
+              className={cn(
+                'w-full h-full flex flex-col items-center justify-center gap-3 bg-muted/80',
+                !isDisabled && 'hover:bg-muted/60 cursor-pointer transition-colors'
+              )}
+            >
+              <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center">
+                <Play className="w-8 h-8 text-primary-foreground ml-1" />
+              </div>
+              <span className="text-sm text-muted-foreground">Click to play</span>
+            </button>
+          ) : (
+            <iframe
+              src={embedUrl}
+              className="w-full h-full"
+              loading="lazy"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          )}
+        </div>
       </div>
 
       {!readOnly && content.requireWatch && !isWatched && (

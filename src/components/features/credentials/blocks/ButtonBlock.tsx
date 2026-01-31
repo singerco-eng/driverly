@@ -6,6 +6,7 @@ interface ButtonBlockProps {
   content: ButtonBlockContent;
   blockId: string;
   disabled?: boolean;
+  readOnly?: boolean;
   onNextStep?: () => void;
   onSubmit?: () => void;
 }
@@ -13,11 +14,18 @@ interface ButtonBlockProps {
 export function ButtonBlock({
   content,
   disabled,
+  readOnly,
   onNextStep,
   onSubmit,
 }: ButtonBlockProps) {
+  if (readOnly && content.action !== 'external_url') {
+    return null;
+  }
+
+  const isDisabled = disabled;
+
   const handleClick = () => {
-    if (disabled) return;
+    if (isDisabled) return;
 
     switch (content.action) {
       case 'next_step':
@@ -51,7 +59,7 @@ export function ButtonBlock({
     <Button
       variant={content.variant === 'ghost' ? 'ghost' : content.variant === 'outline' ? 'outline' : 'default'}
       onClick={handleClick}
-      disabled={disabled}
+      disabled={isDisabled}
     >
       {content.text}
       {getIcon()}
