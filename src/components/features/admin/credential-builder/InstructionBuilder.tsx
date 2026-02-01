@@ -37,9 +37,18 @@ interface InstructionBuilderProps {
   hideAIButton?: boolean;
   /** Make the builder read-only (hides all add/edit buttons) */
   readOnly?: boolean;
+  /** Switch to AI editor mode */
+  onSwitchToAI?: () => void;
 }
 
-export function InstructionBuilder({ config, onChange, credentialName = '', hideAIButton = true, readOnly = false }: InstructionBuilderProps) {
+export function InstructionBuilder({
+  config,
+  onChange,
+  credentialName = '',
+  hideAIButton = true,
+  readOnly = false,
+  onSwitchToAI,
+}: InstructionBuilderProps) {
   const [expandedStepId, setExpandedStepId] = useState<string | null>(
     config.steps[0]?.id ?? null
   );
@@ -235,6 +244,7 @@ export function InstructionBuilder({ config, onChange, credentialName = '', hide
                   onDuplicate={() => handleDuplicateStep(step.id)}
                   onEditBlock={(block) => handleEditBlock(step.id, block)}
                   readOnly={readOnly}
+                  onSwitchToAI={onSwitchToAI}
                 />
               ))}
             </div>
@@ -270,6 +280,8 @@ export function InstructionBuilder({ config, onChange, credentialName = '', hide
         onOpenChange={(open) => !open && setEditingBlock(null)}
         onChange={handleBlockChange}
         onDelete={handleDeleteEditingBlock}
+        mode="edit"
+        onSwitchToAI={onSwitchToAI}
       />
 
       <AIGeneratorSheet

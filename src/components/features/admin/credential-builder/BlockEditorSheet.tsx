@@ -14,6 +14,7 @@ import {
   FileText,
   Image,
   Video,
+  FileUp,
   ExternalLink,
   AlertTriangle,
   CheckSquare,
@@ -38,6 +39,7 @@ const blockTypeIcons: Record<BlockType, React.ElementType> = {
   divider: Minus,
   form_field: FormInput,
   file_upload: Upload,
+  document: FileUp,
   signature_pad: PenTool,
   quiz_question: HelpCircle,
 };
@@ -55,6 +57,7 @@ const blockTypeLabels: Record<BlockType, string> = {
   divider: 'Divider',
   form_field: 'Form Field',
   file_upload: 'File Upload',
+  document: 'Document Upload',
   signature_pad: 'Signature',
   quiz_question: 'Quiz Question',
 };
@@ -65,6 +68,8 @@ interface BlockEditorSheetProps {
   onOpenChange: (open: boolean) => void;
   onChange: (block: ContentBlock) => void;
   onDelete: () => void;
+  mode?: 'ai' | 'edit';
+  onSwitchToAI?: () => void;
 }
 
 export function BlockEditorSheet({
@@ -73,6 +78,8 @@ export function BlockEditorSheet({
   onOpenChange,
   onChange,
   onDelete,
+  mode = 'edit',
+  onSwitchToAI,
 }: BlockEditorSheetProps) {
   if (!block) return null;
 
@@ -94,7 +101,7 @@ export function BlockEditorSheet({
         </SheetHeader>
 
         <div className="py-6">
-          <BlockEditor block={block} onChange={onChange} />
+          <BlockEditor block={block} onChange={onChange} mode={mode} onSwitchToAI={onSwitchToAI} />
         </div>
 
         <div className="flex items-center justify-between border-t pt-4">

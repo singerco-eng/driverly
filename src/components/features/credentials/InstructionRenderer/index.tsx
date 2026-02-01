@@ -13,6 +13,7 @@ import type {
   QuizQuestionBlockContent,
   SignaturePadBlockContent,
   VideoBlockContent,
+  DocumentBlockContent,
 } from '@/types/instructionBuilder';
 import type { StepProgressData, StepState } from '@/types/credentialProgress';
 import {
@@ -201,6 +202,24 @@ function isSectionComplete(step: InstructionStep, stepState: StepState): boolean
         const content = block.content as FileUploadBlockContent;
         if (content.required && stepState.uploadedFiles.length === 0) {
           return false;
+        }
+        break;
+      }
+      case 'document': {
+        const content = block.content as DocumentBlockContent;
+        const documentData = stepState.documentData?.[block.id];
+        const hasUpload = Boolean(
+          documentData?.uploadedFileUrl || documentData?.uploadedFileName
+        );
+        if (content.required && !hasUpload) {
+          return false;
+        }
+        if (hasUpload) {
+          const fieldValues = documentData?.fieldValues ?? {};
+          const missingRequiredField = content.extractionFields.some(
+            (field) => field.required && !fieldValues[field.key]
+          );
+          if (missingRequiredField) return false;
         }
         break;
       }

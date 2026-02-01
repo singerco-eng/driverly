@@ -1,8 +1,8 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Save,
-  Eye,
+  Sparkles,
   MoreVertical,
   Loader2,
   FileText,
@@ -30,12 +30,14 @@ import { RequirementsSection } from '@/components/features/admin/credential-buil
 import { ExpirationSection } from '@/components/features/admin/credential-builder/ExpirationSection';
 import { SettingsSection } from '@/components/features/admin/credential-builder/SettingsSection';
 import { FullPagePreview } from '@/components/features/admin/credential-builder/FullPagePreview';
-import { AIGeneratorFullScreen } from '@/components/features/admin/credential-builder/AIGeneratorFullScreen';
+import { AIBuilderTwoPanel, type ChatMessage } from '@/components/features/admin/credential-builder/AIBuilderTwoPanel';
 import type { CredentialType, CredentialTypeEdits } from '@/types/credential';
 import type { CredentialTypeInstructions } from '@/types/instructionBuilder';
 import { createEmptyInstructions } from '@/types/instructionBuilder';
 
-type EditorMode = 'ai' | 'preview' | 'edit';
+// AI mode now has embedded preview, so we only need 'ai' | 'edit' | 'preview'
+// 'preview' is only used for the Preview button in edit mode (full-page preview)
+type EditorMode = 'ai' | 'edit' | 'preview';
 
 export default function CredentialTypeEditor() {
   const { id } = useParams<{ id: string }>();
@@ -54,6 +56,9 @@ export default function CredentialTypeEditor() {
   // Editor mode state - null means not yet determined
   const [mode, setMode] = useState<EditorMode | null>(null);
   const [modeInitialized, setModeInitialized] = useState(false);
+  
+  // Chat history persists across AI <-> Edit mode switches
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
 
   // Determine if credential has existing instructions with actual content
   const hasExistingInstructions = useMemo(() => {
@@ -74,7 +79,7 @@ export default function CredentialTypeEditor() {
     console.log('Setting initial mode:', { hasExistingInstructions, instruction_config: credentialType.instruction_config });
     
     if (hasExistingInstructions) {
-      setMode('edit');
+      setMode('ai');
     } else {
       setMode('ai');
     }
@@ -89,16 +94,15 @@ export default function CredentialTypeEditor() {
     setEdits({});
   }, [credentialType]);
 
-  const handleConfigChange = (config: CredentialTypeInstructions) => {
+  const handleConfigChange = useCallback((config: CredentialTypeInstructions) => {
     setInstructionConfig(config);
     setHasInstructionChanges(true);
-  };
+  }, []);
 
-  const handleAIApply = (config: CredentialTypeInstructions) => {
-    setInstructionConfig(config);
-    setHasInstructionChanges(true);
-    setMode('preview');
-  };
+  // Callback for chat history changes (memoized to prevent re-renders)
+  const handleChatHistoryChange = useCallback((messages: ChatMessage[]) => {
+    setChatHistory(messages);
+  }, []);
 
   const handleSave = async () => {
     if (!id) return;
@@ -188,15 +192,18 @@ export default function CredentialTypeEditor() {
     );
   }
 
-  // AI Generator Full Screen Mode
+  // AI Builder Two-Panel Mode (chat + live preview)
   if (mode === 'ai') {
     return (
       <div className="fixed inset-0 z-50 bg-background">
-        <AIGeneratorFullScreen
+        <AIBuilderTwoPanel
           credentialName={credentialType.name}
-          onApply={handleAIApply}
-          onManualBuild={() => setMode('edit')}
+          initialConfig={instructionConfig || createEmptyInstructions()}
+          onConfigChange={handleConfigChange}
+          onSwitchToManual={() => setMode('edit')}
           onBack={() => navigate('/admin/settings/credentials')}
+          initialChatHistory={chatHistory}
+          onChatHistoryChange={handleChatHistoryChange}
         />
       </div>
     );
@@ -237,9 +244,9 @@ export default function CredentialTypeEditor() {
   // Build actions
   const actions = (
     <>
-      <Button variant="outline" onClick={() => setMode('preview')}>
-        <Eye className="w-4 h-4 mr-2" />
-        Preview
+      <Button variant="outline" onClick={() => setMode('ai')}>
+        <Sparkles className="w-4 h-4 mr-2" />
+        AI Editor
       </Button>
       <Button onClick={handleSave} disabled={!hasChanges || isSaving}>
         {isSaving ? (
@@ -317,6 +324,7 @@ export default function CredentialTypeEditor() {
                   config={instructionConfig}
                   onChange={handleConfigChange}
                   credentialName={credentialType.name}
+                  onSwitchToAI={() => setMode('ai')}
                 />
               )}
             </TabsContent>

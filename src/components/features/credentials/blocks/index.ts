@@ -10,6 +10,7 @@ export { ExternalLinkBlock } from './ExternalLinkBlock';
 export { ChecklistBlock } from './ChecklistBlock';
 export { FormFieldBlock } from './FormFieldBlock';
 export { FileUploadBlock } from './FileUploadBlock';
+export { DocumentBlock } from './DocumentBlock';
 export { SignatureBlock } from './SignatureBlock';
 export { QuizQuestionBlock } from './QuizQuestionBlock';
 export { ButtonBlock } from './ButtonBlock';

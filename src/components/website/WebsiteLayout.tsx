@@ -86,17 +86,12 @@ export function WebsiteLayout() {
               >
                 Sign In
               </Link>
-              <a
-                href="#waitlist"
-                onClick={(e) => {
-                  e.preventDefault();
-                  document.querySelector('input[type="email"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                  setTimeout(() => document.querySelector<HTMLInputElement>('input[type="email"]')?.focus(), 500);
-                }}
-                className="ws-btn-primary text-sm"
+              <Link
+                to="/login"
+                className="inline-flex items-center px-4 py-2 bg-amber-500 text-gray-900 text-sm font-medium rounded-full hover:bg-amber-400 transition-colors"
               >
-                Join Waitlist
-              </a>
+                Try Free
+              </Link>
             </div>
 
             {/* Mobile menu button */}
@@ -150,20 +145,13 @@ export function WebsiteLayout() {
                 >
                   Sign In
                 </Link>
-                <a
-                  href="#waitlist"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setMobileMenuOpen(false);
-                    setTimeout(() => {
-                      document.querySelector('input[type="email"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                      setTimeout(() => document.querySelector<HTMLInputElement>('input[type="email"]')?.focus(), 500);
-                    }, 300);
-                  }}
-                  className="block ws-btn-primary text-center text-sm"
+                <Link
+                  to="/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block text-center px-4 py-3 bg-amber-500 text-gray-900 text-sm font-medium rounded-full hover:bg-amber-400 transition-colors"
                 >
-                  Join Waitlist
-                </a>
+                  Try Free
+                </Link>
               </div>
             </div>
           </motion.div>

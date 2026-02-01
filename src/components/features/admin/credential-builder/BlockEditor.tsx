@@ -21,16 +21,20 @@ import type {
   DividerBlockContent,
   FormFieldBlockContent,
   FileUploadBlockContent,
+  DocumentBlockContent,
   SignaturePadBlockContent,
   ButtonBlockContent,
 } from '@/types/instructionBuilder';
+import { DocumentBlockEditor } from './blocks/DocumentBlockEditor';
 
 interface BlockEditorProps {
   block: ContentBlock;
   onChange: (block: ContentBlock) => void;
+  mode?: 'ai' | 'edit';
+  onSwitchToAI?: () => void;
 }
 
-export function BlockEditor({ block, onChange }: BlockEditorProps) {
+export function BlockEditor({ block, onChange, mode = 'edit', onSwitchToAI }: BlockEditorProps) {
   function updateContent<T extends object>(updates: Partial<T>) {
     onChange({
       ...block,
@@ -504,6 +508,17 @@ export function BlockEditor({ block, onChange }: BlockEditorProps) {
             </div>
           </div>
         </div>
+      );
+    }
+
+    case 'document': {
+      return (
+        <DocumentBlockEditor
+          content={block.content as DocumentBlockContent}
+          onChange={(content) => onChange({ ...block, content })}
+          mode={mode}
+          onSwitchToAI={onSwitchToAI}
+        />
       );
     }
 

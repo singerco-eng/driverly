@@ -75,6 +75,7 @@ export type BlockType =
   | 'divider'
   | 'form_field'
   | 'file_upload'
+  | 'document'
   | 'signature_pad'
   | 'quiz_question';
 
@@ -92,6 +93,7 @@ export type BlockContent =
   | DividerBlockContent
   | FormFieldBlockContent
   | FileUploadBlockContent
+  | DocumentBlockContent
   | SignaturePadBlockContent
   | QuizQuestionBlockContent;
 
@@ -192,6 +194,40 @@ export interface FileUploadBlockContent {
   multiple: boolean;
   required: boolean;
   helpText?: string;
+}
+
+export interface DocumentBlockContent {
+  uploadLabel: string;
+  uploadDescription?: string;
+  acceptedTypes: string[]; // ['image/*', 'application/pdf']
+  maxSizeMB: number;
+  required: boolean;
+  extractionFields: DocumentExtractionField[];
+  extractionContext?: string;
+}
+
+export interface DocumentExtractionField {
+  id: string;
+  key: string;
+  label: string;
+  type: 'text' | 'date' | 'number' | 'email' | 'phone';
+  required: boolean;
+  placeholder?: string;
+  extractionHints?: string[];
+  source: 'ai_generated' | 'user_specified';
+}
+
+export interface ExtractionResult {
+  fields: Record<string, { value: string | null; confidence?: number }>;
+}
+
+export interface DocumentBlockState {
+  uploadedFileUrl: string | null;
+  uploadedFileName: string | null;
+  extractionStatus: 'idle' | 'extracting' | 'complete' | 'failed';
+  extractionResult: ExtractionResult | null;
+  fieldValues: Record<string, string>;
+  overrides: string[];
 }
 
 export interface SignaturePadBlockContent {

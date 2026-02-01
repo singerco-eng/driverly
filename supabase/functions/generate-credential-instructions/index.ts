@@ -3,23 +3,64 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
-const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY');
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
 interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
 }
 
+interface CredentialTypeInstructions {
+  version: number;
+  settings: Record<string, unknown>;
+  steps: unknown[];
+}
+
+interface ComponentResponseExtractOrUpload {
+  type: 'extract_or_upload';
+  documentName: string;
+  choice: 'extract' | 'upload';
+}
+
+interface ComponentResponseFieldSelection {
+  type: 'field_selection';
+  documentName: string;
+  selectedFields: string[];
+  otherFields: string;
+}
+
+type ComponentResponse =
+  | ComponentResponseExtractOrUpload
+  | ComponentResponseFieldSelection;
+
+interface PendingDocument {
+  id: string;
+  name: string;
+  status: 'awaiting_extract_choice' | 'awaiting_fields' | 'configured';
+  choice?: 'extract' | 'upload';
+  fields?: string[];
+}
+
 interface ChatRequest {
-  mode: 'chat';
+  mode: 'chat' | 'refine_existing';
   messages: ChatMessage[];
   credentialName?: string;
+  existingConfig?: CredentialTypeInstructions;
+  componentResponse?: ComponentResponse;
+  pendingDocuments?: PendingDocument[];
 }
 
 interface GenerateFromChatRequest {
-  mode: 'generate_from_chat';
+  mode: 'generate_from_chat' | 'refine_from_chat';
   messages: ChatMessage[];
   credentialName?: string;
+  existingConfig?: CredentialTypeInstructions;
+}
+
+interface SummarizeRequest {
+  mode: 'summarize_for_refinement';
+  credentialName?: string;
+  existingConfig: CredentialTypeInstructions;
 }
 
 interface AnalyzeRequest {
@@ -35,7 +76,12 @@ interface GenerateRequest {
   clarifications?: Record<string, boolean>;
 }
 
-type RequestBody = ChatRequest | GenerateFromChatRequest | AnalyzeRequest | GenerateRequest;
+type RequestBody =
+  | ChatRequest
+  | GenerateFromChatRequest
+  | SummarizeRequest
+  | AnalyzeRequest
+  | GenerateRequest;
 
 interface ClarifyingQuestion {
   id: string;
@@ -84,6 +130,84 @@ This signals the UI to highlight the generate button.
 - Keep responses concise (2-4 short paragraphs max)
 - Don't output JSON - this is a natural conversation
 - Don't repeat information they already gave you`;
+
+const KNOWN_DOCUMENT_TYPES: Record<
+  string,
+  {
+    triggers: string[];
+    uploadLabel: string;
+    fields: { key: string; label: string; type: string; required: boolean }[];
+  }
+> = {
+  auto_insurance: {
+    triggers: ['insurance', 'insurance card', 'proof of insurance', 'auto insurance'],
+    uploadLabel: 'Insurance Card',
+    fields: [
+      { key: 'policy_number', label: 'Policy Number', type: 'text', required: true },
+      { key: 'carrier', label: 'Insurance Carrier', type: 'text', required: false },
+      { key: 'expiration_date', label: 'Expiration Date', type: 'date', required: true },
+    ],
+  },
+  drivers_license: {
+    triggers: ['license', "driver's license", 'drivers license', 'dl'],
+    uploadLabel: "Driver's License",
+    fields: [
+      { key: 'license_number', label: 'License Number', type: 'text', required: true },
+      { key: 'state', label: 'State', type: 'text', required: false },
+      { key: 'expiration_date', label: 'Expiration Date', type: 'date', required: true },
+      { key: 'class', label: 'License Class', type: 'text', required: false },
+    ],
+  },
+  vehicle_registration: {
+    triggers: ['registration', 'vehicle registration'],
+    uploadLabel: 'Vehicle Registration',
+    fields: [
+      { key: 'plate_number', label: 'Plate Number', type: 'text', required: true },
+      { key: 'vin', label: 'VIN', type: 'text', required: false },
+      { key: 'expiration_date', label: 'Expiration Date', type: 'date', required: true },
+    ],
+  },
+  dot_physical: {
+    triggers: ['dot physical', 'medical card', 'dot medical', 'medical certificate'],
+    uploadLabel: 'DOT Physical Card',
+    fields: [
+      { key: 'certificate_number', label: 'Certificate Number', type: 'text', required: true },
+      { key: 'examiner_name', label: 'Examiner Name', type: 'text', required: false },
+      { key: 'expiration_date', label: 'Expiration Date', type: 'date', required: true },
+    ],
+  },
+  drug_test: {
+    triggers: ['drug test', 'drug screen', 'drug screening'],
+    uploadLabel: 'Drug Test Results',
+    fields: [
+      { key: 'test_date', label: 'Test Date', type: 'date', required: true },
+      { key: 'result', label: 'Result', type: 'text', required: true },
+      { key: 'lab_name', label: 'Lab Name', type: 'text', required: false },
+    ],
+  },
+  training_certificate: {
+    triggers: ['training certificate', 'completion certificate', 'certificate of completion'],
+    uploadLabel: 'Training Certificate',
+    fields: [
+      { key: 'certificate_number', label: 'Certificate Number', type: 'text', required: false },
+      { key: 'completion_date', label: 'Completion Date', type: 'date', required: true },
+      { key: 'expiration_date', label: 'Expiration Date', type: 'date', required: false },
+    ],
+  },
+};
+
+const DOCUMENT_BLOCK_INSTRUCTIONS = `\n## Document Blocks vs File Upload Blocks\n\nWhen users request document uploads, decide between:\n\n1. **Document Block** - Use when user wants to EXTRACT DATA from the document\n   - Insurance cards, licenses, registrations, permits, certificates\n   - Any document where specific fields need to be captured\n   - Generates a block with type: "document" and extractionFields\n\n2. **File Upload Block** - Use for simple file collection\n   - Photos (vehicle photos, profile pictures)\n   - Supporting documents with no specific data to extract\n   - "Proof of" documents where just having the file matters\n   - Generates a block with type: "file_upload"\n\n## Known Document Types\n\nFor these documents, automatically configure extraction fields:\n${Object.entries(KNOWN_DOCUMENT_TYPES)
+  .map(
+    ([, doc]) =>
+      `- ${doc.uploadLabel}: ${doc.fields
+        .map((field) => field.label + (field.required ? '*' : ''))
+        .join(', ')}`
+  )
+  .join('\n')}\n\n## Unknown Document Types\n\nIf you don't recognize the document type, ask the user:\n1. First ask: Extract data or simple upload? (return component: extract_or_upload)\n2. If extract: Ask what fields to extract (return component: field_selection)\n\n## Modifying Document Blocks\n\nYou can modify Document blocks:\n- Add fields: Add to extractionFields array\n- Remove fields: Remove from extractionFields array\n- Change required: Update the required property\n- Convert to FileUpload: Replace document block with file_upload block\n\nWhen making changes, update configUpdates with the modified block.\n`;
+
+const STATE_AWARENESS_PROMPT = `\n## Conversation State\n\nYou may receive a pendingDocuments array showing documents currently being configured:\n- status: 'awaiting_extract_choice' - waiting for user to choose extract vs upload\n- status: 'awaiting_fields' - waiting for user to select fields\n- status: 'configured' - document is fully configured\n\nUse this state to maintain context. Don't re-ask questions for documents already configured.\n`;
+
+const CHAT_RESPONSE_FORMAT_INSTRUCTIONS = `\n## Response Format (Required)\n\nReturn a JSON object with this shape:\n{\n  "type": "message",\n  "content": "Your natural language response to the user",\n  "component": { ... } | null,\n  "configUpdates": { ... } | null,\n  "hasPendingChanges": boolean\n}\n\nRules:\n- Always include "type" and "content"\n- Use "component" ONLY when asking the user to choose extract/upload or select fields\n- Use "configUpdates" when you have concrete changes to apply (prefer a full CredentialTypeInstructions object for clarity)\n- Set "hasPendingChanges" to true when configUpdates should be applied by the user\n- Respond with JSON only. No markdown.\n`;
 
 const GENERATE_FROM_CHAT_PROMPT = `You are an expert at creating credential instruction flows for a driver compliance platform.
 
@@ -485,12 +609,55 @@ User: "Background check through Checkr that admin verifies"
 
 ONLY output the JSON object. No markdown, no explanation, no code fences. Just pure JSON.`;
 
+const SYSTEM_PROMPT_WITH_DOCUMENTS = `${SYSTEM_PROMPT}\n\n${DOCUMENT_BLOCK_INSTRUCTIONS}`;
+
+const CHAT_SYSTEM_PROMPT_WITH_DOCUMENTS = `${CHAT_SYSTEM_PROMPT}\n\n${DOCUMENT_BLOCK_INSTRUCTIONS}\n\n${STATE_AWARENESS_PROMPT}\n\n${CHAT_RESPONSE_FORMAT_INSTRUCTIONS}`;
+
+function buildConfigSummary(config: CredentialTypeInstructions, credentialName?: string) {
+  const stepTitles = Array.isArray(config?.steps)
+    ? config.steps.map((step: any, index: number) => {
+        const title = typeof step?.title === 'string' && step.title.trim()
+          ? step.title
+          : `Section ${index + 1}`;
+        return `${index + 1}. ${title}`;
+      })
+    : [];
+  if (stepTitles.length === 0) {
+    return credentialName
+      ? `Let's build "${credentialName}". What would you like to include?`
+      : 'What would you like to build?';
+  }
+  const header = credentialName
+    ? `I see you've already started building "${credentialName}" with ${stepTitles.length} section${stepTitles.length !== 1 ? 's' : ''}:`
+    : `I see you've already built a credential with ${stepTitles.length} section${stepTitles.length !== 1 ? 's' : ''}:`;
+  return `${header}\n\n${stepTitles.join('\n')}\n\nWhat would you like to change or add?`;
+}
+
+/**
+ * AUTHENTICATION STRATEGY:
+ * 
+ * This function is deployed with --no-verify-jwt flag because Supabase's gateway 
+ * JWT verification was failing (returning 401 before reaching function code).
+ * 
+ * We implement our own JWT verification using the same secure pattern as 
+ * submit-application: using SUPABASE_SERVICE_ROLE_KEY to call getUser(token).
+ * 
+ * This is SECURE because:
+ * 1. We require an Authorization header
+ * 2. We cryptographically verify the JWT using Supabase's auth.getUser(token)
+ * 3. Invalid/expired tokens are rejected with 401
+ * 4. All authenticated requests are logged with user email
+ * 
+ * If gateway JWT starts working in the future, we can remove --no-verify-jwt
+ * for defense-in-depth (gateway + function verification).
+ */
 Deno.serve(async (req) => {
-  console.log('Request received:', req.method, req.url);
+  const requestId = crypto.randomUUID().slice(0, 8);
+  console.log(`[${requestId}] Request: ${req.method} ${req.url}`);
   
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    console.log('Handling CORS preflight');
+    console.log(`[${requestId}] CORS preflight - OK`);
     return new Response(null, { 
       status: 204,
       headers: corsHeaders 
@@ -498,44 +665,46 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Verify user authentication
+    // ===== JWT AUTHENTICATION =====
     const authHeader = req.headers.get('Authorization');
-    console.log('Auth header present:', !!authHeader);
+    console.log(`[${requestId}] Auth: header=${!!authHeader ? 'present' : 'MISSING'}`);
     
     if (!authHeader) {
-      console.error('No authorization header');
+      console.error(`[${requestId}] AUTH FAILED: No authorization header`);
       return new Response(
         JSON.stringify({ error: 'Missing authorization header' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Verify the JWT using Supabase client
-    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-      console.error('Supabase credentials not configured');
+    // Verify we have Supabase credentials
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+      console.error(`[${requestId}] CONFIG ERROR: Missing Supabase credentials`);
       throw new Error('Supabase credentials not configured');
     }
 
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: {
-        headers: { Authorization: authHeader },
-      },
-    });
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // Create admin client and verify JWT
+    const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const token = authHeader.replace('Bearer ', '');
+    
+    // Log token format (not the actual token for security)
+    const tokenParts = token.split('.');
+    console.log(`[${requestId}] Token: format=${tokenParts.length === 3 ? 'valid JWT' : 'INVALID'}, length=${token.length}`);
+    
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
     
     if (authError || !user) {
-      console.error('Auth error:', authError?.message || 'No user found');
+      console.error(`[${requestId}] AUTH FAILED: ${authError?.message || 'No user found'}`);
       return new Response(
         JSON.stringify({ error: 'Invalid or expired token' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('Authenticated user:', user.email);
+    console.log(`[${requestId}] AUTH OK: user=${user.email}, id=${user.id.slice(0, 8)}...`);
 
     if (!OPENAI_API_KEY) {
-      console.error('OpenAI API key not configured');
+      console.error(`[${requestId}] CONFIG ERROR: OpenAI API key not configured`);
       throw new Error('OpenAI API key not configured');
     }
 
@@ -543,7 +712,7 @@ Deno.serve(async (req) => {
     let body: RequestBody;
     try {
       const text = await req.text();
-      console.log('Request body length:', text?.length || 0);
+      console.log(`[${requestId}] Body: length=${text?.length || 0}`);
       if (!text || text.trim() === '') {
         console.error('Empty request body');
         return new Response(
@@ -552,7 +721,9 @@ Deno.serve(async (req) => {
         );
       }
       body = JSON.parse(text) as RequestBody;
-      console.log('Parsed body - mode:', (body as AnalyzeRequest).mode, 'prompt length:', body.prompt?.length);
+      const parsedMode = (body as { mode?: string }).mode;
+      const parsedPromptLength = (body as { prompt?: string }).prompt?.length;
+      console.log('Parsed body - mode:', parsedMode, 'prompt length:', parsedPromptLength);
     } catch (parseError) {
       console.error('JSON parse error:', parseError);
       return new Response(
@@ -561,10 +732,28 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Mode: Summarize existing config for refinement
+    if (body.mode === 'summarize_for_refinement') {
+      const summarizeBody = body as SummarizeRequest;
+      if (!summarizeBody.existingConfig) {
+        return new Response(
+          JSON.stringify({ error: 'No existing config provided' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({
+          summary: buildConfigSummary(summarizeBody.existingConfig, summarizeBody.credentialName),
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Mode: Chat conversation
-    if (body.mode === 'chat') {
+    if (body.mode === 'chat' || body.mode === 'refine_existing') {
       const chatBody = body as ChatRequest;
-      const { messages, credentialName } = chatBody;
+      const { messages, credentialName, existingConfig, componentResponse, pendingDocuments } = chatBody;
 
       if (!messages || messages.length === 0) {
         return new Response(
@@ -576,9 +765,44 @@ Deno.serve(async (req) => {
       console.log('Chat mode - messages:', messages.length);
 
       // Build conversation for OpenAI
+      const stateContext = pendingDocuments?.length
+        ? `\n\nCurrent pending documents:\n${JSON.stringify(pendingDocuments, null, 2)}`
+        : '';
+
       const openAIMessages = [
-        { role: 'system', content: CHAT_SYSTEM_PROMPT + (credentialName ? `\n\nThe credential being created is called "${credentialName}".` : '') },
-        ...messages.map(m => ({ role: m.role, content: m.content })),
+        {
+          role: 'system',
+          content:
+            CHAT_SYSTEM_PROMPT_WITH_DOCUMENTS +
+            (credentialName
+              ? `\n\nThe credential being created is called "${credentialName}".`
+              : ''),
+        },
+        ...(stateContext
+          ? [
+              {
+                role: 'system',
+                content: stateContext,
+              },
+            ]
+          : []),
+        ...(existingConfig
+          ? [
+              {
+                role: 'system',
+                content: `CURRENT CONFIG (JSON):\n${JSON.stringify(existingConfig)}`,
+              },
+            ]
+          : []),
+        ...(componentResponse
+          ? [
+              {
+                role: 'system',
+                content: `COMPONENT RESPONSE (structured):\n${JSON.stringify(componentResponse)}`,
+              },
+            ]
+          : []),
+        ...messages.map((m) => ({ role: m.role, content: m.content })),
       ];
 
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -592,6 +816,7 @@ Deno.serve(async (req) => {
           messages: openAIMessages,
           temperature: 0.7,
           max_tokens: 800,
+          response_format: { type: 'json_object' },
         }),
       });
 
@@ -602,11 +827,26 @@ Deno.serve(async (req) => {
       }
 
       const data = await response.json();
-      const aiResponse = data.choices[0]?.message?.content;
+      const rawResponse = data.choices[0]?.message?.content;
 
-      if (!aiResponse) {
+      if (!rawResponse) {
         throw new Error('No response generated');
       }
+
+      let parsedResponse: {
+        type?: string;
+        content?: string;
+        component?: unknown;
+        configUpdates?: unknown;
+        hasPendingChanges?: boolean;
+      } = {};
+      try {
+        parsedResponse = JSON.parse(rawResponse);
+      } catch {
+        parsedResponse = { content: rawResponse };
+      }
+
+      const responseText = parsedResponse.content ?? rawResponse;
 
       // Check if AI indicates it has enough info
       const readyIndicators = [
@@ -617,13 +857,19 @@ Deno.serve(async (req) => {
         'good to go',
         'all set',
       ];
-      const readyToGenerate = readyIndicators.some(indicator => 
-        aiResponse.toLowerCase().includes(indicator)
+      const readyToGenerate = readyIndicators.some((indicator) =>
+        responseText.toLowerCase().includes(indicator)
       );
 
       return new Response(
-        JSON.stringify({ 
-          response: aiResponse,
+        JSON.stringify({
+          response: responseText,
+          component: parsedResponse.component ?? null,
+          configUpdates: parsedResponse.configUpdates ?? null,
+          hasPendingChanges:
+            typeof parsedResponse.hasPendingChanges === 'boolean'
+              ? parsedResponse.hasPendingChanges
+              : undefined,
           readyToGenerate,
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -631,9 +877,9 @@ Deno.serve(async (req) => {
     }
 
     // Mode: Generate from chat conversation
-    if (body.mode === 'generate_from_chat') {
+    if (body.mode === 'generate_from_chat' || body.mode === 'refine_from_chat') {
       const chatBody = body as GenerateFromChatRequest;
-      const { messages, credentialName } = chatBody;
+      const { messages, credentialName, existingConfig } = chatBody;
 
       if (!messages || messages.length === 0) {
         return new Response(
@@ -653,6 +899,11 @@ Deno.serve(async (req) => {
         ? `Create an instruction flow for a credential called "${credentialName}" based on this conversation:\n\n${conversationContext}`
         : `Create an instruction flow based on this conversation:\n\n${conversationContext}`;
 
+      const refinementContext =
+        body.mode === 'refine_from_chat' && existingConfig
+          ? `\n\nCURRENT CONFIG (JSON):\n${JSON.stringify(existingConfig)}\n\nUpdate the existing config based on the conversation. Return the full updated config JSON.`
+          : '';
+
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -662,8 +913,11 @@ Deno.serve(async (req) => {
         body: JSON.stringify({
           model: 'gpt-4o',
           messages: [
-            { role: 'system', content: GENERATE_FROM_CHAT_PROMPT + '\n\n' + SYSTEM_PROMPT },
-            { role: 'user', content: userPrompt },
+            {
+              role: 'system',
+              content: GENERATE_FROM_CHAT_PROMPT + '\n\n' + SYSTEM_PROMPT_WITH_DOCUMENTS,
+            },
+            { role: 'user', content: userPrompt + refinementContext },
           ],
           temperature: 0.5,
           max_tokens: 4000,
@@ -697,7 +951,8 @@ Deno.serve(async (req) => {
     }
 
     // Legacy modes below (analyze and generate) - keep for backward compatibility
-    const { prompt, credentialName } = body as (AnalyzeRequest | GenerateRequest);
+    const legacyBody = body as AnalyzeRequest | GenerateRequest;
+    const { prompt, credentialName } = legacyBody;
 
     if (!prompt || prompt.trim().length < 10) {
       return new Response(
@@ -758,17 +1013,17 @@ Deno.serve(async (req) => {
     }
 
     // Mode 2: Generate with clarifications (default)
-    let systemPrompt = SYSTEM_PROMPT;
+    let systemPrompt = SYSTEM_PROMPT_WITH_DOCUMENTS;
     let userPrompt = credentialName 
       ? `Create an instruction flow for a credential called "${credentialName}". Here's what it should include:\n\n${prompt}`
       : `Create an instruction flow based on this description:\n\n${prompt}`;
 
     // If clarifications were provided, add them to the prompt
-    if (body.clarifications && Object.keys(body.clarifications).length > 0) {
-      systemPrompt = GENERATE_WITH_CLARIFICATIONS_PROMPT + SYSTEM_PROMPT;
+    if ('clarifications' in legacyBody && legacyBody.clarifications && Object.keys(legacyBody.clarifications).length > 0) {
+      systemPrompt = GENERATE_WITH_CLARIFICATIONS_PROMPT + SYSTEM_PROMPT_WITH_DOCUMENTS;
       
       const clarificationLines: string[] = [];
-      for (const [questionId, answer] of Object.entries(body.clarifications)) {
+      for (const [questionId, answer] of Object.entries(legacyBody.clarifications)) {
         clarificationLines.push(`- ${questionId}: ${answer ? 'YES' : 'NO'}`);
       }
       

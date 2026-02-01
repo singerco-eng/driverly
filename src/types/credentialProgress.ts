@@ -52,6 +52,16 @@ export interface StepState {
   
   /** Whether video blocks have been watched (keyed by block ID) */
   videosWatched: Record<string, boolean>;
+
+  /** Document upload + extracted field data keyed by block ID */
+  documentData?: Record<
+    string,
+    {
+      uploadedFileUrl: string | null;
+      uploadedFileName: string | null;
+      fieldValues: Record<string, string>;
+    }
+  >;
 }
 
 // Re-export SignatureData from credential.ts to avoid duplication
@@ -74,6 +84,7 @@ export function createEmptyStepState(): StepState {
     externalLinksVisited: [],
     quizAnswers: {},
     videosWatched: {},
+    documentData: {},
   };
 }
 

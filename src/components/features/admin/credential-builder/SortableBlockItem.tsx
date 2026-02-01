@@ -18,6 +18,7 @@ import {
   Heading,
   Type,
   FileText,
+  FileUp,
   Image,
   Video,
   ExternalLink,
@@ -46,6 +47,7 @@ const blockTypeIcons: Record<BlockType, React.ElementType> = {
   divider: Minus,
   form_field: FormInput,
   file_upload: Upload,
+  document: FileUp,
   signature_pad: PenTool,
   quiz_question: HelpCircle,
 };
@@ -63,6 +65,7 @@ const blockTypeLabels: Record<BlockType, string> = {
   divider: 'Divider',
   form_field: 'Form Field',
   file_upload: 'File Upload',
+  document: 'Document Upload',
   signature_pad: 'Signature',
   quiz_question: 'Quiz Question',
 };
@@ -94,6 +97,8 @@ function getBlockPreview(block: ContentBlock): string {
       return (content.label as string) || 'Field';
     case 'file_upload':
       return (content.label as string) || 'File upload';
+    case 'document':
+      return (content.uploadLabel as string) || 'Document upload';
     case 'signature_pad':
       return (content.label as string) || 'Signature';
     case 'quiz_question':

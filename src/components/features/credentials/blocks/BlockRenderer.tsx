@@ -11,6 +11,7 @@ import { ExternalLinkBlock } from './ExternalLinkBlock';
 import { ChecklistBlock } from './ChecklistBlock';
 import { FormFieldBlock } from './FormFieldBlock';
 import { FileUploadBlock } from './FileUploadBlock';
+import { DocumentBlock } from './DocumentBlock';
 import { SignatureBlock } from './SignatureBlock';
 import { QuizQuestionBlock } from './QuizQuestionBlock';
 import { ButtonBlock } from './ButtonBlock';
@@ -70,6 +71,9 @@ export function BlockRenderer({
 
     case 'file_upload':
       return <FileUploadBlock content={block.content} {...commonProps} />;
+
+    case 'document':
+      return <DocumentBlock content={block.content} {...commonProps} />;
 
     case 'signature_pad':
       return <SignatureBlock content={block.content} {...commonProps} />;

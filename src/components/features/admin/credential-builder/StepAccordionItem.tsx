@@ -92,6 +92,8 @@ interface StepAccordionItemProps {
   onEditBlock: (block: ContentBlock) => void;
   /** Make step read-only (buttons do nothing) */
   readOnly?: boolean;
+  /** Switch to AI editor mode */
+  onSwitchToAI?: () => void;
 }
 
 export function StepAccordionItem({
@@ -104,6 +106,7 @@ export function StepAccordionItem({
   onDuplicate,
   onEditBlock,
   readOnly = false,
+  onSwitchToAI,
 }: StepAccordionItemProps) {
   const [showPalette, setShowPalette] = useState(false);
 
@@ -337,6 +340,7 @@ export function StepAccordionItem({
         open={showPalette}
         onOpenChange={setShowPalette}
         onAddBlock={handleAddBlock}
+        onSwitchToAI={onSwitchToAI}
       />
     </>
   );

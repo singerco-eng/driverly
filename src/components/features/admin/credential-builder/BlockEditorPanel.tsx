@@ -34,9 +34,11 @@ import { createBlock } from '@/types/instructionBuilder';
 interface BlockEditorPanelProps {
   step: InstructionStep;
   onStepChange: (step: InstructionStep) => void;
+  mode?: 'ai' | 'edit';
+  onSwitchToAI?: () => void;
 }
 
-export function BlockEditorPanel({ step, onStepChange }: BlockEditorPanelProps) {
+export function BlockEditorPanel({ step, onStepChange, mode = 'edit', onSwitchToAI }: BlockEditorPanelProps) {
   const [showPalette, setShowPalette] = useState(false);
   const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
 
@@ -196,7 +198,12 @@ export function BlockEditorPanel({ step, onStepChange }: BlockEditorPanelProps) 
             </div>
           </CardHeader>
           <CardContent>
-            <BlockEditor block={editingBlock} onChange={handleBlockChange} />
+            <BlockEditor
+              block={editingBlock}
+              onChange={handleBlockChange}
+              mode={mode}
+              onSwitchToAI={onSwitchToAI}
+            />
           </CardContent>
         </Card>
       )}
@@ -205,6 +212,7 @@ export function BlockEditorPanel({ step, onStepChange }: BlockEditorPanelProps) 
         open={showPalette}
         onOpenChange={setShowPalette}
         onAddBlock={handleAddBlock}
+        onSwitchToAI={onSwitchToAI}
       />
     </div>
   );

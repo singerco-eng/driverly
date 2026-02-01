@@ -21,6 +21,7 @@ import {
   Upload,
   PenTool,
   HelpCircle,
+  Sparkles,
 } from 'lucide-react';
 import type { BlockType, BlockContent } from '@/types/instructionBuilder';
 
@@ -29,8 +30,11 @@ interface BlockPaletteItem {
   label: string;
   description: string;
   icon: React.ElementType;
-  category: 'content' | 'interactive' | 'action';
+  category: 'content' | 'interactive' | 'documents' | 'action';
   defaultContent: BlockContent;
+  canAddManually?: boolean;
+  aiRequired?: boolean;
+  restrictedMessage?: string;
 }
 
 const paletteItems: BlockPaletteItem[] = [
@@ -101,7 +105,7 @@ const paletteItems: BlockPaletteItem[] = [
   {
     type: 'file_upload',
     label: 'File Upload',
-    description: 'Document upload',
+    description: 'Simple upload',
     icon: Upload,
     category: 'interactive',
     defaultContent: {
@@ -110,6 +114,25 @@ const paletteItems: BlockPaletteItem[] = [
       maxSizeMB: 50,
       multiple: false,
       required: true,
+    },
+  },
+  {
+    type: 'document',
+    label: 'Document Upload',
+    description: 'Upload with automatic field extraction',
+    icon: FileText,
+    category: 'documents',
+    canAddManually: false,
+    aiRequired: true,
+    restrictedMessage:
+      'Document blocks are created using AI mode to ensure extraction fields are configured correctly.',
+    defaultContent: {
+      uploadLabel: 'Upload your document',
+      uploadDescription: '',
+      acceptedTypes: ['image/*', 'application/pdf'],
+      maxSizeMB: 10,
+      required: true,
+      extractionFields: [],
     },
   },
   {
@@ -176,18 +199,22 @@ interface BlockPaletteSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onAddBlock: (type: BlockType, content: BlockContent) => void;
+  onSwitchToAI?: () => void;
 }
 
 export function BlockPaletteSheet({
   open,
   onOpenChange,
   onAddBlock,
+  onSwitchToAI,
 }: BlockPaletteSheetProps) {
   const contentBlocks = paletteItems.filter((b) => b.category === 'content');
   const interactiveBlocks = paletteItems.filter((b) => b.category === 'interactive');
+  const documentBlocks = paletteItems.filter((b) => b.category === 'documents');
   const actionBlocks = paletteItems.filter((b) => b.category === 'action');
 
   function handleAdd(item: BlockPaletteItem) {
+    if (item.canAddManually === false) return;
     onAddBlock(item.type, item.defaultContent);
   }
 
@@ -253,6 +280,60 @@ export function BlockPaletteSheet({
               })}
             </div>
           </div>
+
+          {documentBlocks.length > 0 && (
+            <div>
+              <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+                Documents
+              </h4>
+              <div className="space-y-2">
+                {documentBlocks.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <div
+                      key={item.type}
+                      className="border rounded-lg p-3 bg-muted/30 space-y-2"
+                    >
+                      <div className="flex items-start gap-2">
+                        <Icon className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium">{item.label}</p>
+                            {item.aiRequired && (
+                              <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">
+                                <Sparkles className="w-3 h-3" />
+                                AI
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {item.description}
+                          </p>
+                        </div>
+                      </div>
+                      {item.restrictedMessage && (
+                        <div className="rounded-md border border-dashed p-2 text-xs text-muted-foreground bg-background">
+                          {item.restrictedMessage}
+                        </div>
+                      )}
+                      {onSwitchToAI && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            onOpenChange(false);
+                            onSwitchToAI();
+                          }}
+                        >
+                          Switch to AI Mode
+                        </Button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           <div>
             <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">

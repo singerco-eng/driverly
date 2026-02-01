@@ -82,15 +82,41 @@ export function VideoBlock({
               onClick={handlePlay}
               disabled={isDisabled}
               className={cn(
-                'w-full h-full flex flex-col items-center justify-center gap-3 bg-muted/80',
-                !isDisabled && 'hover:bg-muted/60 cursor-pointer transition-colors'
+                'w-full h-full flex flex-col items-center justify-center gap-3 relative',
+                !isDisabled && 'cursor-pointer group'
               )}
             >
-              <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center">
+              {/* Thumbnail background for uploaded videos */}
+              {content.source === 'upload' && (
+                <img
+                  src={content.url.replace(/\.[^.]+$/, '-thumbnail.png')}
+                  alt=""
+                  className="absolute inset-0 w-full h-full object-cover"
+                  onError={(e) => {
+                    // Hide image if thumbnail doesn't exist
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              )}
+              {/* Overlay */}
+              <div className={cn(
+                'absolute inset-0 bg-black/40 transition-colors',
+                !isDisabled && 'group-hover:bg-black/30'
+              )} />
+              {/* Play button */}
+              <div className="relative z-10 w-16 h-16 rounded-full bg-primary/90 flex items-center justify-center shadow-lg">
                 <Play className="w-8 h-8 text-primary-foreground ml-1" />
               </div>
-              <span className="text-sm text-muted-foreground">Click to play</span>
+              <span className="relative z-10 text-sm text-white/90 font-medium drop-shadow">Click to play</span>
             </button>
+          ) : content.source === 'upload' ? (
+            <video
+              src={content.url}
+              className="w-full h-full"
+              autoPlay
+              controls
+              playsInline
+            />
           ) : (
             <iframe
               src={embedUrl}

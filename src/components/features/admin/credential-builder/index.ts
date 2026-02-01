@@ -2,6 +2,8 @@ export { InstructionBuilder } from './InstructionBuilder';
 export { RequirementsSection } from './RequirementsSection';
 export { AIGeneratorSheet } from './LegacyAIGeneratorSheet';
 export { AIGeneratorFullScreen } from './AIGeneratorFullScreen';
+export { AIBuilderTwoPanel } from './AIBuilderTwoPanel';
+export type { ChatMessage } from './AIBuilderTwoPanel';
 export { ExpirationSection } from './ExpirationSection';
 export { SettingsSection } from './SettingsSection';
 export { StepAccordionItem } from './StepAccordionItem';
