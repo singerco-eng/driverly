@@ -63,11 +63,25 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold">Welcome to Driverly</CardTitle>
-          <CardDescription>Enter your credentials to sign in</CardDescription>
-        </CardHeader>
+      <div className="w-full max-w-md">
+        {/* Logo */}
+        <div className="flex flex-col items-center mb-8">
+          <img 
+            src="/flowcred-icon.svg" 
+            alt="Flowcred AI" 
+            className="h-12 w-auto mb-3"
+          />
+          <span className="text-xl font-semibold">
+            <span className="text-foreground">Flowcred</span>
+            <span className="text-amber-500 ml-1">AI</span>
+          </span>
+        </div>
+
+        <Card>
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl font-bold">Sign in</CardTitle>
+            <CardDescription>Enter your credentials to continue</CardDescription>
+          </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
@@ -107,6 +121,7 @@ export default function Login() {
           </form>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }
