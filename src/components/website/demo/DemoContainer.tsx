@@ -15,7 +15,7 @@ export function DemoContainer({
   activeTab,
   tabs,
   onTabChange,
-  url = 'app.acme.io',
+  url = 'app.flowcred.ai',
 }: DemoContainerProps) {
   return (
     <div className="relative">

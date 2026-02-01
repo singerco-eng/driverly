@@ -133,7 +133,7 @@ export default function HomePage() {
                   {/* URL bar */}
                   <div className="hidden md:flex items-center gap-2 px-4 py-1.5 bg-[#1a1917] rounded-lg text-sm text-[#918e8a] min-w-[200px]">
                     <div className="w-3 h-3 rounded-full bg-amber-500/50" />
-                    app.acme.io/{activeTab}
+                    app.flowcred.ai/{activeTab}
                   </div>
                 </div>
 

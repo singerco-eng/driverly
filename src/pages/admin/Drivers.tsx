@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueries } from '@tanstack/react-query';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -13,9 +14,49 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useCompany } from '@/hooks/useCompanies';
 import { useToast } from '@/hooks/use-toast';
 import { resolveAvatarUrl } from '@/services/profile';
+import * as credentialService from '@/services/credentials';
 import type { DriverFilters, DriverStatus, EmploymentType, DriverWithUser } from '@/types/driver';
 import { AdminDriverCard, AdminDriverCardAction } from '@/components/features/admin/DriverCard';
-import { driverStatusVariant } from '@/lib/status-styles';
+import { driverStatusVariant, credentialStatusVariant } from '@/lib/status-styles';
+
+// Compute global credential status for a driver
+function computeGlobalCredentialStatus(credentials: Awaited<ReturnType<typeof credentialService.getDriverCredentials>>) {
+  const requiredGlobal = credentials.filter(
+    (c) => c.credentialType.requirement === 'required' && c.credentialType.scope === 'global'
+  );
+  
+  if (requiredGlobal.length === 0) {
+    return { status: 'valid' as const, missing: 0, total: 0 };
+  }
+
+  const approved = requiredGlobal.filter((c) => c.displayStatus === 'approved');
+  const expired = requiredGlobal.filter((c) => c.displayStatus === 'expired');
+  const expiring = requiredGlobal.filter((c) => c.displayStatus === 'expiring');
+  const pending = requiredGlobal.filter((c) => c.displayStatus === 'pending_review' || c.displayStatus === 'awaiting');
+  const missing = requiredGlobal.filter((c) => 
+    ['not_submitted', 'rejected'].includes(c.displayStatus)
+  );
+
+  if (expired.length > 0) {
+    return { status: 'expired' as const, missing: expired.length, total: requiredGlobal.length };
+  }
+  if (expiring.length > 0) {
+    return { status: 'expiring' as const, missing: 0, total: requiredGlobal.length };
+  }
+  if (missing.length > 0) {
+    return { status: 'missing' as const, missing: missing.length, total: requiredGlobal.length };
+  }
+  if (pending.length > 0) {
+    return { status: 'pending' as const, missing: 0, total: requiredGlobal.length };
+  }
+  return { status: 'valid' as const, missing: 0, total: requiredGlobal.length };
+}
+
+type DriverCredentialStatus = ReturnType<typeof computeGlobalCredentialStatus>;
+
+interface DriverWithCredentialStatus extends DriverWithUser {
+  credentialStatus?: DriverCredentialStatus;
+}
 
 // Helper component to handle avatar URL resolution
 function DriverAvatar({ avatarPath, name }: { avatarPath: string | null | undefined; name: string }) {
@@ -69,6 +110,27 @@ export default function DriversPage() {
   const { toast } = useToast();
   const [filters, setFilters] = useState<DriverFilters>({});
   const { data: drivers, isLoading } = useDrivers(filters);
+
+  // Fetch credentials for all drivers in parallel
+  const credentialQueries = useQueries({
+    queries: (drivers || []).map((driver) => ({
+      queryKey: ['driver-credentials', driver.id],
+      queryFn: () => credentialService.getDriverCredentials(driver.id),
+      enabled: !!driver.id,
+    })),
+  });
+
+  // Combine drivers with their credential status
+  const driversWithStatus = useMemo<DriverWithCredentialStatus[]>(() => {
+    return (drivers || []).map((driver, index) => {
+      const credentials = credentialQueries[index]?.data || [];
+      const credentialStatus = computeGlobalCredentialStatus(credentials);
+      return {
+        ...driver,
+        credentialStatus,
+      };
+    });
+  }, [drivers, credentialQueries]);
 
   const statusFilter = (filters.status ?? 'all') as DriverStatus | 'all';
   const employmentFilter = (filters.employmentType ?? 'all') as EmploymentType | 'all';
@@ -187,21 +249,22 @@ export default function DriversPage() {
 
             {/* Table view */}
             <TabsContent value="table" className="mt-0">
-              <EnhancedTable loading={isLoading} skeletonRows={5} skeletonColumns={5}>
+              <EnhancedTable loading={isLoading} skeletonRows={5} skeletonColumns={6}>
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Driver</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Type</TableHead>
+                      <TableHead>Credentials</TableHead>
                       <TableHead>Last Active</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {(drivers || []).length === 0 && !isLoading ? (
+                    {driversWithStatus.length === 0 && !isLoading ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="h-24 text-center">
+                        <TableCell colSpan={6} className="h-24 text-center">
                           <div className="flex flex-col items-center gap-2">
                             <Users className="w-8 h-8 text-muted-foreground" />
                             <p className="text-muted-foreground">No drivers found</p>
@@ -209,42 +272,65 @@ export default function DriversPage() {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      (drivers || []).map((driver) => (
-                        <TableRow
-                          key={driver.id}
-                          className="cursor-pointer hover:bg-muted/50"
-                        >
-                          <TableCell onClick={() => navigate(`/admin/drivers/${driver.id}`)}>
-                            <div className="flex items-center gap-3">
-                              <DriverAvatar avatarPath={driver.user.avatar_url} name={driver.user.full_name} />
-                              <div>
-                                <div className="font-medium">{driver.user.full_name}</div>
-                                <div className="text-sm text-muted-foreground">
-                                  {driver.user.email}
+                      driversWithStatus.map((driver, index) => {
+                        const credentialQuery = credentialQueries[index];
+                        const isCredentialLoading = credentialQuery?.isLoading;
+                        const credStatus = driver.credentialStatus;
+                        
+                        return (
+                          <TableRow
+                            key={driver.id}
+                            className="cursor-pointer hover:bg-muted/50"
+                          >
+                            <TableCell onClick={() => navigate(`/admin/drivers/${driver.id}`)}>
+                              <div className="flex items-center gap-3">
+                                <DriverAvatar avatarPath={driver.user.avatar_url} name={driver.user.full_name} />
+                                <div>
+                                  <div className="font-medium">{driver.user.full_name}</div>
+                                  <div className="text-sm text-muted-foreground">
+                                    {driver.user.email}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          </TableCell>
-                          <TableCell onClick={() => navigate(`/admin/drivers/${driver.id}`)}>
-                            <Badge variant={driverStatusVariant[driver.status]}>
-                              {statusLabels[driver.status]}
-                            </Badge>
-                          </TableCell>
-                          <TableCell onClick={() => navigate(`/admin/drivers/${driver.id}`)}>
-                            <Badge variant="secondary">{driver.employment_type.toUpperCase()}</Badge>
-                          </TableCell>
-                          <TableCell onClick={() => navigate(`/admin/drivers/${driver.id}`)}>
-                            {driver.last_active_at
-                              ? new Date(driver.last_active_at).toLocaleDateString()
-                              : '—'}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button variant="ghost" size="sm" onClick={() => navigate(`/admin/drivers/${driver.id}`)}>
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))
+                            </TableCell>
+                            <TableCell onClick={() => navigate(`/admin/drivers/${driver.id}`)}>
+                              <Badge variant={driverStatusVariant[driver.status]}>
+                                {statusLabels[driver.status]}
+                              </Badge>
+                            </TableCell>
+                            <TableCell onClick={() => navigate(`/admin/drivers/${driver.id}`)}>
+                              <Badge variant="secondary">{driver.employment_type.toUpperCase()}</Badge>
+                            </TableCell>
+                            <TableCell onClick={() => navigate(`/admin/drivers/${driver.id}`)}>
+                              {isCredentialLoading ? (
+                                <Skeleton className="h-5 w-20" />
+                              ) : !credStatus || credStatus.total === 0 ? (
+                                <span className="text-sm text-muted-foreground">—</span>
+                              ) : credStatus.status === 'valid' ? (
+                                <Badge variant={credentialStatusVariant.approved}>Complete</Badge>
+                              ) : credStatus.status === 'expiring' ? (
+                                <Badge variant={credentialStatusVariant.expiring}>Expiring Soon</Badge>
+                              ) : credStatus.status === 'expired' ? (
+                                <Badge variant={credentialStatusVariant.expired}>Expired</Badge>
+                              ) : credStatus.status === 'missing' ? (
+                                <Badge variant={credentialStatusVariant.not_submitted}>Incomplete</Badge>
+                              ) : (
+                                <Badge variant={credentialStatusVariant.pending_review}>Pending Review</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell onClick={() => navigate(`/admin/drivers/${driver.id}`)}>
+                              {driver.last_active_at
+                                ? new Date(driver.last_active_at).toLocaleDateString()
+                                : '—'}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button variant="ghost" size="sm" onClick={() => navigate(`/admin/drivers/${driver.id}`)}>
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
                     )}
                   </TableBody>
                 </Table>
@@ -259,7 +345,7 @@ export default function DriversPage() {
                     <Skeleton key={i} className="h-48 rounded-lg" />
                   ))}
                 </div>
-              ) : (drivers || []).length === 0 ? (
+              ) : driversWithStatus.length === 0 ? (
                 <Card className="p-12 text-center">
                   <Users className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
                   <h3 className="text-lg font-medium mb-2">No drivers found</h3>
@@ -269,7 +355,7 @@ export default function DriversPage() {
                 </Card>
               ) : (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {(drivers || []).map((driver) => (
+                  {driversWithStatus.map((driver) => (
                     <AdminDriverCard key={driver.id} driver={driver} onAction={handleCardAction} />
                   ))}
                 </div>

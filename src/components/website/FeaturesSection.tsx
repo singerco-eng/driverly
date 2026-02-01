@@ -59,7 +59,7 @@ export function FeaturesSection() {
         >
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/20 mb-6">
             <Layers className="w-4 h-4 text-amber-400" />
-            <span className="text-sm font-medium text-amber-300">Why Acme</span>
+            <span className="text-sm font-medium text-amber-300">Why Flowcred</span>
           </div>
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
             Built for Modern Fleets
@@ -105,7 +105,7 @@ export function FeaturesSection() {
                 Reduce onboarding time by 90%
               </h3>
               <p className="text-gray-400">
-                Companies using Acme report drivers going from application to road-ready in hours instead of weeks.
+                Companies using Flowcred report drivers going from application to road-ready in hours instead of weeks.
                 No more paper forms, no more manual follow-ups.
               </p>
             </div>

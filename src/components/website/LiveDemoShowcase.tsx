@@ -108,7 +108,7 @@ export function LiveDemoShowcase() {
               </div>
               <div className="flex-1 ml-4">
                 <div className="max-w-md mx-auto bg-gray-700/50 rounded-lg px-4 py-1.5 text-sm text-gray-400">
-                  app.acme.io/credentials
+                  app.flowcred.ai/credentials
                 </div>
               </div>
             </div>

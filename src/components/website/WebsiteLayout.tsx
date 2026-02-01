@@ -34,11 +34,16 @@ export function WebsiteLayout() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <Link to="/website" className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center">
-                <span className="text-black font-bold text-lg">A</span>
-              </div>
-              <span className="font-semibold text-lg text-white">Acme</span>
+            <Link to="/website" className="flex items-center gap-2">
+              <img 
+                src="/flowcred-icon.svg" 
+                alt="Flowcred AI" 
+                className="h-8 w-auto"
+              />
+              <span className="font-semibold text-lg">
+                <span className="text-white">Flowcred</span>
+                <span className="text-amber-500 ml-1">AI</span>
+              </span>
             </Link>
 
             {/* Desktop Navigation */}
@@ -176,14 +181,19 @@ export function WebsiteLayout() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
             {/* Brand */}
             <div className="col-span-2 md:col-span-1">
-              <Link to="/website" className="flex items-center gap-3 mb-4">
-                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center">
-                  <span className="text-black font-bold text-lg">A</span>
-                </div>
-                <span className="font-semibold text-lg text-white">Acme</span>
+              <Link to="/website" className="flex items-center gap-2 mb-4">
+                <img 
+                  src="/flowcred-icon.svg" 
+                  alt="Flowcred AI" 
+                  className="h-8 w-auto"
+                />
+                <span className="font-semibold text-lg">
+                  <span className="text-white">Flowcred</span>
+                  <span className="text-amber-500 ml-1">AI</span>
+                </span>
               </Link>
               <p className="text-sm text-gray-500">
-                Modern driver management platform for transportation companies.
+                AI-powered credentialing for NEMT fleets.
               </p>
             </div>
 
@@ -218,7 +228,7 @@ export function WebsiteLayout() {
 
           <div className="pt-8 border-t border-gray-800/50 flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-sm text-gray-500">
-              © {new Date().getFullYear()} Acme. All rights reserved.
+              © {new Date().getFullYear()} Flowcred AI. All rights reserved.
             </p>
             <div className="flex items-center gap-6">
               <span className="text-sm text-gray-500">Built for the modern fleet</span>

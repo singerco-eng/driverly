@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { EnhancedTable, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Car, Plus, Shield, LayoutGrid, List } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { credentialStatusVariant } from '@/lib/status-styles';
 import { useDriverByUserId } from '@/hooks/useDrivers';
 import {
   useAssignedVehicles,
@@ -323,7 +324,7 @@ export default function DriverVehicles() {
 
               {/* Table view */}
               <TabsContent value="table" className="mt-0">
-                <EnhancedTable loading={loading} skeletonRows={5} skeletonColumns={5}>
+                <EnhancedTable loading={loading} skeletonRows={5} skeletonColumns={6}>
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -331,13 +332,14 @@ export default function DriverVehicles() {
                         <TableHead>Type</TableHead>
                         <TableHead>Plate</TableHead>
                         <TableHead>Status</TableHead>
+                        <TableHead>Global Credentials</TableHead>
                         <TableHead>Primary</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredVehicles.length === 0 && !loading ? (
                         <TableRow>
-                          <TableCell colSpan={5} className="h-24 text-center">
+                          <TableCell colSpan={6} className="h-24 text-center">
                             <div className="flex flex-col items-center gap-2 text-muted-foreground">
                               <Car className="w-8 h-8" />
                               <p>No vehicles found</p>
@@ -345,23 +347,43 @@ export default function DriverVehicles() {
                           </TableCell>
                         </TableRow>
                       ) : (
-                        filteredVehicles.map((vehicle) => (
-                          <TableRow
-                            key={vehicle.id}
-                            className="cursor-pointer hover:bg-muted/50"
-                            onClick={() => navigate(`/driver/vehicles/${vehicle.id}`)}
-                          >
-                            <TableCell>{vehicle.year} {vehicle.make} {vehicle.model}</TableCell>
-                            <TableCell>{vehicle.vehicle_type.replace('_', ' ')}</TableCell>
-                            <TableCell>{vehicle.license_plate}</TableCell>
-                            <TableCell>
-                              <Badge variant={vehicle.status === 'active' ? 'default' : vehicle.status === 'retired' ? 'destructive' : 'secondary'}>
-                                {vehicle.status === 'active' ? 'Active' : vehicle.status === 'retired' ? 'Retired' : 'Inactive'}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>{vehicle.assignment?.is_primary ? 'Yes' : 'No'}</TableCell>
-                          </TableRow>
-                        ))
+                        filteredVehicles.map((vehicle) => {
+                          const credentialQuery = credentialQueries[vehicles.findIndex(v => v.id === vehicle.id)];
+                          const isCredentialLoading = credentialQuery?.isLoading;
+                          
+                          return (
+                            <TableRow
+                              key={vehicle.id}
+                              className="cursor-pointer hover:bg-muted/50"
+                              onClick={() => navigate(`/driver/vehicles/${vehicle.id}`)}
+                            >
+                              <TableCell>{vehicle.year} {vehicle.make} {vehicle.model}</TableCell>
+                              <TableCell>{vehicle.vehicle_type.replace('_', ' ')}</TableCell>
+                              <TableCell>{vehicle.license_plate}</TableCell>
+                              <TableCell>
+                                <Badge variant={vehicle.status === 'active' ? 'default' : vehicle.status === 'retired' ? 'destructive' : 'secondary'}>
+                                  {vehicle.status === 'active' ? 'Active' : vehicle.status === 'retired' ? 'Retired' : 'Inactive'}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                {isCredentialLoading ? (
+                                  <Skeleton className="h-5 w-20" />
+                                ) : vehicle.credentialStatus === 'valid' ? (
+                                  <Badge variant={credentialStatusVariant.approved}>Complete</Badge>
+                                ) : vehicle.credentialStatus === 'expiring' ? (
+                                  <Badge variant={credentialStatusVariant.expiring}>Expiring Soon</Badge>
+                                ) : vehicle.credentialStatus === 'expired' ? (
+                                  <Badge variant={credentialStatusVariant.expired}>Expired</Badge>
+                                ) : vehicle.isUncredentialed ? (
+                                  <Badge variant={credentialStatusVariant.not_submitted}>Incomplete</Badge>
+                                ) : (
+                                  <Badge variant={credentialStatusVariant.pending_review}>Pending Review</Badge>
+                                )}
+                              </TableCell>
+                              <TableCell>{vehicle.assignment?.is_primary ? 'Yes' : 'No'}</TableCell>
+                            </TableRow>
+                          );
+                        })
                       )}
                     </TableBody>
                   </Table>
