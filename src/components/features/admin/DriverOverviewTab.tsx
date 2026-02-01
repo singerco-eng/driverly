@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { DriverNotesSection } from '@/components/features/admin/DriverNotesSection';
+import { applicationStatusVariant } from '@/lib/status-styles';
 import type { DriverWithDetails } from '@/types/driver';
 
 interface DriverOverviewTabProps {
@@ -17,7 +18,9 @@ export function DriverOverviewTab({ driver, canEdit = true }: DriverOverviewTabP
             <CardTitle className="text-sm">Application Status</CardTitle>
           </CardHeader>
           <CardContent>
-            <Badge variant="outline">{driver.application_status}</Badge>
+            <Badge variant={applicationStatusVariant[driver.application_status]}>
+              {driver.application_status.replace('_', ' ')}
+            </Badge>
             <p className="mt-3 text-xs text-muted-foreground">
               Submitted {driver.application_date ? new Date(driver.application_date).toLocaleDateString() : '—'}
             </p>

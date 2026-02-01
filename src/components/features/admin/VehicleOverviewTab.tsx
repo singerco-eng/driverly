@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useUpdateVehicleMileage } from '@/hooks/useVehicles';
+import { vehicleStatusVariant } from '@/lib/status-styles';
 import type { VehicleWithAssignments } from '@/types/vehicle';
 
 interface VehicleOverviewTabProps {
@@ -37,7 +38,9 @@ export function VehicleOverviewTab({ vehicle, canEdit = true }: VehicleOverviewT
             <CardTitle className="text-sm">Status</CardTitle>
           </CardHeader>
           <CardContent>
-            <Badge variant="outline">{vehicle.status}</Badge>
+            <Badge variant={vehicleStatusVariant[vehicle.status]} className="capitalize">
+              {vehicle.status}
+            </Badge>
             {vehicle.status_reason && (
               <p className="mt-2 text-xs text-muted-foreground">{vehicle.status_reason}</p>
             )}

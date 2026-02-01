@@ -9,8 +9,10 @@ import { CheckCircle, AlertTriangle, Camera, Building2, Star } from 'lucide-reac
 import { getBrokers } from '@/services/brokers';
 import * as credentialService from '@/services/credentials';
 import { resolveVehiclePhotoUrl } from '@/lib/vehiclePhoto';
+import { vehicleStatusVariant } from '@/lib/status-styles';
 import type { DriverVehicleWithStatus } from '@/types/driverVehicle';
 import type { Driver } from '@/types/driver';
+import type { VehicleStatus } from '@/types/vehicle';
 
 interface VehicleOverviewTabProps {
   vehicle: DriverVehicleWithStatus;
@@ -89,7 +91,7 @@ export function VehicleOverviewTab({
             <CardTitle className="text-sm">Status</CardTitle>
           </CardHeader>
           <CardContent>
-            <Badge variant="outline" className="capitalize">
+            <Badge variant={vehicleStatusVariant[vehicle.status as VehicleStatus]} className="capitalize">
               {vehicle.status}
             </Badge>
             {vehicle.status_reason && (
