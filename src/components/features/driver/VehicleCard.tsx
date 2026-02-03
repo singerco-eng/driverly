@@ -11,9 +11,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
+import { vehicleStatusConfig } from '@/lib/status-configs';
 import { resolveVehiclePhotoUrl } from '@/lib/vehiclePhoto';
 import type { DriverVehicleWithStatus, VehicleCompletionStatus } from '@/types/driverVehicle';
-import type { VehicleStatus } from '@/types/vehicle';
 import {
   Car,
   Eye,
@@ -39,24 +39,6 @@ interface VehicleCardProps {
   onAction?: (action: VehicleCardAction, vehicle: DriverVehicleWithStatus) => void;
 }
 
-/** Status config using native Badge variants per design system */
-const statusConfig: Record<VehicleStatus, { 
-  label: string; 
-  badgeVariant: 'default' | 'secondary' | 'destructive' | 'outline';
-}> = {
-  active: {
-    label: 'Active',
-    badgeVariant: 'default',
-  },
-  inactive: {
-    label: 'Inactive',
-    badgeVariant: 'secondary',
-  },
-  retired: {
-    label: 'Retired',
-    badgeVariant: 'destructive',
-  },
-};
 
 export default function VehicleCard({ vehicle, readOnly, onAction }: VehicleCardProps) {
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
@@ -84,7 +66,7 @@ export default function VehicleCard({ vehicle, readOnly, onAction }: VehicleCard
     };
   }, [vehicle.exterior_photo_url]);
 
-  const vehicleStatus = statusConfig[vehicle.status];
+  const vehicleStatus = vehicleStatusConfig[vehicle.status];
   const isPrimary = vehicle.assignment?.is_primary;
 
   return (
@@ -92,7 +74,7 @@ export default function VehicleCard({ vehicle, readOnly, onAction }: VehicleCard
       <CardContent className="p-4 space-y-3 flex-1 flex flex-col">
         {/* Header row with single status badge and actions */}
         <div className="flex items-center justify-between">
-          <Badge variant={vehicleStatus.badgeVariant}>
+          <Badge variant={vehicleStatus.variant}>
             {vehicleStatus.label}
           </Badge>
           {/* Actions Menu */}

@@ -25,6 +25,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useDriverByUserId } from '@/hooks/useDrivers';
 import { useDriverVehicle, useSetPrimaryVehicle, useSetVehicleActive } from '@/hooks/useDriverVehicles';
 import { useVehicleCredentials } from '@/hooks/useCredentials';
+import { vehicleStatusConfig } from '@/lib/status-configs';
 import { resolveVehiclePhotoUrl } from '@/lib/vehiclePhoto';
 import { VehicleOverviewTab } from '@/components/features/driver/VehicleOverviewTab';
 import { VehicleDetailsTab } from '@/components/features/driver/VehicleDetailsTab';
@@ -34,17 +35,6 @@ import UpdatePhotosModal from '@/components/features/driver/UpdatePhotosModal';
 import SetInactiveModal from '@/components/features/driver/SetInactiveModal';
 import RetireVehicleModal from '@/components/features/driver/RetireVehicleModal';
 import { CannotActivateVehicleModal } from '@/components/features/driver/CannotActivateVehicleModal';
-import type { VehicleStatus } from '@/types/vehicle';
-
-/** Status config using native Badge variants per design system */
-const statusConfig: Record<VehicleStatus, {
-  label: string;
-  badgeVariant: 'default' | 'secondary' | 'destructive' | 'outline';
-}> = {
-  active: { label: 'Active', badgeVariant: 'default' },
-  inactive: { label: 'Inactive', badgeVariant: 'secondary' },
-  retired: { label: 'Retired', badgeVariant: 'destructive' },
-};
 
 export default function DriverVehicleDetail() {
   const { vehicleId } = useParams<{ vehicleId: string }>();
@@ -138,8 +128,8 @@ export default function DriverVehicleDetail() {
 
   // Single status badge - always show vehicle status
   const badges = (
-    <Badge variant={statusConfig[vehicle.status].badgeVariant}>
-      {statusConfig[vehicle.status].label}
+    <Badge variant={vehicleStatusConfig[vehicle.status].variant}>
+      {vehicleStatusConfig[vehicle.status].label}
     </Badge>
   );
 

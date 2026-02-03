@@ -10,20 +10,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Car, Eye, Plus, LayoutGrid, List } from 'lucide-react';
 import { useVehicles } from '@/hooks/useVehicles';
 import { useAuth } from '@/contexts/AuthContext';
+import { vehicleStatusConfig } from '@/lib/status-configs';
 import type { VehicleFilters, VehicleOwnership, VehicleStatus, VehicleType, VehicleWithAssignments } from '@/types/vehicle';
 import { CreateVehicleModal } from '@/components/features/admin/CreateVehicleModal';
 import { AdminVehicleCard, AdminVehicleCardAction } from '@/components/features/admin/VehicleCard';
 import { EditVehicleModal } from '@/components/features/admin/EditVehicleModal';
-
-/** Status config using native Badge variants per design system */
-const statusConfig: Record<VehicleStatus, {
-  label: string;
-  badgeVariant: 'default' | 'secondary' | 'destructive' | 'outline';
-}> = {
-  active: { label: 'Active', badgeVariant: 'default' },
-  inactive: { label: 'Inactive', badgeVariant: 'secondary' },
-  retired: { label: 'Retired', badgeVariant: 'destructive' },
-};
 
 export default function VehiclesPage() {
   const navigate = useNavigate();
@@ -190,8 +181,8 @@ export default function VehiclesPage() {
                               </div>
                             </TableCell>
                             <TableCell onClick={() => navigate(`/admin/vehicles/${vehicle.id}`)}>
-                              <Badge variant={statusConfig[vehicle.status].badgeVariant}>
-                                {statusConfig[vehicle.status].label}
+                              <Badge variant={vehicleStatusConfig[vehicle.status].variant}>
+                                {vehicleStatusConfig[vehicle.status].label}
                               </Badge>
                             </TableCell>
                             <TableCell className="capitalize" onClick={() => navigate(`/admin/vehicles/${vehicle.id}`)}>
