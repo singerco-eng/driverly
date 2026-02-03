@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { FileText, Eye, Calendar, Clock, ListChecks, Building2 } from 'lucide-react';
 import type { CredentialForReview, ReviewStatus } from '@/types/credentialReview';
 import { formatDate } from '@/lib/formatters';
+import { credentialStatusConfig, type CredentialStatusConfigEntry } from '@/lib/status-configs';
 
 interface CredentialReviewCardProps {
   credential: CredentialForReview;
@@ -12,40 +13,15 @@ interface CredentialReviewCardProps {
 
 type DisplayStatus = ReviewStatus | 'not_submitted';
 
-/** Status config using native Badge variants per design system */
-const statusConfig: Record<DisplayStatus, { 
-  label: string; 
-  badgeVariant: 'default' | 'secondary' | 'destructive' | 'outline';
-}> = {
-  pending_review: {
-    label: 'Pending Review',
-    badgeVariant: 'secondary',
-  },
-  awaiting_verification: {
-    label: 'Awaiting Verification',
-    badgeVariant: 'secondary',
-  },
-  expiring: {
-    label: 'Expiring Soon',
-    badgeVariant: 'outline',
-  },
-  expired: {
-    label: 'Expired',
-    badgeVariant: 'destructive',
-  },
-  approved: {
-    label: 'Approved',
-    badgeVariant: 'default',
-  },
-  rejected: {
-    label: 'Rejected',
-    badgeVariant: 'destructive',
-  },
-  not_submitted: {
-    label: 'Not Submitted',
-    badgeVariant: 'outline',
-  },
+const awaitingVerificationConfig: CredentialStatusConfigEntry = {
+  label: 'Awaiting Verification',
+  variant: 'secondary',
 };
+
+const getStatusConfig = (status: DisplayStatus) =>
+  status === 'awaiting_verification'
+    ? awaitingVerificationConfig
+    : credentialStatusConfig[status] || credentialStatusConfig.not_submitted;
 
 function getSubjectLine(credential: CredentialForReview) {
   if (credential.driver?.user?.full_name) {
@@ -61,7 +37,7 @@ export function CredentialReviewCard({
   credential,
   onView,
 }: CredentialReviewCardProps) {
-  const status = statusConfig[credential.displayStatus as DisplayStatus] || statusConfig.not_submitted;
+  const status = getStatusConfig(credential.displayStatus as DisplayStatus);
   const subjectLine = getSubjectLine(credential);
   const submittedDate = credential.submittedAt ? formatDate(credential.submittedAt) : null;
   const expiresDate = credential.expiresAt ? formatDate(credential.expiresAt) : null;
@@ -73,7 +49,7 @@ export function CredentialReviewCard({
       <CardContent className="p-4 space-y-3 flex-1 flex flex-col">
         {/* Header row with badge */}
         <div className="flex items-center justify-between">
-          <Badge variant={status.badgeVariant}>
+          <Badge variant={status.variant}>
             {status.label}
           </Badge>
         </div>

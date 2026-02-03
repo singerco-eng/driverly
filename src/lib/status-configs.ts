@@ -1,0 +1,50 @@
+import type { BadgeProps } from '@/components/ui/badge';
+import type { CredentialDisplayStatus } from '@/types/credential';
+
+export type BadgeVariant = BadgeProps['variant'];
+
+export type CredentialStatusConfigEntry = {
+  label: string;
+  variant: BadgeVariant;
+};
+
+export type CredentialStatusConfig = Record<CredentialDisplayStatus, CredentialStatusConfigEntry>;
+
+export const credentialStatusConfig: CredentialStatusConfig = {
+  approved: {
+    label: 'Complete',
+    variant: 'default',
+  },
+  rejected: {
+    label: 'Rejected',
+    variant: 'destructive',
+  },
+  pending_review: {
+    label: 'Pending Review',
+    variant: 'secondary',
+  },
+  not_submitted: {
+    label: 'Not Submitted',
+    variant: 'outline',
+  },
+  expired: {
+    label: 'Expired',
+    variant: 'destructive',
+  },
+  expiring: {
+    label: 'Expiring Soon',
+    variant: 'outline',
+  },
+  awaiting: {
+    label: 'In Review',
+    variant: 'secondary',
+  },
+  grace_period: {
+    label: 'Due Soon',
+    variant: 'secondary',
+  },
+  missing: {
+    label: 'Missing',
+    variant: 'destructive',
+  },
+};

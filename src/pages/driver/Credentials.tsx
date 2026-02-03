@@ -22,52 +22,10 @@ import { useDriverByUserId } from '@/hooks/useDrivers';
 import { useDriverAssignments } from '@/hooks/useVehicleAssignments';
 import { useDriverCredentials } from '@/hooks/useCredentials';
 import * as credentialService from '@/services/credentials';
-import type { CredentialWithDisplayStatus, CredentialDisplayStatus } from '@/types/credential';
+import type { CredentialWithDisplayStatus } from '@/types/credential';
 import { isAdminOnlyCredential } from '@/lib/credentialRequirements';
 import { formatDate } from '@/lib/formatters';
-
-/** Status config using native Badge variants per design system */
-const statusConfig: Record<CredentialDisplayStatus, { 
-  label: string; 
-  badgeVariant: 'default' | 'secondary' | 'destructive' | 'outline';
-}> = {
-  approved: {
-    label: 'Complete',
-    badgeVariant: 'default',
-  },
-  rejected: {
-    label: 'Rejected',
-    badgeVariant: 'destructive',
-  },
-  pending_review: {
-    label: 'Pending Review',
-    badgeVariant: 'secondary',
-  },
-  not_submitted: {
-    label: 'Not Submitted',
-    badgeVariant: 'outline',
-  },
-  expired: {
-    label: 'Expired',
-    badgeVariant: 'destructive',
-  },
-  expiring: {
-    label: 'Expiring Soon',
-    badgeVariant: 'outline',
-  },
-  awaiting: {
-    label: 'In Review',
-    badgeVariant: 'secondary',
-  },
-  grace_period: {
-    label: 'Due Soon',
-    badgeVariant: 'secondary',
-  },
-  missing: {
-    label: 'Missing',
-    badgeVariant: 'destructive',
-  },
-};
+import { credentialStatusConfig } from '@/lib/status-configs';
 
 interface CredentialFilters {
   search?: string;
@@ -437,7 +395,7 @@ export default function DriverCredentials() {
                       </TableRow>
                     ) : (
                       credentialsWithId.map((item) => {
-                        const status = statusConfig[item.displayStatus] || statusConfig.not_submitted;
+                        const status = credentialStatusConfig[item.displayStatus] || credentialStatusConfig.not_submitted;
                         const stepCount = item.credentialType.instruction_config?.steps?.length || 0;
                         const isGlobal = item.credentialType.scope === 'global';
                         const needsAction = [
@@ -466,7 +424,7 @@ export default function DriverCredentials() {
                             </TableCell>
                             <TableCell>
                               <Badge
-                                variant={status.badgeVariant}
+                                variant={status.variant}
                                 className={
                                   item.displayStatus === 'grace_period'
                                     ? 'bg-amber-50 text-amber-700 border-amber-200'

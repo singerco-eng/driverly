@@ -19,6 +19,7 @@ import { CredentialReviewCard } from '@/components/features/admin/CredentialRevi
 import { CredentialDetailHeader } from '@/components/features/credentials/CredentialDetail/CredentialDetailHeader';
 import { InstructionRenderer } from '@/components/features/credentials/InstructionRenderer';
 import { formatDate } from '@/lib/formatters';
+import { credentialStatusConfig, type CredentialStatusConfigEntry } from '@/lib/status-configs';
 
 // Import REAL types
 import type { CredentialForReview, ReviewStatus } from '@/types/credentialReview';
@@ -692,15 +693,14 @@ const mockReviewHistory: DemoHistoryItem[] = [
 
 // Status config for table view
 type DisplayStatus = ReviewStatus | 'not_submitted';
-const statusConfig: Record<DisplayStatus, { label: string; badgeVariant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
-  pending_review: { label: 'Pending Review', badgeVariant: 'secondary' },
-  awaiting_verification: { label: 'Awaiting Verification', badgeVariant: 'secondary' },
-  expiring: { label: 'Expiring Soon', badgeVariant: 'outline' },
-  expired: { label: 'Expired', badgeVariant: 'destructive' },
-  approved: { label: 'Approved', badgeVariant: 'default' },
-  rejected: { label: 'Rejected', badgeVariant: 'destructive' },
-  not_submitted: { label: 'Not Submitted', badgeVariant: 'outline' },
+const awaitingVerificationConfig: CredentialStatusConfigEntry = {
+  label: 'Awaiting Verification',
+  variant: 'secondary',
 };
+const getStatusConfig = (status: DisplayStatus) =>
+  status === 'awaiting_verification'
+    ? awaitingVerificationConfig
+    : credentialStatusConfig[status] || credentialStatusConfig.not_submitted;
 
 function getSubjectLabel(credential: CredentialForReview) {
   if (credential.driver?.user?.full_name) {
@@ -1125,7 +1125,7 @@ export default function DemoAdminReview({ embedded = false }: DemoAdminReviewPro
                         </TableRow>
                       ) : (
                         filteredDriverCredentials.map((credential) => {
-                          const status = statusConfig[credential.displayStatus as DisplayStatus] || statusConfig.not_submitted;
+                          const status = getStatusConfig(credential.displayStatus as DisplayStatus);
                           return (
                             <TableRow
                               key={credential.id}
@@ -1136,7 +1136,7 @@ export default function DemoAdminReview({ embedded = false }: DemoAdminReviewPro
                                 {credential.credentialType.name}
                               </TableCell>
                               <TableCell>
-                                <Badge variant={status.badgeVariant}>{status.label}</Badge>
+                                <Badge variant={status.variant}>{status.label}</Badge>
                               </TableCell>
                               <TableCell>{getSubjectLabel(credential)}</TableCell>
                               <TableCell>{formatDate(credential.submittedAt)}</TableCell>
@@ -1222,7 +1222,7 @@ export default function DemoAdminReview({ embedded = false }: DemoAdminReviewPro
                         </TableRow>
                       ) : (
                         filteredVehicleCredentials.map((credential) => {
-                          const status = statusConfig[credential.displayStatus as DisplayStatus] || statusConfig.not_submitted;
+                          const status = getStatusConfig(credential.displayStatus as DisplayStatus);
                           return (
                             <TableRow
                               key={credential.id}
@@ -1233,7 +1233,7 @@ export default function DemoAdminReview({ embedded = false }: DemoAdminReviewPro
                                 {credential.credentialType.name}
                               </TableCell>
                               <TableCell>
-                                <Badge variant={status.badgeVariant}>{status.label}</Badge>
+                                <Badge variant={status.variant}>{status.label}</Badge>
                               </TableCell>
                               <TableCell>{getSubjectLabel(credential)}</TableCell>
                               <TableCell>{formatDate(credential.submittedAt)}</TableCell>

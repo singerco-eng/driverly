@@ -14,6 +14,7 @@ import { useAdminEnsureDriverCredential } from '@/hooks/useCredentials';
 import type { CredentialForReview, ReviewStatus } from '@/types/credentialReview';
 import { isAdminOnlyCredential } from '@/lib/credentialRequirements';
 import { formatDate } from '@/lib/formatters';
+import { credentialStatusConfig, type CredentialStatusConfigEntry } from '@/lib/status-configs';
 
 interface DriverCredentialsTabProps {
   companyId: string;
@@ -22,40 +23,15 @@ interface DriverCredentialsTabProps {
 
 type DisplayStatus = ReviewStatus | 'not_submitted';
 
-/** Status config using native Badge variants per design system */
-const statusConfig: Record<DisplayStatus, { 
-  label: string; 
-  badgeVariant: 'default' | 'secondary' | 'destructive' | 'outline';
-}> = {
-  pending_review: {
-    label: 'Pending Review',
-    badgeVariant: 'secondary',
-  },
-  awaiting_verification: {
-    label: 'Awaiting Verification',
-    badgeVariant: 'secondary',
-  },
-  expiring: {
-    label: 'Expiring Soon',
-    badgeVariant: 'outline',
-  },
-  expired: {
-    label: 'Expired',
-    badgeVariant: 'destructive',
-  },
-  approved: {
-    label: 'Approved',
-    badgeVariant: 'default',
-  },
-  rejected: {
-    label: 'Rejected',
-    badgeVariant: 'destructive',
-  },
-  not_submitted: {
-    label: 'Not Submitted',
-    badgeVariant: 'outline',
-  },
+const awaitingVerificationConfig: CredentialStatusConfigEntry = {
+  label: 'Awaiting Verification',
+  variant: 'secondary',
 };
+
+const getStatusConfig = (status: DisplayStatus) =>
+  status === 'awaiting_verification'
+    ? awaitingVerificationConfig
+    : credentialStatusConfig[status] || credentialStatusConfig.pending_review;
 
 export function DriverCredentialsTab({ companyId, driverId }: DriverCredentialsTabProps) {
   const navigate = useNavigate();
@@ -129,7 +105,7 @@ export function DriverCredentialsTab({ companyId, driverId }: DriverCredentialsT
 
   // Render credential card for card view - standardized pattern
   const renderCredentialCard = (credential: CredentialForReview) => {
-    const status = statusConfig[credential.displayStatus] || statusConfig.pending_review;
+    const status = getStatusConfig(credential.displayStatus);
     const stepCount = credential.credentialType.instruction_config?.steps?.length || 0;
     const isComplete = credential.displayStatus === 'approved';
 
@@ -141,7 +117,7 @@ export function DriverCredentialsTab({ companyId, driverId }: DriverCredentialsT
         <CardContent className="p-4 space-y-3 flex-1 flex flex-col">
           {/* Header row with badge */}
           <div className="flex items-center justify-between">
-            <Badge variant={status.badgeVariant}>
+            <Badge variant={status.variant}>
               {status.label}
             </Badge>
           </div>
@@ -277,7 +253,7 @@ export function DriverCredentialsTab({ companyId, driverId }: DriverCredentialsT
                   </TableRow>
                 ) : (
                   filteredCredentials.map((credential) => {
-                    const status = statusConfig[credential.displayStatus] || statusConfig.pending_review;
+                    const status = getStatusConfig(credential.displayStatus);
                     const isAdminOnly = isAdminOnlyCredential(credential.credentialType);
                     const showApproveReject = credential.displayStatus === 'pending_review' && !isAdminOnly;
                     const showVerify = credential.displayStatus === 'awaiting_verification';
@@ -296,7 +272,7 @@ export function DriverCredentialsTab({ companyId, driverId }: DriverCredentialsT
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={status.badgeVariant}>
+                          <Badge variant={status.variant}>
                             {status.label}
                           </Badge>
                         </TableCell>
