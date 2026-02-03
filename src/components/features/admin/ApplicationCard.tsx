@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Eye, Briefcase, Calendar } from 'lucide-react';
+import { applicationStatusConfig } from '@/lib/status-configs';
 import type { ApplicationStatus } from '@/types/driver';
 
 interface ApplicationCardProps {
@@ -18,40 +19,9 @@ interface ApplicationCardProps {
   };
 }
 
-/** Status config using native Badge variants per design system */
-const statusConfig: Record<ApplicationStatus, {
-  label: string;
-  badgeVariant: 'default' | 'secondary' | 'destructive' | 'outline';
-}> = {
-  draft: {
-    label: 'Draft',
-    badgeVariant: 'outline',
-  },
-  pending: {
-    label: 'Pending',
-    badgeVariant: 'secondary',
-  },
-  under_review: {
-    label: 'Under Review',
-    badgeVariant: 'secondary',
-  },
-  approved: {
-    label: 'Approved',
-    badgeVariant: 'default',
-  },
-  rejected: {
-    label: 'Rejected',
-    badgeVariant: 'destructive',
-  },
-  withdrawn: {
-    label: 'Withdrawn',
-    badgeVariant: 'outline',
-  },
-};
-
 export function ApplicationCard({ application }: ApplicationCardProps) {
   const navigate = useNavigate();
-  const status = statusConfig[application.application_status];
+  const status = applicationStatusConfig[application.application_status];
   
   const initials = application.user.full_name
     .split(' ')
@@ -68,7 +38,7 @@ export function ApplicationCard({ application }: ApplicationCardProps) {
       <CardContent className="p-4 space-y-3 flex-1 flex flex-col">
         {/* Header row with badge */}
         <div className="flex items-center justify-between">
-          <Badge variant={status.badgeVariant}>
+          <Badge variant={status.variant}>
             {status.label}
           </Badge>
         </div>

@@ -9,21 +9,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { FileText, LayoutGrid, List } from 'lucide-react';
 import { useApplications } from '@/hooks/useApplications';
 import { ApplicationCard } from '@/components/features/admin/ApplicationCard';
+import { applicationStatusConfig } from '@/lib/status-configs';
 import type { ApplicationStatus, EmploymentType } from '@/types/driver';
 import type { ApplicationFilters } from '@/services/applications';
-
-/** Status config using native Badge variants per design system */
-const statusConfig: Record<ApplicationStatus, {
-  label: string;
-  badgeVariant: 'default' | 'secondary' | 'destructive' | 'outline';
-}> = {
-  draft: { label: 'Draft', badgeVariant: 'outline' },
-  pending: { label: 'Pending', badgeVariant: 'secondary' },
-  under_review: { label: 'Under Review', badgeVariant: 'secondary' },
-  approved: { label: 'Approved', badgeVariant: 'default' },
-  rejected: { label: 'Rejected', badgeVariant: 'destructive' },
-  withdrawn: { label: 'Withdrawn', badgeVariant: 'outline' },
-};
 
 export default function ApplicationsPage() {
   const navigate = useNavigate();
@@ -162,8 +150,8 @@ export default function ApplicationsPage() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Badge variant={statusConfig[application.application_status].badgeVariant}>
-                              {statusConfig[application.application_status].label}
+                            <Badge variant={applicationStatusConfig[application.application_status].variant}>
+                              {applicationStatusConfig[application.application_status].label}
                             </Badge>
                           </TableCell>
                           <TableCell>

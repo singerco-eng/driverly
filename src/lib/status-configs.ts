@@ -1,5 +1,6 @@
 import type { BadgeProps } from '@/components/ui/badge';
 import type { CredentialDisplayStatus } from '@/types/credential';
+import type { ApplicationStatus } from '@/types/driver';
 import type { VehicleStatus } from '@/types/vehicle';
 
 export type BadgeVariant = BadgeProps['variant'];
@@ -69,5 +70,39 @@ export const vehicleStatusConfig: VehicleStatusConfig = {
   retired: {
     label: 'Retired',
     variant: 'destructive',
+  },
+};
+
+export type ApplicationStatusConfigEntry = {
+  label: string;
+  variant: BadgeVariant;
+};
+
+export type ApplicationStatusConfig = Record<ApplicationStatus, ApplicationStatusConfigEntry>;
+
+export const applicationStatusConfig: ApplicationStatusConfig = {
+  draft: {
+    label: 'Draft',
+    variant: 'outline',
+  },
+  pending: {
+    label: 'Pending',
+    variant: 'secondary',
+  },
+  under_review: {
+    label: 'Under Review',
+    variant: 'secondary',
+  },
+  approved: {
+    label: 'Approved',
+    variant: 'default',
+  },
+  rejected: {
+    label: 'Rejected',
+    variant: 'destructive',
+  },
+  withdrawn: {
+    label: 'Withdrawn',
+    variant: 'outline',
   },
 };

@@ -9,19 +9,7 @@ import { DetailPageHeader } from '@/components/ui/DetailPageHeader';
 import { supabase } from '@/integrations/supabase/client';
 import { useApplication, useApproveApplication, useRejectApplication, useUpdateApplicationNotes } from '@/hooks/useApplications';
 import { RejectApplicationModal } from '@/components/features/admin/RejectApplicationModal';
-import type { ApplicationStatus } from '@/types/driver';
-
-const statusConfig: Record<ApplicationStatus, {
-  label: string;
-  badgeVariant: 'default' | 'secondary' | 'destructive' | 'outline';
-}> = {
-  draft: { label: 'Draft', badgeVariant: 'outline' },
-  pending: { label: 'Pending', badgeVariant: 'secondary' },
-  under_review: { label: 'Under Review', badgeVariant: 'secondary' },
-  approved: { label: 'Approved', badgeVariant: 'default' },
-  rejected: { label: 'Rejected', badgeVariant: 'destructive' },
-  withdrawn: { label: 'Withdrawn', badgeVariant: 'outline' },
-};
+import { applicationStatusConfig } from '@/lib/status-configs';
 
 export default function ApplicationReviewPage() {
   const navigate = useNavigate();
@@ -104,7 +92,7 @@ export default function ApplicationReviewPage() {
     );
   }
 
-  const status = statusConfig[application.application_status];
+  const status = applicationStatusConfig[application.application_status];
 
   // Action buttons for the header
   const actions = (
@@ -132,7 +120,7 @@ export default function ApplicationReviewPage() {
         title={application.user.full_name}
         subtitle="Driver application details and actions"
         badges={
-          <Badge variant={status.badgeVariant}>
+          <Badge variant={status.variant}>
             {status.label}
           </Badge>
         }
