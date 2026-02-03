@@ -1,6 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { credentialStatusVariant } from '@/lib/status-styles';
+import { credentialStatusConfig } from '@/lib/status-configs';
 import type { CredentialWithDisplayStatus, CredentialDisplayStatus } from '@/types/credential';
 import { CredentialRequirementsDisplay } from '@/components/features/credentials/CredentialRequirementsDisplay';
 import {
@@ -12,18 +12,6 @@ import {
   XCircle,
 } from 'lucide-react';
 
-const credentialStatusLabels: Record<CredentialDisplayStatus, string> = {
-  approved: 'Complete',
-  rejected: 'Rejected',
-  pending_review: 'Pending',
-  not_submitted: 'To Do',
-  expired: 'Expired',
-  expiring: 'Expiring',
-  awaiting: 'In Review',
-  grace_period: 'Due Soon',
-  missing: 'Missing',
-};
-
 const credentialStatusIcons: Record<CredentialDisplayStatus, React.ElementType> = {
   approved: CheckCircle,
   rejected: XCircle,
@@ -32,6 +20,7 @@ const credentialStatusIcons: Record<CredentialDisplayStatus, React.ElementType> 
   expired: XCircle,
   expiring: AlertTriangle,
   awaiting: PauseCircle,
+  awaiting_verification: PauseCircle,
   grace_period: Clock,
   missing: AlertTriangle,
 };
@@ -44,11 +33,8 @@ interface CredentialCardProps {
 
 export function CredentialCard({ credential, onSubmit, onView }: CredentialCardProps) {
   const { credentialType, displayStatus, credential: instance } = credential;
+  const statusConfig = credentialStatusConfig[displayStatus] || credentialStatusConfig.not_submitted;
   const StatusIcon = credentialStatusIcons[displayStatus] ?? Circle;
-  const statusLabel =
-    displayStatus === 'grace_period' && credential.gracePeriodDueDate
-      ? `Due by ${credential.gracePeriodDueDate.toLocaleDateString()}`
-      : credentialStatusLabels[displayStatus] ?? displayStatus;
 
   const needsAction = [
     'not_submitted',
@@ -86,26 +72,23 @@ export function CredentialCard({ credential, onSubmit, onView }: CredentialCardP
               />
             </div>
           </div>
-          <Badge
-            variant={credentialStatusVariant[displayStatus]}
-            className={
-              displayStatus === 'grace_period'
-                ? 'gap-1 bg-amber-50 text-amber-700 border-amber-200'
-                : 'gap-1'
-            }
-          >
+          <Badge variant={statusConfig.variant} className="gap-1">
             <StatusIcon className="w-3 h-3" />
-            {statusLabel}
+            {statusConfig.label}
           </Badge>
         </div>
       </CardHeader>
       <CardContent>
-        <div className="text-sm text-muted-foreground">
-          {instance?.expires_at
-            ? `Expires ${new Date(instance.expires_at).toLocaleDateString()}`
-            : displayStatus === 'rejected' && instance?.rejection_reason
-              ? <span className="text-destructive">{instance.rejection_reason}</span>
-              : null}
+        <div className="text-sm text-muted-foreground space-y-1">
+          {credential.gracePeriodDueDate && (
+            <div>Due by {credential.gracePeriodDueDate.toLocaleDateString()}</div>
+          )}
+          {instance?.expires_at && (
+            <div>Expires {new Date(instance.expires_at).toLocaleDateString()}</div>
+          )}
+          {displayStatus === 'rejected' && instance?.rejection_reason && (
+            <span className="text-destructive">{instance.rejection_reason}</span>
+          )}
         </div>
       </CardContent>
     </Card>

@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { getCompanyScope } from '@/services/authScope';
 import type {
   Driver,
   DriverWithUser,
@@ -9,6 +10,8 @@ import type {
 } from '@/types/driver';
 
 export async function getDrivers(filters?: DriverFilters): Promise<DriverWithUser[]> {
+  const { companyId, isSuperAdmin } = await getCompanyScope();
+
   let query = supabase
     .from('drivers')
     .select(
@@ -18,6 +21,10 @@ export async function getDrivers(filters?: DriverFilters): Promise<DriverWithUse
     `
     )
     .order('created_at', { ascending: false });
+
+  if (companyId && !isSuperAdmin) {
+    query = query.eq('company_id', companyId);
+  }
 
   if (filters?.status && filters.status !== 'all') {
     query = query.eq('status', filters.status);

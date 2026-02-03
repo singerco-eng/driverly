@@ -149,24 +149,114 @@ export function useUpdateCredentialType() {
 
 export function useDeactivateCredentialType() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   return useMutation({
     mutationFn: (id: string) => credentialTypesService.deactivateCredentialType(id),
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['credential-types', result.company_id] });
       queryClient.invalidateQueries({ queryKey: ['credential-types', 'detail', result.id] });
+      toast({
+        title: 'Credential deactivated',
+        description: 'Drivers will no longer see this credential.',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Failed to deactivate credential',
+        description: error.message,
+        variant: 'destructive',
+      });
     },
   });
 }
 
 export function useReactivateCredentialType() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   return useMutation({
-    mutationFn: (id: string) => credentialTypesService.reactivateCredentialType(id),
+    mutationFn: ({
+      id,
+      effectiveDate,
+    }: {
+      id: string;
+      effectiveDate?: Date;
+    }) => credentialTypesService.reactivateCredentialType(id, effectiveDate),
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['credential-types', result.company_id] });
       queryClient.invalidateQueries({ queryKey: ['credential-types', 'detail', result.id] });
+      toast({
+        title: 'Credential reactivated',
+        description:
+          result.status === 'scheduled'
+            ? 'Credential is scheduled to go live.'
+            : 'Credential is active again.',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Failed to reactivate credential',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+}
+
+export function usePublishCredentialType() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      effectiveDate,
+    }: {
+      id: string;
+      effectiveDate?: Date;
+    }) => credentialTypesService.publishCredentialType(id, effectiveDate),
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['credential-types', result.company_id] });
+      queryClient.invalidateQueries({ queryKey: ['credential-types', 'detail', result.id] });
+      toast({
+        title: 'Credential published',
+        description:
+          result.status === 'scheduled'
+            ? 'Credential is scheduled to go live.'
+            : 'Credential is now active.',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Failed to publish credential',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+}
+
+export function useUnpublishCredentialType() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (id: string) => credentialTypesService.unpublishCredentialType(id),
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['credential-types', result.company_id] });
+      queryClient.invalidateQueries({ queryKey: ['credential-types', 'detail', result.id] });
+      toast({
+        title: 'Schedule canceled',
+        description: 'Credential returned to draft.',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Failed to cancel schedule',
+        description: error.message,
+        variant: 'destructive',
+      });
     },
   });
 }

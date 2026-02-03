@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { getCompanyScope } from '@/services/authScope';
 import type { Invitation, InvitationWithCompany } from '@/types/invitation';
 
 export interface CreateInvitationData {
@@ -8,6 +9,9 @@ export interface CreateInvitationData {
 }
 
 export async function getInvitations(companyId?: string): Promise<InvitationWithCompany[]> {
+  const { companyId: scopedCompanyId, isSuperAdmin } = await getCompanyScope();
+  const resolvedCompanyId = companyId ?? (isSuperAdmin ? null : scopedCompanyId);
+
   let query = supabase
     .from('invitations')
     .select(`
@@ -16,8 +20,8 @@ export async function getInvitations(companyId?: string): Promise<InvitationWith
     `)
     .order('created_at', { ascending: false });
 
-  if (companyId) {
-    query = query.eq('company_id', companyId);
+  if (resolvedCompanyId) {
+    query = query.eq('company_id', resolvedCompanyId);
   }
 
   const { data, error } = await query;

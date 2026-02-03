@@ -21,6 +21,8 @@ interface RequiredCredentialRow {
   submission_type: CredentialType['submission_type'];
   requires_driver_action: CredentialType['requires_driver_action'];
   requirement: CredentialType['requirement'];
+  grace_period_days: CredentialType['grace_period_days'];
+  effective_date: CredentialType['effective_date'];
 }
 
 export async function getDriverCredentials(
@@ -30,6 +32,14 @@ export async function getDriverCredentials(
     .rpc('get_driver_required_credentials', { p_driver_id: driverId });
 
   if (reqError) throw reqError;
+
+  const { data: driver, error: driverError } = await supabase
+    .from('drivers')
+    .select('created_at')
+    .eq('id', driverId)
+    .maybeSingle();
+
+  if (driverError) throw driverError;
 
   const { data: credentials, error } = await supabase
     .from('driver_credentials')
@@ -46,6 +56,9 @@ export async function getDriverCredentials(
   return mergeCredentialsWithTypes(
     (credentials || []) as DriverCredential[],
     (required || []) as RequiredCredentialRow[],
+    undefined,
+    undefined,
+    driver?.created_at ? new Date(driver.created_at) : null,
   );
 }
 
@@ -81,6 +94,7 @@ export async function getVehicleCredentials(
     (required || []) as RequiredCredentialRow[],
     vehicleId,
     (vehicle || null) as Vehicle | null,
+    null,
   );
 }
 
@@ -393,6 +407,7 @@ function mergeCredentialsWithTypes(
   required: RequiredCredentialRow[],
   vehicleId?: string,
   vehicleSummary?: Vehicle | null,
+  driverCreatedAt?: Date | null,
 ): CredentialWithDisplayStatus[] {
   const result: CredentialWithDisplayStatus[] = [];
 
@@ -406,7 +421,13 @@ function mergeCredentialsWithTypes(
           vehicleCredential.vehicle = vehicleSummary;
         }
       }
-      result.push(computeDisplayStatus(existing, existing.credential_type as CredentialType));
+      result.push(
+        computeDisplayStatus(
+          existing,
+          existing.credential_type as CredentialType,
+          driverCreatedAt ?? undefined,
+        ),
+      );
       continue;
     }
 
@@ -425,11 +446,18 @@ function mergeCredentialsWithTypes(
         category: req.category || 'vehicle',
         scope: req.scope,
         broker_id: req.broker_id,
+        status: 'active',
+        effective_date: req.effective_date ?? null,
+        published_at: null,
+        published_by: null,
         submission_type: req.submission_type,
         requires_driver_action: req.requires_driver_action ?? true,
         requirement: req.requirement,
+        grace_period_days: req.grace_period_days ?? 0,
+        is_active: true,
         broker: req.broker_name ? { id: req.broker_id, name: req.broker_name } : undefined,
       } as CredentialType),
+      driverCreatedAt,
     );
   }
 
@@ -439,10 +467,12 @@ function mergeCredentialsWithTypes(
 function computeDisplayStatus(
   credential: DriverCredential | VehicleCredential | any,
   credentialType: CredentialType,
+  driverCreatedAt?: Date | null,
 ): CredentialWithDisplayStatus {
   let displayStatus: CredentialWithDisplayStatus['displayStatus'] = credential.status;
   let isExpiringSoon = false;
   let daysUntilExpiration: number | null = null;
+  let gracePeriodDueDate: Date | undefined;
 
   if (credential.status === 'approved' && credential.expires_at) {
     const expiresAt = new Date(credential.expires_at);
@@ -460,8 +490,22 @@ function computeDisplayStatus(
     }
   }
 
+  if (credential.status === 'not_submitted') {
+    const gracePeriodEnds = calculateGracePeriodEnd(credentialType, driverCreatedAt ?? undefined);
+    if (gracePeriodEnds) {
+      const now = new Date();
+      if (now < gracePeriodEnds) {
+        displayStatus = 'grace_period';
+        gracePeriodDueDate = gracePeriodEnds;
+      } else {
+        displayStatus = 'missing';
+      }
+    }
+  }
+
   if (isAdminOnlyCredential(credentialType) && credential.status === 'not_submitted') {
     displayStatus = 'awaiting';
+    gracePeriodDueDate = undefined;
   }
 
   const canSubmit =
@@ -474,6 +518,7 @@ function computeDisplayStatus(
     isExpiringSoon,
     daysUntilExpiration,
     canSubmit,
+    gracePeriodDueDate,
   };
 }
 
@@ -483,7 +528,9 @@ function calculateProgress(credentials: CredentialWithDisplayStatus[]): Credenti
   const pending = required.filter((c) => ['pending_review', 'awaiting'].includes(c.displayStatus))
     .length;
   const actionNeeded = required.filter((c) =>
-    ['not_submitted', 'rejected', 'expired', 'expiring'].includes(c.displayStatus),
+    ['not_submitted', 'rejected', 'expired', 'expiring', 'grace_period', 'missing'].includes(
+      c.displayStatus,
+    ),
   ).length;
 
   return {
@@ -494,6 +541,22 @@ function calculateProgress(credentials: CredentialWithDisplayStatus[]): Credenti
     percentage:
       required.length > 0 ? Math.round((complete / required.length) * 100) : 100,
   };
+}
+
+function calculateGracePeriodEnd(
+  credentialType: CredentialType,
+  driverCreatedAt?: Date,
+): Date | null {
+  if (!credentialType.effective_date || !credentialType.grace_period_days) {
+    return null;
+  }
+
+  const effectiveDate = new Date(credentialType.effective_date);
+  const baseDate =
+    driverCreatedAt && driverCreatedAt > effectiveDate ? driverCreatedAt : effectiveDate;
+  const gracePeriodEnds = new Date(baseDate);
+  gracePeriodEnds.setDate(gracePeriodEnds.getDate() + credentialType.grace_period_days);
+  return gracePeriodEnds;
 }
 
 async function getNextSubmissionVersion(

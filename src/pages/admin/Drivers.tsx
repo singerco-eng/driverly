@@ -17,12 +17,15 @@ import { resolveAvatarUrl } from '@/services/profile';
 import * as credentialService from '@/services/credentials';
 import type { DriverFilters, DriverStatus, EmploymentType, DriverWithUser } from '@/types/driver';
 import { AdminDriverCard, AdminDriverCardAction } from '@/components/features/admin/DriverCard';
-import { driverStatusVariant, credentialStatusVariant } from '@/lib/status-styles';
+import { driverStatusConfig, credentialStatusConfig } from '@/lib/status-configs';
 
 // Compute global credential status for a driver
 function computeGlobalCredentialStatus(credentials: Awaited<ReturnType<typeof credentialService.getDriverCredentials>>) {
   const requiredGlobal = credentials.filter(
-    (c) => c.credentialType.requirement === 'required' && c.credentialType.scope === 'global'
+    (c) =>
+      c.credentialType &&
+      c.credentialType.requirement === 'required' &&
+      c.credentialType.scope === 'global',
   );
   
   if (requiredGlobal.length === 0) {
@@ -95,13 +98,6 @@ function DriverAvatar({ avatarPath, name }: { avatarPath: string | null | undefi
     </div>
   );
 }
-
-const statusLabels: Record<DriverStatus, string> = {
-  active: 'Active',
-  inactive: 'Inactive',
-  suspended: 'Suspended',
-  archived: 'Archived',
-};
 
 export default function DriversPage() {
   const navigate = useNavigate();
@@ -294,8 +290,8 @@ export default function DriversPage() {
                               </div>
                             </TableCell>
                             <TableCell onClick={() => navigate(`/admin/drivers/${driver.id}`)}>
-                              <Badge variant={driverStatusVariant[driver.status]}>
-                                {statusLabels[driver.status]}
+                              <Badge variant={driverStatusConfig[driver.status].variant}>
+                                {driverStatusConfig[driver.status].label}
                               </Badge>
                             </TableCell>
                             <TableCell onClick={() => navigate(`/admin/drivers/${driver.id}`)}>
@@ -307,15 +303,15 @@ export default function DriversPage() {
                               ) : !credStatus || credStatus.total === 0 ? (
                                 <span className="text-sm text-muted-foreground">—</span>
                               ) : credStatus.status === 'valid' ? (
-                                <Badge variant={credentialStatusVariant.approved}>Complete</Badge>
+                                <Badge variant={credentialStatusConfig.approved.variant}>{credentialStatusConfig.approved.label}</Badge>
                               ) : credStatus.status === 'expiring' ? (
-                                <Badge variant={credentialStatusVariant.expiring}>Expiring Soon</Badge>
+                                <Badge variant={credentialStatusConfig.expiring.variant}>{credentialStatusConfig.expiring.label}</Badge>
                               ) : credStatus.status === 'expired' ? (
-                                <Badge variant={credentialStatusVariant.expired}>Expired</Badge>
+                                <Badge variant={credentialStatusConfig.expired.variant}>{credentialStatusConfig.expired.label}</Badge>
                               ) : credStatus.status === 'missing' ? (
-                                <Badge variant={credentialStatusVariant.not_submitted}>Incomplete</Badge>
+                                <Badge variant={credentialStatusConfig.not_submitted.variant}>Incomplete</Badge>
                               ) : (
-                                <Badge variant={credentialStatusVariant.pending_review}>Pending Review</Badge>
+                                <Badge variant={credentialStatusConfig.pending_review.variant}>{credentialStatusConfig.pending_review.label}</Badge>
                               )}
                             </TableCell>
                             <TableCell onClick={() => navigate(`/admin/drivers/${driver.id}`)}>

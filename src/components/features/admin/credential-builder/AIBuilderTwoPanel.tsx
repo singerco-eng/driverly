@@ -32,9 +32,12 @@ import {
   User,
   ArrowLeft,
   Wrench,
+  Save,
+  Check,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import { useAutoSaveDraft } from '@/hooks/useAIBuilderDraft';
 
 // Preview components
 import { InstructionRenderer } from '@/components/features/credentials/InstructionRenderer';
@@ -47,6 +50,7 @@ import {
   type CredentialTypeInstructions,
   type DocumentExtractionField,
 } from '@/types/instructionBuilder';
+import type { CredentialTypeStatus } from '@/types/credential';
 
 // ============================================
 // TYPES
@@ -95,13 +99,18 @@ export interface ChatMessage {
 }
 
 interface AIBuilderTwoPanelProps {
+  credentialId?: string;
   credentialName: string;
   initialConfig: CredentialTypeInstructions;
   onConfigChange: (config: CredentialTypeInstructions) => void;
+  onSave?: () => Promise<void>;
   onSwitchToManual: () => void;
   onBack: () => void;
   initialChatHistory?: ChatMessage[];
   onChatHistoryChange?: (messages: ChatMessage[]) => void;
+  credentialStatus?: CredentialTypeStatus;
+  secondaryActionLabel?: string;
+  onSecondaryAction?: () => void;
 }
 
 // ============================================
@@ -279,13 +288,18 @@ function EmptyPreviewState() {
 // ============================================
 
 export function AIBuilderTwoPanel({
+  credentialId,
   credentialName,
   initialConfig,
   onConfigChange,
+  onSave,
   onSwitchToManual,
   onBack,
   initialChatHistory = [],
   onChatHistoryChange,
+  credentialStatus,
+  secondaryActionLabel,
+  onSecondaryAction,
 }: AIBuilderTwoPanelProps) {
   // Chat state
   const [messages, setMessages] = useState<ChatMessage[]>(initialChatHistory);
@@ -302,6 +316,11 @@ export function AIBuilderTwoPanel({
   const [config, setConfig] = useState<CredentialTypeInstructions>(initialConfig);
   const [pendingConfig, setPendingConfig] = useState<CredentialTypeInstructions | null>(null);
   
+  // Save state
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  
   // Preview progress state
   const [progressData, setProgressData] = useState<StepProgressData>(
     createEmptyProgressData()
@@ -310,6 +329,9 @@ export function AIBuilderTwoPanel({
   // Track if we're in "refinement" mode (started with existing config)
   const hasExistingConfig = (pendingConfig ?? config).steps.length > 0;
   const [contextMessageGenerated, setContextMessageGenerated] = useState(false);
+  
+  // Auto-save to localStorage
+  useAutoSaveDraft(credentialId, config, messages, true);
 
   // Refs
   const chatScrollRef = useRef<HTMLDivElement>(null);
@@ -324,6 +346,39 @@ export function AIBuilderTwoPanel({
   useEffect(() => {
     onConfigChange(config);
   }, [config, onConfigChange]);
+
+  // Track unsaved changes (when config has steps and differs from initial)
+  const initialConfigRef = useRef(initialConfig);
+  useEffect(() => {
+    // If config has steps and differs from initial, mark as unsaved
+    if (config.steps.length > 0) {
+      const hasChanges = JSON.stringify(config) !== JSON.stringify(initialConfigRef.current);
+      setHasUnsavedChanges(hasChanges);
+    }
+  }, [config]);
+
+  // Handle save to database
+  const handleSave = useCallback(async () => {
+    if (!onSave || isSaving) return;
+    
+    setIsSaving(true);
+    setSaveSuccess(false);
+    
+    try {
+      await onSave();
+      setSaveSuccess(true);
+      setHasUnsavedChanges(false);
+      initialConfigRef.current = config; // Update ref to current config
+      
+      // Reset success indicator after 2 seconds
+      setTimeout(() => setSaveSuccess(false), 2000);
+    } catch (err) {
+      console.error('Failed to save:', err);
+      setError('Failed to save credential. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  }, [onSave, isSaving, config]);
 
   // Generate context message when entering with existing config
   useEffect(() => {
@@ -458,7 +513,16 @@ export function AIBuilderTwoPanel({
 
   const addDocumentToConfig = (doc: PendingDocument) => {
     const baseConfig = pendingConfig ?? config;
-    const step = createStep(doc.name, 'document_upload');
+    
+    // Check if a step with this document name already exists (for updates)
+    const existingStepIndex = baseConfig.steps.findIndex(
+      (s) => s.title.toLowerCase() === doc.name.toLowerCase()
+    );
+    
+    const step = existingStepIndex >= 0 
+      ? { ...baseConfig.steps[existingStepIndex] }
+      : createStep(doc.name, 'document_upload');
+    
     const headingBlock = createBlock('heading', {
       text: doc.name,
       level: 2,
@@ -496,7 +560,18 @@ export function AIBuilderTwoPanel({
     }
 
     if (step.blocks.length > 0) {
-      const nextSteps = [...baseConfig.steps, { ...step, order: baseConfig.steps.length + 1 }];
+      let nextSteps: typeof baseConfig.steps;
+      
+      if (existingStepIndex >= 0) {
+        // Update existing step in place
+        nextSteps = baseConfig.steps.map((s, idx) => 
+          idx === existingStepIndex ? step : s
+        );
+      } else {
+        // Add new step
+        nextSteps = [...baseConfig.steps, { ...step, order: baseConfig.steps.length + 1 }];
+      }
+      
       setConfig({ ...baseConfig, steps: nextSteps });
       setPendingConfig(null);
       setHasPendingChanges(false);
@@ -768,7 +843,8 @@ export function AIBuilderTwoPanel({
 
   const handleComponentResponse = async (
     response: ComponentResponse,
-    summaryOverride?: string
+    summaryOverride?: string,
+    isUpdate?: boolean
   ) => {
     if (response.type === 'extract_or_upload') {
       const matched = findPendingDocument(response.documentName);
@@ -804,8 +880,44 @@ export function AIBuilderTwoPanel({
       return;
     }
 
+    // Handle field_selection response (for both known and unknown documents)
     const otherText = response.otherFields.trim();
     const parsedOtherFields = parseOtherFields(otherText);
+    const allFields = [...response.selectedFields, ...parsedOtherFields].filter(Boolean);
+    
+    // Check if there's an existing pending document (from A/B choice flow)
+    const matched = findPendingDocument(response.documentName);
+    
+    // Create the document config - works for both known docs (no pending) and unknown docs (has pending)
+    const docToAdd: PendingDocument = matched
+      ? {
+          ...matched,
+          status: 'configured',
+          choice: 'extract' as const,
+          fields: allFields,
+        }
+      : {
+          // For known documents that skip A/B choice, create the doc entry directly
+          id: crypto.randomUUID(),
+          name: response.documentName,
+          status: 'configured',
+          choice: 'extract' as const,
+          fields: allFields,
+        };
+
+    // Add or update the document in config
+    addDocumentToConfig(docToAdd);
+    
+    // Clean up pending documents if there was one
+    if (matched) {
+      setPendingDocuments((prev) => prev.filter((doc) => doc.id !== matched.id));
+    }
+
+    // Skip sending message if this is just an update (user re-edited an existing form)
+    if (isUpdate) {
+      return;
+    }
+
     const parts = [summaryOverride || response.selectedFields.join(', ')].filter(Boolean);
     if (otherText) {
       parts.push(otherText);
@@ -814,23 +926,6 @@ export function AIBuilderTwoPanel({
     const userMessage = summary
       ? `Extract ${summary} from ${response.documentName}.`
       : `Extract fields from ${response.documentName}.`;
-    const matched = findPendingDocument(response.documentName);
-    const updatedDoc = matched
-      ? {
-          ...matched,
-          status: 'configured',
-          choice: 'extract' as const,
-          fields: [
-            ...response.selectedFields,
-            ...parsedOtherFields,
-          ].filter(Boolean),
-        }
-      : undefined;
-
-    if (updatedDoc) {
-      addDocumentToConfig(updatedDoc);
-      setPendingDocuments((prev) => prev.filter((doc) => doc.id !== updatedDoc.id));
-    }
 
     await sendMessage(userMessage, {
       componentResponse: response,
@@ -839,7 +934,10 @@ export function AIBuilderTwoPanel({
   };
 
   const hasMessages = messages.length > 0;
-  const hasSteps = config.steps.length > 0;
+  // Use pendingConfig for preview if available (shows AI suggestions before user clicks "Update")
+  const previewConfig = pendingConfig ?? config;
+  const hasSteps = previewConfig.steps.length > 0;
+  const saveLabel = credentialStatus === 'draft' ? 'Save Draft' : 'Save Changes';
 
   return (
     <div className="flex flex-col h-full">
@@ -858,10 +956,17 @@ export function AIBuilderTwoPanel({
             </span>
           </div>
         </div>
-        <Button variant="outline" size="sm" onClick={onSwitchToManual} className="gap-2">
-          <Wrench className="w-4 h-4" />
-          Edit Manually
-        </Button>
+        <div className="flex items-center gap-2">
+          {secondaryActionLabel && onSecondaryAction && (
+            <Button variant="outline" size="sm" onClick={onSecondaryAction}>
+              {secondaryActionLabel}
+            </Button>
+          )}
+          <Button variant="outline" size="sm" onClick={onSwitchToManual} className="gap-2">
+            <Wrench className="w-4 h-4" />
+            Edit Manually
+          </Button>
+        </div>
       </div>
 
       {/* Main Content - Two Panels */}
@@ -874,17 +979,6 @@ export function AIBuilderTwoPanel({
           'border-b md:border-b-0 md:border-r border-border flex flex-col bg-background',
           'h-1/2 md:h-full md:w-[38%] md:min-w-[320px]'
         )}>
-          {/* Chat Header */}
-          <div className="px-4 py-3 border-b border-border bg-muted/30">
-            <div className="flex items-center gap-2">
-              <Bot className="w-4 h-4 text-primary" />
-              <span className="font-medium text-sm">AI Assistant</span>
-            </div>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {hasExistingConfig ? 'Refinement mode' : 'Describe what you need'}
-            </p>
-          </div>
-
           {/* Chat Messages */}
           <div
             ref={chatScrollRef}
@@ -950,7 +1044,7 @@ export function AIBuilderTwoPanel({
                             <FieldSelectionForm
                               documentName={msg.component.documentName}
                               suggestedFields={msg.component.suggestedFields}
-                              onConfirm={(selectedFields, otherFields) =>
+                              onConfirm={(selectedFields, otherFields, isUpdate) =>
                                 handleComponentResponse(
                                   {
                                     type: 'field_selection',
@@ -965,7 +1059,8 @@ export function AIBuilderTwoPanel({
                                           (field) => field.key === fieldKey
                                         )?.label ?? fieldKey
                                     )
-                                    .join(', ')
+                                    .join(', '),
+                                  isUpdate
                                 )
                               }
                             />
@@ -992,26 +1087,29 @@ export function AIBuilderTwoPanel({
 
           {/* Input Area */}
           <div className="p-3 border-t border-border space-y-2">
-            {/* Generate button when there are messages */}
-            {hasMessages && !isThinking && (
+            {/* Save button when there are configured steps */}
+            {hasSteps && onSave && !isThinking && (
               <Button
-                onClick={handleGenerate}
-                disabled={isGenerating}
+                onClick={handleSave}
+                disabled={isSaving || (!hasUnsavedChanges && !saveSuccess)}
                 className="w-full"
                 size="sm"
-                variant={hasPendingChanges || isReadyToGenerate ? 'default' : 'secondary'}
+                variant={hasUnsavedChanges ? 'default' : saveSuccess ? 'default' : 'secondary'}
               >
-                {isGenerating ? (
+                {isSaving ? (
                   <>
                     <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                    Generating...
+                    Saving...
+                  </>
+                ) : saveSuccess ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 mr-1.5" />
+                    Saved
                   </>
                 ) : (
                   <>
-                    <Wand2 className="w-3.5 h-3.5 mr-1.5" />
-                    {hasPendingChanges
-                      ? 'Update Credential'
-                      : 'Create Credential'}
+                    <Save className="w-3.5 h-3.5 mr-1.5" />
+                    {hasUnsavedChanges ? saveLabel : 'Saved'}
                   </>
                 )}
               </Button>
@@ -1051,23 +1149,6 @@ export function AIBuilderTwoPanel({
           'flex-1 flex flex-col bg-muted/20',
           'h-1/2 md:h-full'
         )}>
-          {/* Preview Header */}
-          <div className="px-4 py-3 border-b border-border bg-background flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="font-medium text-sm">Preview</span>
-              {hasSteps && (
-                <Badge variant="secondary" className="text-xs">
-                  {config.steps.length} section{config.steps.length !== 1 ? 's' : ''}
-                </Badge>
-              )}
-            </div>
-            {hasSteps && !isGenerating && (
-              <span className="text-xs text-muted-foreground">
-                Interactive — try it out
-              </span>
-            )}
-          </div>
-
           {/* Preview Content */}
           <div className="flex-1 overflow-y-auto p-4">
             {isGenerating ? (
@@ -1077,7 +1158,7 @@ export function AIBuilderTwoPanel({
             ) : (
               <div className="animate-[fade-in_0.4s_ease-out]">
                 <InstructionRenderer
-                  config={config}
+                  config={previewConfig}
                   progressData={progressData}
                   onProgressChange={handleProgressChange}
                   onSubmit={() => {

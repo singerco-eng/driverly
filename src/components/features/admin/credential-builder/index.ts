@@ -14,8 +14,4 @@ export { BlockEditor } from './BlockEditor';
 export { BlockEditorSheet } from './BlockEditorSheet';
 export { PreviewModal } from './PreviewModal';
 export { FullPagePreview } from './FullPagePreview';
-
-// Legacy exports (can be removed after cleanup)
-export { StepList } from './StepList';
-export { SortableStepItem } from './SortableStepItem';
-export { BlockEditorPanel } from './BlockEditorPanel';
+export { PublishDialog } from './PublishDialog';

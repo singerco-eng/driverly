@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import type { CredentialType, CredentialTypeEdits } from '@/types/credential';
 import type { InstructionSettings } from '@/types/instructionBuilder';
 
@@ -21,7 +22,7 @@ export function SettingsSection({
   instructionSettings,
   onInstructionSettingsChange,
 }: SettingsSectionProps) {
-  const isActive = edits.is_active ?? credentialType.is_active;
+  const status = credentialType.status;
   const requiresDriverAction =
     edits.requires_driver_action ?? credentialType.requires_driver_action ?? true;
   const showProgressBar = instructionSettings?.showProgressBar ?? true;
@@ -73,15 +74,22 @@ export function SettingsSection({
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Active</Label>
+            <div className="space-y-1">
+              <Label>Publication Status</Label>
               <p className="text-sm text-muted-foreground">
-                {isActive
-                  ? 'This credential is visible and required for applicable drivers/vehicles.'
-                  : 'This credential is hidden and not enforced.'}
+                {status === 'draft' &&
+                  'Draft credentials are hidden from drivers until published.'}
+                {status === 'scheduled' &&
+                  'Scheduled credentials will become active on the effective date.'}
+                {status === 'active' &&
+                  'Active credentials are visible and required for applicable drivers/vehicles.'}
+                {status === 'inactive' &&
+                  'Inactive credentials are hidden and not enforced.'}
               </p>
             </div>
-            <Switch checked={isActive} onCheckedChange={(value) => onEditChange({ is_active: value })} />
+            <Badge variant={status === 'active' ? 'default' : status === 'inactive' ? 'destructive' : 'secondary'}>
+              {status === 'scheduled' ? 'Scheduled' : status.charAt(0).toUpperCase() + status.slice(1)}
+            </Badge>
           </div>
         </CardContent>
       </Card>

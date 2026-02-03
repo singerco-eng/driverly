@@ -390,12 +390,33 @@ export async function getVehicleCredentialsForAdmin(
 
   const result: CredentialForReview[] = [];
 
+  const vehicleCreatedAt = vehicle?.created_at ? new Date(vehicle.created_at) : null;
+
   for (const credType of credentialTypes || []) {
     const existing = existingByType.get(credType.id);
 
     if (existing) {
-      result.push(mapVehicleCredentialToReview(existing));
+      result.push(mapVehicleCredentialToReview(existing, vehicleCreatedAt));
     } else {
+      // Calculate grace period for placeholder
+      let displayStatus: CredentialForReview['displayStatus'] = 'not_submitted';
+      let gracePeriodDueDate: Date | undefined;
+      
+      if (isAdminOnlyCredential(credType)) {
+        displayStatus = 'awaiting_verification';
+      } else {
+        const gracePeriodEnds = calculateGracePeriodEnd(credType, vehicleCreatedAt);
+        if (gracePeriodEnds) {
+          const now = new Date();
+          if (now < gracePeriodEnds) {
+            displayStatus = 'grace_period';
+            gracePeriodDueDate = gracePeriodEnds;
+          } else {
+            displayStatus = 'missing';
+          }
+        }
+      }
+
       // Create a placeholder for display (not persisted yet)
       result.push({
         id: `placeholder-${credType.id}`,
@@ -415,12 +436,10 @@ export async function getVehicleCredentialsForAdmin(
         reviewNotes: null,
         rejectionReason: null,
         vehicle: vehicle || undefined,
-        // Not submitted yet - show appropriate status based on submission type
-        displayStatus: isAdminOnlyCredential(credType)
-          ? 'awaiting_verification' 
-          : 'not_submitted',
+        displayStatus,
         daysUntilExpiration: null,
         isExpiringSoon: false,
+        gracePeriodDueDate,
         // Extra fields for ensuring credential
         _isPlaceholder: true,
         _credentialTypeId: credType.id,
@@ -486,12 +505,33 @@ export async function getDriverCredentialsForAdmin(
 
   const result: CredentialForReview[] = [];
 
+  const driverCreatedAt = driver?.created_at ? new Date(driver.created_at) : null;
+
   for (const credType of credentialTypes || []) {
     const existing = existingByType.get(credType.id);
 
     if (existing) {
-      result.push(mapDriverCredentialToReview(existing));
+      result.push(mapDriverCredentialToReview(existing, driverCreatedAt));
     } else {
+      // Calculate grace period for placeholder
+      let displayStatus: CredentialForReview['displayStatus'] = 'not_submitted';
+      let gracePeriodDueDate: Date | undefined;
+      
+      if (isAdminOnlyCredential(credType)) {
+        displayStatus = 'awaiting_verification';
+      } else {
+        const gracePeriodEnds = calculateGracePeriodEnd(credType, driverCreatedAt);
+        if (gracePeriodEnds) {
+          const now = new Date();
+          if (now < gracePeriodEnds) {
+            displayStatus = 'grace_period';
+            gracePeriodDueDate = gracePeriodEnds;
+          } else {
+            displayStatus = 'missing';
+          }
+        }
+      }
+
       // Create a placeholder for display (not persisted yet)
       result.push({
         id: `placeholder-${credType.id}`,
@@ -511,12 +551,10 @@ export async function getDriverCredentialsForAdmin(
         reviewNotes: null,
         rejectionReason: null,
         driver: driver || undefined,
-        // Not submitted yet - show appropriate status based on submission type
-        displayStatus: isAdminOnlyCredential(credType)
-          ? 'awaiting_verification' 
-          : 'not_submitted',
+        displayStatus,
         daysUntilExpiration: null,
         isExpiringSoon: false,
+        gracePeriodDueDate,
         // Extra fields for ensuring credential
         _isPlaceholder: true,
         _credentialTypeId: credType.id,
@@ -529,12 +567,29 @@ export async function getDriverCredentialsForAdmin(
 
 // ============ HELPERS ============
 
-function mapDriverCredentialToReview(raw: any): CredentialForReview {
+function calculateGracePeriodEnd(
+  credentialType: any,
+  entityCreatedAt?: Date | null,
+): Date | null {
+  if (!credentialType?.effective_date || !credentialType?.grace_period_days) {
+    return null;
+  }
+
+  const effectiveDate = new Date(credentialType.effective_date);
+  const baseDate =
+    entityCreatedAt && entityCreatedAt > effectiveDate ? entityCreatedAt : effectiveDate;
+  const gracePeriodEnds = new Date(baseDate);
+  gracePeriodEnds.setDate(gracePeriodEnds.getDate() + credentialType.grace_period_days);
+  return gracePeriodEnds;
+}
+
+function mapDriverCredentialToReview(raw: any, driverCreatedAt?: Date | null): CredentialForReview {
   const credentialType = raw.credential_type;
   // Keep the original status - 'not_submitted' is a valid display status
-  let displayStatus = raw.status;
+  let displayStatus: CredentialForReview['displayStatus'] = raw.status;
   let daysUntilExpiration: number | null = null;
   let isExpiringSoon = false;
+  let gracePeriodDueDate: Date | undefined;
 
   if (raw.status === 'approved' && raw.expires_at) {
     const expiresAt = new Date(raw.expires_at);
@@ -550,8 +605,23 @@ function mapDriverCredentialToReview(raw: any): CredentialForReview {
     }
   }
 
+  // Calculate grace period for not_submitted credentials
+  if (raw.status === 'not_submitted') {
+    const gracePeriodEnds = calculateGracePeriodEnd(credentialType, driverCreatedAt);
+    if (gracePeriodEnds) {
+      const now = new Date();
+      if (now < gracePeriodEnds) {
+        displayStatus = 'grace_period';
+        gracePeriodDueDate = gracePeriodEnds;
+      } else {
+        displayStatus = 'missing';
+      }
+    }
+  }
+
   if (credentialType && isAdminOnlyCredential(credentialType) && raw.status === 'not_submitted') {
     displayStatus = 'awaiting_verification';
+    gracePeriodDueDate = undefined;
   }
 
   return {
@@ -575,15 +645,17 @@ function mapDriverCredentialToReview(raw: any): CredentialForReview {
     displayStatus,
     daysUntilExpiration,
     isExpiringSoon,
+    gracePeriodDueDate,
   };
 }
 
-function mapVehicleCredentialToReview(raw: any): CredentialForReview {
+function mapVehicleCredentialToReview(raw: any, vehicleCreatedAt?: Date | null): CredentialForReview {
   const credentialType = raw.credential_type;
   // Keep the original status - 'not_submitted' is a valid display status
-  let displayStatus = raw.status;
+  let displayStatus: CredentialForReview['displayStatus'] = raw.status;
   let daysUntilExpiration: number | null = null;
   let isExpiringSoon = false;
+  let gracePeriodDueDate: Date | undefined;
 
   if (raw.status === 'approved' && raw.expires_at) {
     const expiresAt = new Date(raw.expires_at);
@@ -597,8 +669,23 @@ function mapVehicleCredentialToReview(raw: any): CredentialForReview {
     }
   }
 
+  // Calculate grace period for not_submitted credentials
+  if (raw.status === 'not_submitted') {
+    const gracePeriodEnds = calculateGracePeriodEnd(credentialType, vehicleCreatedAt);
+    if (gracePeriodEnds) {
+      const now = new Date();
+      if (now < gracePeriodEnds) {
+        displayStatus = 'grace_period';
+        gracePeriodDueDate = gracePeriodEnds;
+      } else {
+        displayStatus = 'missing';
+      }
+    }
+  }
+
   if (credentialType && isAdminOnlyCredential(credentialType) && raw.status === 'not_submitted') {
     displayStatus = 'awaiting_verification';
+    gracePeriodDueDate = undefined;
   }
 
   return {
@@ -622,5 +709,6 @@ function mapVehicleCredentialToReview(raw: any): CredentialForReview {
     displayStatus,
     daysUntilExpiration,
     isExpiringSoon,
+    gracePeriodDueDate,
   };
 }

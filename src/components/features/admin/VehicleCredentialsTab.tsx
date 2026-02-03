@@ -12,9 +12,10 @@ import { VerifyCredentialModal } from '@/components/features/admin/VerifyCredent
 import { useVehicleCredentialsForAdmin } from '@/hooks/useCredentialReview';
 import { useAdminEnsureVehicleCredential } from '@/hooks/useCredentials';
 import type { CredentialForReview, ReviewStatus } from '@/types/credentialReview';
+import type { CredentialDisplayStatus } from '@/types/credential';
 import { isAdminOnlyCredential } from '@/lib/credentialRequirements';
 import { formatDate } from '@/lib/formatters';
-import { credentialStatusConfig, type CredentialStatusConfigEntry } from '@/lib/status-configs';
+import { credentialStatusConfig } from '@/lib/status-configs';
 
 interface VehicleCredentialsTabProps {
   companyId: string;
@@ -23,15 +24,8 @@ interface VehicleCredentialsTabProps {
 
 type DisplayStatus = ReviewStatus | 'not_submitted';
 
-const awaitingVerificationConfig: CredentialStatusConfigEntry = {
-  label: 'Awaiting Verification',
-  variant: 'secondary',
-};
-
 const getStatusConfig = (status: DisplayStatus) =>
-  status === 'awaiting_verification'
-    ? awaitingVerificationConfig
-    : credentialStatusConfig[status] || credentialStatusConfig.pending_review;
+  credentialStatusConfig[status as CredentialDisplayStatus] || credentialStatusConfig.pending_review;
 
 export function VehicleCredentialsTab({ companyId, vehicleId }: VehicleCredentialsTabProps) {
   const navigate = useNavigate();
@@ -149,6 +143,14 @@ export function VehicleCredentialsTab({ companyId, vehicleId }: VehicleCredentia
 
           {/* Metadata Section */}
           <div className="border-t pt-3 space-y-2 text-sm">
+            {/* Due Date */}
+            {credential.gracePeriodDueDate && (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Calendar className="h-4 w-4 shrink-0" />
+                <span>Due by {formatDate(credential.gracePeriodDueDate)}</span>
+              </div>
+            )}
+
             {/* Submitted Date */}
             {credential.submittedAt && (
               <div className="flex items-center gap-2 text-muted-foreground">
@@ -234,6 +236,7 @@ export function VehicleCredentialsTab({ companyId, vehicleId }: VehicleCredentia
                   <TableHead>Credential</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Scope</TableHead>
+                  <TableHead>Due Date</TableHead>
                   <TableHead>Submitted</TableHead>
                   <TableHead>Expires</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -242,7 +245,7 @@ export function VehicleCredentialsTab({ companyId, vehicleId }: VehicleCredentia
               <TableBody>
                 {filteredCredentials.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center">
+                    <TableCell colSpan={7} className="h-24 text-center">
                       <div className="flex flex-col items-center gap-2">
                         <FileText className="w-8 h-8 text-muted-foreground" />
                         <p className="text-muted-foreground">
@@ -282,6 +285,11 @@ export function VehicleCredentialsTab({ companyId, vehicleId }: VehicleCredentia
                           ) : (
                             <span className="text-muted-foreground">Global</span>
                           )}
+                        </TableCell>
+                        <TableCell>
+                          {credential.gracePeriodDueDate
+                            ? formatDate(credential.gracePeriodDueDate)
+                            : '—'}
                         </TableCell>
                         <TableCell>{formatDate(credential.submittedAt)}</TableCell>
                         <TableCell>

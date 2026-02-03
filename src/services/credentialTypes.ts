@@ -106,6 +106,11 @@ export async function createCredentialType(
           : null,
       expiration_warning_days: formData.expiration_warning_days,
       grace_period_days: formData.grace_period_days,
+      status: 'draft',
+      effective_date: null,
+      published_at: null,
+      published_by: null,
+      is_active: false,
       created_by: userId,
     })
     .select()
@@ -147,7 +152,11 @@ export async function createCredentialTypeSimple(
       expiration_type: 'never',
       expiration_warning_days: 30,
       grace_period_days: 30,
-      is_active: true,
+      status: 'draft',
+      effective_date: null,
+      published_at: null,
+      published_by: null,
+      is_active: false,
       created_by: createdBy,
     })
     .select('id')
@@ -233,7 +242,11 @@ export async function getCredentialTypeById(id: string): Promise<CredentialType 
 export async function deactivateCredentialType(id: string): Promise<CredentialType> {
   const { data, error } = await supabase
     .from('credential_types')
-    .update({ is_active: false, updated_at: new Date().toISOString() })
+    .update({
+      status: 'inactive',
+      is_active: false,
+      updated_at: new Date().toISOString(),
+    })
     .eq('id', id)
     .select()
     .single();
@@ -242,10 +255,27 @@ export async function deactivateCredentialType(id: string): Promise<CredentialTy
   return data as CredentialType;
 }
 
-export async function reactivateCredentialType(id: string): Promise<CredentialType> {
+export async function reactivateCredentialType(
+  id: string,
+  effectiveDate?: Date,
+): Promise<CredentialType> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const now = new Date();
+  const useEffectiveDate = effectiveDate ?? now;
+  const status = useEffectiveDate > now ? 'scheduled' : 'active';
+
   const { data, error } = await supabase
     .from('credential_types')
-    .update({ is_active: true, updated_at: new Date().toISOString() })
+    .update({
+      status,
+      effective_date: useEffectiveDate.toISOString(),
+      published_at: now.toISOString(),
+      published_by: user?.id ?? null,
+      is_active: status === 'active',
+      updated_at: now.toISOString(),
+    })
     .eq('id', id)
     .select()
     .single();
@@ -261,6 +291,81 @@ export async function deleteCredentialType(id: string): Promise<void> {
     .eq('id', id);
 
   if (error) throw error;
+}
+
+/**
+ * Publish a credential type immediately or on a schedule.
+ */
+export async function publishCredentialType(
+  credentialTypeId: string,
+  effectiveDate?: Date,
+): Promise<CredentialType> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const now = new Date();
+  const useEffectiveDate = effectiveDate ?? now;
+  const status = useEffectiveDate > now ? 'scheduled' : 'active';
+
+  const { data, error } = await supabase
+    .from('credential_types')
+    .update({
+      status,
+      effective_date: useEffectiveDate.toISOString(),
+      published_at: now.toISOString(),
+      published_by: user?.id ?? null,
+      is_active: status === 'active',
+      updated_at: now.toISOString(),
+    })
+    .eq('id', credentialTypeId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as CredentialType;
+}
+
+/**
+ * Unpublish a credential type (return to draft).
+ * Only allowed if no driver/vehicle credentials exist.
+ */
+export async function unpublishCredentialType(
+  credentialTypeId: string,
+): Promise<CredentialType> {
+  const { count: driverCount, error: driverError } = await supabase
+    .from('driver_credentials')
+    .select('id', { count: 'exact', head: true })
+    .eq('credential_type_id', credentialTypeId);
+
+  if (driverError) throw driverError;
+
+  const { count: vehicleCount, error: vehicleError } = await supabase
+    .from('vehicle_credentials')
+    .select('id', { count: 'exact', head: true })
+    .eq('credential_type_id', credentialTypeId);
+
+  if (vehicleError) throw vehicleError;
+
+  if ((driverCount ?? 0) > 0 || (vehicleCount ?? 0) > 0) {
+    throw new Error('Cannot unpublish: drivers have already started this credential');
+  }
+
+  const { data, error } = await supabase
+    .from('credential_types')
+    .update({
+      status: 'draft',
+      effective_date: null,
+      published_at: null,
+      published_by: null,
+      is_active: false,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', credentialTypeId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as CredentialType;
 }
 
 export async function updateCredentialTypeOrder(

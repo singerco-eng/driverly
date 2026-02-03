@@ -19,7 +19,8 @@ import { CredentialReviewCard } from '@/components/features/admin/CredentialRevi
 import { CredentialDetailHeader } from '@/components/features/credentials/CredentialDetail/CredentialDetailHeader';
 import { InstructionRenderer } from '@/components/features/credentials/InstructionRenderer';
 import { formatDate } from '@/lib/formatters';
-import { credentialStatusConfig, type CredentialStatusConfigEntry } from '@/lib/status-configs';
+import { credentialStatusConfig } from '@/lib/status-configs';
+import type { CredentialDisplayStatus } from '@/types/credential';
 
 // Import REAL types
 import type { CredentialForReview, ReviewStatus } from '@/types/credentialReview';
@@ -693,14 +694,8 @@ const mockReviewHistory: DemoHistoryItem[] = [
 
 // Status config for table view
 type DisplayStatus = ReviewStatus | 'not_submitted';
-const awaitingVerificationConfig: CredentialStatusConfigEntry = {
-  label: 'Awaiting Verification',
-  variant: 'secondary',
-};
 const getStatusConfig = (status: DisplayStatus) =>
-  status === 'awaiting_verification'
-    ? awaitingVerificationConfig
-    : credentialStatusConfig[status] || credentialStatusConfig.not_submitted;
+  credentialStatusConfig[status as CredentialDisplayStatus] || credentialStatusConfig.not_submitted;
 
 function getSubjectLabel(credential: CredentialForReview) {
   if (credential.driver?.user?.full_name) {

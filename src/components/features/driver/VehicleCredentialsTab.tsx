@@ -7,29 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useVehicleCredentials, useEnsureVehicleCredential } from '@/hooks/useCredentials';
-import type { CredentialWithDisplayStatus, CredentialDisplayStatus } from '@/types/credential';
+import type { CredentialWithDisplayStatus } from '@/types/credential';
 import { DriverCredentialCard } from '@/components/features/driver/DriverCredentialCard';
-import { credentialStatusVariant } from '@/lib/status-styles';
+import { credentialStatusConfig } from '@/lib/status-configs';
 import { isAdminOnlyCredential } from '@/lib/credentialRequirements';
 import { formatDate } from '@/lib/formatters';
-
-interface VehicleCredentialsTabProps {
-  companyId: string;
-  vehicleId: string;
-}
-
-/** Status labels for table view */
-const statusLabels: Record<CredentialDisplayStatus, string> = {
-  approved: 'Complete',
-  rejected: 'Rejected',
-  pending_review: 'Pending Review',
-  not_submitted: 'Not Submitted',
-  expired: 'Expired',
-  expiring: 'Expiring Soon',
-  awaiting: 'In Review',
-  grace_period: 'Due Soon',
-  missing: 'Missing',
-};
 
 // Extended type with placeholder tracking for unsubmitted credentials
 interface CredentialWithPlaceholder extends CredentialWithDisplayStatus {
@@ -142,6 +124,7 @@ export function VehicleCredentialsTab({ companyId, vehicleId }: VehicleCredentia
                   <TableHead>Credential</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Scope</TableHead>
+                  <TableHead>Due Date</TableHead>
                   <TableHead>Submitted</TableHead>
                   <TableHead>Expires</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -150,7 +133,7 @@ export function VehicleCredentialsTab({ companyId, vehicleId }: VehicleCredentia
               <TableBody>
                 {filteredCredentials.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center">
+                    <TableCell colSpan={7} className="h-24 text-center">
                       <div className="flex flex-col items-center gap-2">
                         <FileText className="w-8 h-8 text-muted-foreground" />
                         <p className="text-muted-foreground">
@@ -161,11 +144,7 @@ export function VehicleCredentialsTab({ companyId, vehicleId }: VehicleCredentia
                   </TableRow>
                 ) : (
                   filteredCredentials.map((credential) => {
-                    const badgeVariant = credentialStatusVariant[credential.displayStatus] || 'outline';
-                    const statusLabel =
-                      credential.displayStatus === 'grace_period' && credential.gracePeriodDueDate
-                        ? `Due by ${credential.gracePeriodDueDate.toLocaleDateString()}`
-                        : statusLabels[credential.displayStatus] || 'Unknown';
+                    const statusConfig = credentialStatusConfig[credential.displayStatus] || credentialStatusConfig.not_submitted;
                     const needsAction = [
                       'not_submitted',
                       'rejected',
@@ -188,15 +167,8 @@ export function VehicleCredentialsTab({ companyId, vehicleId }: VehicleCredentia
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge
-                            variant={badgeVariant}
-                            className={
-                              credential.displayStatus === 'grace_period'
-                                ? 'bg-amber-50 text-amber-700 border-amber-200'
-                                : undefined
-                            }
-                          >
-                            {statusLabel}
+                          <Badge variant={statusConfig.variant}>
+                            {statusConfig.label}
                           </Badge>
                         </TableCell>
                         <TableCell>
@@ -205,6 +177,11 @@ export function VehicleCredentialsTab({ companyId, vehicleId }: VehicleCredentia
                           ) : (
                             <span className="text-muted-foreground">Global</span>
                           )}
+                        </TableCell>
+                        <TableCell>
+                          {credential.gracePeriodDueDate
+                            ? formatDate(credential.gracePeriodDueDate)
+                            : '—'}
                         </TableCell>
                         <TableCell>{formatDate(credential.credential?.submitted_at)}</TableCell>
                         <TableCell>

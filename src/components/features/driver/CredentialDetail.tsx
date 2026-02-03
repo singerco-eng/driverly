@@ -6,22 +6,13 @@ import { Card } from '@/components/ui/card';
 import type { CredentialWithDisplayStatus } from '@/types/credential';
 import { getDocumentUrl } from '@/services/credentials';
 import { SubmissionHistoryModal } from './SubmissionHistoryModal';
+import { credentialStatusConfig } from '@/lib/status-configs';
 
 interface CredentialDetailProps {
   credential: CredentialWithDisplayStatus;
   onClose: () => void;
   onSubmit: () => void;
 }
-
-const statusLabels: Record<string, string> = {
-  approved: 'Approved',
-  rejected: 'Rejected',
-  pending_review: 'Pending Review',
-  not_submitted: 'Not Submitted',
-  expired: 'Expired',
-  expiring: 'Expiring',
-  awaiting: 'Awaiting Admin',
-};
 
 export function CredentialDetail({ credential, onClose, onSubmit }: CredentialDetailProps) {
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -45,7 +36,9 @@ export function CredentialDetail({ credential, onClose, onSubmit }: CredentialDe
 
   const showSubmit =
     credential.canSubmit &&
-    ['not_submitted', 'rejected', 'expired', 'expiring'].includes(displayStatus);
+    ['not_submitted', 'rejected', 'expired', 'expiring', 'grace_period', 'missing'].includes(
+      displayStatus,
+    );
 
   return (
     <>
@@ -54,7 +47,9 @@ export function CredentialDetail({ credential, onClose, onSubmit }: CredentialDe
           <DialogHeader>
             <DialogTitle className="flex flex-wrap items-center gap-2">
               {credentialType.name}
-              <Badge variant="outline">{statusLabels[displayStatus] ?? displayStatus}</Badge>
+              <Badge variant={credentialStatusConfig[displayStatus]?.variant || 'outline'}>
+                {credentialStatusConfig[displayStatus]?.label ?? displayStatus}
+              </Badge>
             </DialogTitle>
           </DialogHeader>
 
@@ -142,7 +137,7 @@ export function CredentialDetail({ credential, onClose, onSubmit }: CredentialDe
               <Card className="p-4 space-y-2">
                 <h4 className="text-sm font-semibold">Status Details</h4>
                 <p className="text-sm text-muted-foreground">
-                  Status: {statusLabels[displayStatus] ?? displayStatus}
+                  Status: {credentialStatusConfig[displayStatus]?.label ?? displayStatus}
                 </p>
                 {instance.reviewed_at && (
                   <p className="text-sm text-muted-foreground">
@@ -157,6 +152,11 @@ export function CredentialDetail({ credential, onClose, onSubmit }: CredentialDe
                 {credential.daysUntilExpiration !== null && (
                   <p className="text-sm text-muted-foreground">
                     Days until expiration: {credential.daysUntilExpiration}
+                  </p>
+                )}
+                {credential.gracePeriodDueDate && (
+                  <p className="text-sm text-muted-foreground">
+                    Due by {credential.gracePeriodDueDate.toLocaleDateString()}
                   </p>
                 )}
               </Card>

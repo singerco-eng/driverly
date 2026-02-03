@@ -27,14 +27,7 @@ import { VehicleCredentialsTab } from '@/components/features/admin/VehicleCreden
 import { EditVehicleModal } from '@/components/features/admin/EditVehicleModal';
 import { useAuth } from '@/contexts/AuthContext';
 import type { VehicleStatus } from '@/types/vehicle';
-import { vehicleStatusVariant } from '@/lib/status-styles';
-
-/** Status labels for display */
-const statusLabels: Record<VehicleStatus, string> = {
-  active: 'Active',
-  inactive: 'Inactive',
-  retired: 'Retired',
-};
+import { vehicleStatusConfig } from '@/lib/status-configs';
 
 export default function VehicleDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -70,10 +63,10 @@ export default function VehicleDetailPage() {
     );
   }
 
-  // Single status badge using standard variants
+  // Single status badge using standard config
   const badges = (
-    <Badge variant={vehicleStatusVariant[vehicle.status]}>
-      {statusLabels[vehicle.status]}
+    <Badge variant={vehicleStatusConfig[vehicle.status].variant}>
+      {vehicleStatusConfig[vehicle.status].label}
     </Badge>
   );
 

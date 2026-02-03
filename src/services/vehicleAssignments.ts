@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { getCompanyScope } from '@/services/authScope';
 import type {
   VehicleAssignment,
   AssignmentHistory,
@@ -52,6 +53,9 @@ export async function getVehicleAssignment(
 }
 
 export async function getAvailableVehicles(companyId?: string | null): Promise<any[]> {
+  const { companyId: scopedCompanyId, isSuperAdmin } = await getCompanyScope();
+  const resolvedCompanyId = companyId ?? (isSuperAdmin ? null : scopedCompanyId);
+
   let query = supabase
     .from('vehicles')
     .select(
@@ -72,8 +76,8 @@ export async function getAvailableVehicles(companyId?: string | null): Promise<a
     .eq('status', 'active')
     .order('make');
 
-  if (companyId) {
-    query = query.eq('company_id', companyId);
+  if (resolvedCompanyId) {
+    query = query.eq('company_id', resolvedCompanyId);
   }
 
   const { data: vehicles, error } = await query;
@@ -90,6 +94,9 @@ export async function getAvailableVehicles(companyId?: string | null): Promise<a
 }
 
 export async function getAvailableDrivers(companyId?: string | null): Promise<any[]> {
+  const { companyId: scopedCompanyId, isSuperAdmin } = await getCompanyScope();
+  const resolvedCompanyId = companyId ?? (isSuperAdmin ? null : scopedCompanyId);
+
   let query = supabase
     .from('drivers')
     .select(
@@ -108,8 +115,8 @@ export async function getAvailableDrivers(companyId?: string | null): Promise<an
     .in('status', ['active', 'inactive'])
     .order('created_at');
 
-  if (companyId) {
-    query = query.eq('company_id', companyId);
+  if (resolvedCompanyId) {
+    query = query.eq('company_id', resolvedCompanyId);
   }
 
   const { data, error } = await query;

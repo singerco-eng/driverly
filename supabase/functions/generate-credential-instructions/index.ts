@@ -94,41 +94,82 @@ const CHAT_SYSTEM_PROMPT = `You are a helpful assistant designing credential wor
 
 You're having a conversation to understand exactly what the user needs. Your job is to:
 1. Understand their requirement
-2. Ask follow-up questions to get specific details you need
-3. Gather concrete information (URLs, specific text, numbers, etc.)
+2. For KNOWN document types, show field selection with defaults pre-checked
+3. For UNKNOWN document types, first ask if they want extraction, then show field selection
+4. Gather concrete information (URLs, specific text, numbers, etc.)
 
 ## How to Respond
 
-Be conversational and friendly. Ask 2-3 specific questions at a time, not more. Focus on gathering:
-- Specific URLs if they mention external links or training
-- Exact field names and whether they're required
-- Specific document types and if they need expiration tracking
-- Quiz questions if they mention testing/comprehension
-- Checklist items if they mention acknowledgments
-- Signature requirements and context
+Always respond with a JSON object (the system requires JSON format).
 
-## Example Good Conversation
+## Known Document Types - SHOW FIELD SELECTION
 
-User: "HIPAA training with external course and certification upload"
+When the user mentions these documents, return a field_selection component with default fields pre-checked:
+- "insurance", "insurance card", "proof of insurance" → Insurance Card
+- "license", "driver's license", "DL" → Driver's License  
+- "registration", "vehicle registration" → Vehicle Registration
+- "DOT physical", "medical card", "DOT medical" → DOT Physical Card
+- "drug test", "drug screen" → Drug Test Results
+- "training certificate", "completion certificate" → Training Certificate
 
-Good response: "Got it! I'll create a HIPAA training credential. A few questions:
+## Unknown Document Types - TWO STEP FLOW
 
-1. What's the URL for the HIPAA training course? (Or should drivers find an approved course themselves?)
-2. Should there be a quiz to verify they understood the training before uploading their cert?
-3. Does the certification have an expiration date that needs to be tracked?"
+For documents you don't recognize:
+1. FIRST: Return extract_or_upload component (A/B choice)
+2. IF they choose extract: Return field_selection component with suggested fields
 
-## When You Have Enough Information
+## Example Responses
 
-When you feel you have enough details to build a good credential, say something like:
-"I think I have everything I need! Click 'Generate Credential' when you're ready, or let me know if there's anything else."
+### Known Document (show field selection directly):
+User: "I need an insurance card upload"
 
-This signals the UI to highlight the generate button.
+{
+  "type": "message",
+  "content": "I'll set up an Insurance Card upload. Select the fields you want to extract:",
+  "component": {
+    "type": "field_selection",
+    "documentName": "Insurance Card",
+    "suggestedFields": [
+      { "key": "policy_number", "label": "Policy Number", "defaultChecked": true },
+      { "key": "carrier", "label": "Insurance Carrier", "defaultChecked": true },
+      { "key": "expiration_date", "label": "Expiration Date", "defaultChecked": true }
+    ]
+  }
+}
+
+### Unknown Document (A/B choice first):
+User: "Add a TNC permit"
+
+{
+  "type": "message", 
+  "content": "I'll add a TNC Permit. Does this document have data you want to automatically capture?",
+  "component": {
+    "type": "extract_or_upload",
+    "documentName": "TNC Permit"
+  }
+}
+
+### After user chooses "Extract" for unknown doc:
+{
+  "type": "message",
+  "content": "What information should I extract from the TNC Permit?",
+  "component": {
+    "type": "field_selection",
+    "documentName": "TNC Permit",
+    "suggestedFields": [
+      { "key": "permit_number", "label": "Permit Number", "defaultChecked": true },
+      { "key": "expiration_date", "label": "Expiration Date", "defaultChecked": true },
+      { "key": "issue_date", "label": "Issue Date", "defaultChecked": false },
+      { "key": "issuing_authority", "label": "Issuing Authority", "defaultChecked": false }
+    ]
+  }
+}
 
 ## Important Rules
-- Ask for SPECIFIC details, not yes/no questions
-- Reference their specific request, don't be generic
-- Keep responses concise (2-4 short paragraphs max)
-- Don't output JSON - this is a natural conversation
+- Always respond with valid JSON
+- Known documents: Skip A/B choice, go directly to field_selection
+- Unknown documents: Show A/B choice first, then field_selection if extract chosen
+- Keep message content concise
 - Don't repeat information they already gave you`;
 
 const KNOWN_DOCUMENT_TYPES: Record<
@@ -196,18 +237,123 @@ const KNOWN_DOCUMENT_TYPES: Record<
   },
 };
 
-const DOCUMENT_BLOCK_INSTRUCTIONS = `\n## Document Blocks vs File Upload Blocks\n\nWhen users request document uploads, decide between:\n\n1. **Document Block** - Use when user wants to EXTRACT DATA from the document\n   - Insurance cards, licenses, registrations, permits, certificates\n   - Any document where specific fields need to be captured\n   - Generates a block with type: "document" and extractionFields\n\n2. **File Upload Block** - Use for simple file collection\n   - Photos (vehicle photos, profile pictures)\n   - Supporting documents with no specific data to extract\n   - "Proof of" documents where just having the file matters\n   - Generates a block with type: "file_upload"\n\n## Known Document Types\n\nFor these documents, automatically configure extraction fields:\n${Object.entries(KNOWN_DOCUMENT_TYPES)
+const DOCUMENT_BLOCK_INSTRUCTIONS = `
+## Document Blocks vs File Upload Blocks
+
+1. **Document Block** (type: "document") - For extracting data from documents
+   - Insurance cards, licenses, registrations, permits, certificates
+   - Has extractionFields array for AI-powered field extraction
+
+2. **File Upload Block** (type: "file_upload") - For simple file collection
+   - Photos, supporting documents, proof documents
+   - No data extraction needed
+
+## Known Document Types with Default Fields
+
+${Object.entries(KNOWN_DOCUMENT_TYPES)
   .map(
-    ([, doc]) =>
-      `- ${doc.uploadLabel}: ${doc.fields
+    ([key, doc]) =>
+      `- ${doc.uploadLabel} (triggers: ${doc.triggers.join(', ')}): ${doc.fields
         .map((field) => field.label + (field.required ? '*' : ''))
         .join(', ')}`
   )
-  .join('\n')}\n\n## Unknown Document Types\n\nIf you don't recognize the document type, ask the user:\n1. First ask: Extract data or simple upload? (return component: extract_or_upload)\n2. If extract: Ask what fields to extract (return component: field_selection)\n\n## Modifying Document Blocks\n\nYou can modify Document blocks:\n- Add fields: Add to extractionFields array\n- Remove fields: Remove from extractionFields array\n- Change required: Update the required property\n- Convert to FileUpload: Replace document block with file_upload block\n\nWhen making changes, update configUpdates with the modified block.\n`;
+  .join('\n')}
+
+## Flow for Document Requests
+
+### KNOWN Documents (insurance, license, registration, etc.)
+Skip the A/B choice - go directly to field selection:
+{
+  "type": "message",
+  "content": "I'll set up an [Document Name] upload. Select the fields you want to extract:",
+  "component": {
+    "type": "field_selection",
+    "documentName": "[Document Name]",
+    "suggestedFields": [
+      { "key": "field_key", "label": "Field Label", "defaultChecked": true },
+      ...
+    ]
+  }
+}
+
+### UNKNOWN Documents (TNC permit, city license, etc.)
+Step 1 - Ask if extraction is needed:
+{
+  "type": "message",
+  "content": "I'll add a [Document Name]. Does this document have data you want to automatically capture?",
+  "component": {
+    "type": "extract_or_upload",
+    "documentName": "[Document Name]"
+  }
+}
+
+Step 2 - If user chose "extract", show field selection:
+{
+  "type": "message",
+  "content": "What information should I extract from the [Document Name]?",
+  "component": {
+    "type": "field_selection",
+    "documentName": "[Document Name]",
+    "suggestedFields": [
+      { "key": "permit_number", "label": "Permit Number", "defaultChecked": true },
+      { "key": "expiration_date", "label": "Expiration Date", "defaultChecked": true },
+      { "key": "issue_date", "label": "Issue Date", "defaultChecked": false },
+      { "key": "issuing_authority", "label": "Issuing Authority", "defaultChecked": false }
+    ]
+  }
+}
+
+Step 2 (alt) - If user chose "upload", create file_upload block (no component needed).
+
+## After Field Selection Confirmed
+
+The frontend handles creating the Document block from the selected fields.
+Respond with a confirmation message (no component needed):
+{
+  "type": "message",
+  "content": "Got it! I've configured the [Document Name] document with your selected fields. Ready to create, or would you like any changes?"
+}
+`;
 
 const STATE_AWARENESS_PROMPT = `\n## Conversation State\n\nYou may receive a pendingDocuments array showing documents currently being configured:\n- status: 'awaiting_extract_choice' - waiting for user to choose extract vs upload\n- status: 'awaiting_fields' - waiting for user to select fields\n- status: 'configured' - document is fully configured\n\nUse this state to maintain context. Don't re-ask questions for documents already configured.\n`;
 
-const CHAT_RESPONSE_FORMAT_INSTRUCTIONS = `\n## Response Format (Required)\n\nReturn a JSON object with this shape:\n{\n  "type": "message",\n  "content": "Your natural language response to the user",\n  "component": { ... } | null,\n  "configUpdates": { ... } | null,\n  "hasPendingChanges": boolean\n}\n\nRules:\n- Always include "type" and "content"\n- Use "component" ONLY when asking the user to choose extract/upload or select fields\n- Use "configUpdates" when you have concrete changes to apply (prefer a full CredentialTypeInstructions object for clarity)\n- Set "hasPendingChanges" to true when configUpdates should be applied by the user\n- Respond with JSON only. No markdown.\n`;
+const CHAT_RESPONSE_FORMAT_INSTRUCTIONS = `
+## Response Format (REQUIRED - Always JSON)
+
+You MUST respond with a JSON object. Never respond with plain text.
+
+{
+  "type": "message",
+  "content": "Your message to the user",
+  "component": null | { "type": "extract_or_upload" | "field_selection", ... }
+}
+
+## Component Types
+
+1. **field_selection** - Checkbox list for selecting extraction fields
+   - Use for KNOWN documents (insurance, license, etc.) - show immediately
+   - Use for UNKNOWN documents AFTER user chose "extract" in A/B choice
+   - Include suggestedFields with defaultChecked values
+
+2. **extract_or_upload** - A/B choice buttons
+   - Use ONLY for UNKNOWN documents
+   - Asks if user wants to extract data or just upload the file
+
+## Flow Summary
+
+| Document Type | Response |
+|--------------|----------|
+| Known (insurance, license, etc.) | Return field_selection component with defaults |
+| Unknown | Return extract_or_upload component first |
+| Unknown + user chose "extract" | Return field_selection component |
+| Unknown + user chose "upload" | Frontend creates file_upload block |
+
+## Critical Rules
+- ALWAYS respond with valid JSON
+- Known documents: Skip A/B, go directly to field_selection
+- Unknown documents: A/B choice first
+- The frontend handles creating Document blocks from field selections
+`;
 
 const GENERATE_FROM_CHAT_PROMPT = `You are an expert at creating credential instruction flows for a driver compliance platform.
 
@@ -379,8 +525,16 @@ Each block MUST have this exact structure:
 5. **form_field** - Text/date/select inputs
    content = { "key": string, "label": string, "type": "text"|"number"|"date"|"select"|"textarea"|"checkbox"|"email"|"phone", "required": boolean, "placeholder": string (optional), "helpText": string (optional), "options": [{"value": string, "label": string}] (for select) }
 
-6. **file_upload** - Document/photo upload
+6. **file_upload** - Simple file upload (no data extraction)
    content = { "label": string, "accept": string, "maxSizeMB": number, "multiple": boolean, "required": boolean, "helpText": string (optional) }
+   - Use ONLY for photos, supporting documents, or files where you don't need to extract data
+   - For documents where you need to capture specific fields, use "document" block instead
+
+7. **document** - Document upload WITH automatic field extraction
+   content = { "uploadLabel": string, "uploadDescription": string (optional), "acceptedTypes": string[], "maxSizeMB": number, "required": boolean, "extractionFields": [...] }
+   - Use for insurance cards, licenses, registrations, permits, certificates
+   - extractionFields defines what data to extract: { "id": string, "key": string, "label": string, "type": "text"|"date"|"number", "required": boolean, "source": "ai_generated" }
+   - AI will automatically extract these fields from the uploaded document
 
 7. **signature_pad** - Signature capture
    content = { "label": string, "required": boolean, "allowTyped": boolean, "allowDrawn": boolean, "agreementText": string (optional) }
@@ -472,9 +626,11 @@ Standard flow within each section:
 
 ## EXAMPLES
 
-### Simple Document Upload (1 section with heading)
+### Document Upload with Extraction (1 section with heading)
 
-User: "I need drivers to upload their driver's license front and back with expiration date"
+User: "I need drivers to upload their driver's license"
+
+NOTE: Use the "document" block type for documents where you need to extract data like license numbers, dates, etc.
 
 {
   "version": 2,
@@ -492,10 +648,55 @@ User: "I need drivers to upload their driver's license front and back with expir
     "required": true,
     "blocks": [
       { "id": "h1", "order": 0, "type": "heading", "content": { "text": "Driver's License", "level": 2 }},
-      { "id": "p1", "order": 1, "type": "paragraph", "content": { "text": "Upload clear photos of both sides of your license." }},
-      { "id": "b1", "order": 2, "type": "file_upload", "content": { "label": "Front of License", "accept": "image/*", "maxSizeMB": 10, "multiple": false, "required": true }},
-      { "id": "b2", "order": 3, "type": "file_upload", "content": { "label": "Back of License", "accept": "image/*", "maxSizeMB": 10, "multiple": false, "required": true }},
-      { "id": "b3", "order": 4, "type": "form_field", "content": { "key": "expiration_date", "label": "Expiration Date", "type": "date", "required": true }}
+      { "id": "p1", "order": 1, "type": "paragraph", "content": { "text": "Upload a clear photo of your driver's license." }},
+      { 
+        "id": "b1", 
+        "order": 2, 
+        "type": "document", 
+        "content": { 
+          "uploadLabel": "Driver's License", 
+          "uploadDescription": "Front of your license showing photo and license number",
+          "acceptedTypes": ["image/*", "application/pdf"], 
+          "maxSizeMB": 10, 
+          "required": true,
+          "extractionFields": [
+            { "id": "f1", "key": "license_number", "label": "License Number", "type": "text", "required": true, "source": "ai_generated" },
+            { "id": "f2", "key": "state", "label": "State", "type": "text", "required": false, "source": "ai_generated" },
+            { "id": "f3", "key": "expiration_date", "label": "Expiration Date", "type": "date", "required": true, "source": "ai_generated" },
+            { "id": "f4", "key": "class", "label": "License Class", "type": "text", "required": false, "source": "ai_generated" }
+          ]
+        }
+      }
+    ],
+    "conditions": [],
+    "completion": { "type": "manual" }
+  }]
+}
+
+### Simple File Upload (no extraction needed)
+
+User: "I need drivers to upload a photo of their vehicle"
+
+NOTE: Use "file_upload" block for simple uploads where you DON'T need to extract data.
+
+{
+  "version": 2,
+  "settings": {
+    "showProgressBar": false,
+    "allowStepSkip": false,
+    "completionBehavior": "required_only",
+    "externalSubmissionAllowed": false
+  },
+  "steps": [{
+    "id": "vehicle-photo",
+    "order": 0,
+    "title": "Vehicle Photo",
+    "type": "document_upload",
+    "required": true,
+    "blocks": [
+      { "id": "h1", "order": 0, "type": "heading", "content": { "text": "Vehicle Photo", "level": 2 }},
+      { "id": "p1", "order": 1, "type": "paragraph", "content": { "text": "Upload a clear photo of your vehicle." }},
+      { "id": "b1", "order": 2, "type": "file_upload", "content": { "label": "Vehicle Photo", "accept": "image/*", "maxSizeMB": 10, "multiple": false, "required": true }}
     ],
     "conditions": [],
     "completion": { "type": "manual" }
@@ -815,7 +1016,7 @@ Deno.serve(async (req) => {
           model: 'gpt-4o-mini',
           messages: openAIMessages,
           temperature: 0.7,
-          max_tokens: 800,
+          max_tokens: 2000,  // Increased to allow full configUpdates with Document blocks
           response_format: { type: 'json_object' },
         }),
       });
@@ -842,7 +1043,12 @@ Deno.serve(async (req) => {
       } = {};
       try {
         parsedResponse = JSON.parse(rawResponse);
-      } catch {
+        console.log(`[${requestId}] AI response parsed - has configUpdates: ${!!parsedResponse.configUpdates}, has component: ${!!parsedResponse.component}`);
+        if (parsedResponse.configUpdates) {
+          console.log(`[${requestId}] configUpdates steps count: ${(parsedResponse.configUpdates as any)?.steps?.length ?? 'N/A'}`);
+        }
+      } catch (parseError) {
+        console.error(`[${requestId}] Failed to parse AI response as JSON:`, parseError);
         parsedResponse = { content: rawResponse };
       }
 

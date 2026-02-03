@@ -48,6 +48,8 @@ import HomePage from '@/pages/website/HomePage';
 import CredentialingPage from '@/pages/website/CredentialingPage';
 import PricingPage from '@/pages/website/PricingPage';
 import { useFeatureFlag } from '@/hooks/useFeatureFlags';
+import { ErrorBoundary } from '@/lib/sentry';
+import { ErrorFallback } from '@/components/ErrorFallback';
 
 const queryClient = new QueryClient();
 
@@ -63,11 +65,16 @@ function DriverPaymentRoute() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <ThemeProvider>
-          <BrowserRouter>
-            <Routes>
+    <ErrorBoundary
+      fallback={({ error, resetError }) => (
+        <ErrorFallback error={error} resetError={resetError} />
+      )}
+    >
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <ThemeProvider>
+            <BrowserRouter>
+              <Routes>
               {/* Public routes */}
               <Route path="/login" element={<Login />} />
               <Route path="/accept-invitation" element={<AcceptInvitation />} />
@@ -155,12 +162,13 @@ function App() {
 
               {/* Default redirect to website homepage */}
               <Route path="/" element={<Navigate to="/website" replace />} />
-            </Routes>
-          </BrowserRouter>
-          <Toaster />
-        </ThemeProvider>
-      </AuthProvider>
-    </QueryClientProvider>
+              </Routes>
+            </BrowserRouter>
+            <Toaster />
+          </ThemeProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 

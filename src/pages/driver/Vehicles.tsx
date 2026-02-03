@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { EnhancedTable, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Car, Plus, Shield, LayoutGrid, List } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { credentialStatusVariant } from '@/lib/status-styles';
+import { vehicleStatusConfig, credentialStatusConfig } from '@/lib/status-configs';
 import { useDriverByUserId } from '@/hooks/useDrivers';
 import {
   useAssignedVehicles,
@@ -361,23 +361,23 @@ export default function DriverVehicles() {
                               <TableCell>{vehicle.vehicle_type.replace('_', ' ')}</TableCell>
                               <TableCell>{vehicle.license_plate}</TableCell>
                               <TableCell>
-                                <Badge variant={vehicle.status === 'active' ? 'default' : vehicle.status === 'retired' ? 'destructive' : 'secondary'}>
-                                  {vehicle.status === 'active' ? 'Active' : vehicle.status === 'retired' ? 'Retired' : 'Inactive'}
+                                <Badge variant={vehicleStatusConfig[vehicle.status].variant}>
+                                  {vehicleStatusConfig[vehicle.status].label}
                                 </Badge>
                               </TableCell>
                               <TableCell>
                                 {isCredentialLoading ? (
                                   <Skeleton className="h-5 w-20" />
                                 ) : vehicle.credentialStatus === 'valid' ? (
-                                  <Badge variant={credentialStatusVariant.approved}>Complete</Badge>
+                                  <Badge variant={credentialStatusConfig.approved.variant}>{credentialStatusConfig.approved.label}</Badge>
                                 ) : vehicle.credentialStatus === 'expiring' ? (
-                                  <Badge variant={credentialStatusVariant.expiring}>Expiring Soon</Badge>
+                                  <Badge variant={credentialStatusConfig.expiring.variant}>{credentialStatusConfig.expiring.label}</Badge>
                                 ) : vehicle.credentialStatus === 'expired' ? (
-                                  <Badge variant={credentialStatusVariant.expired}>Expired</Badge>
+                                  <Badge variant={credentialStatusConfig.expired.variant}>{credentialStatusConfig.expired.label}</Badge>
                                 ) : vehicle.isUncredentialed ? (
-                                  <Badge variant={credentialStatusVariant.not_submitted}>Incomplete</Badge>
+                                  <Badge variant={credentialStatusConfig.not_submitted.variant}>Incomplete</Badge>
                                 ) : (
-                                  <Badge variant={credentialStatusVariant.pending_review}>Pending Review</Badge>
+                                  <Badge variant={credentialStatusConfig.pending_review.variant}>{credentialStatusConfig.pending_review.label}</Badge>
                                 )}
                               </TableCell>
                               <TableCell>{vehicle.assignment?.is_primary ? 'Yes' : 'No'}</TableCell>

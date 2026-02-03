@@ -69,6 +69,7 @@ export type {
   RequirementLevel,
   SubmissionType,
   ExpirationType,
+  CredentialTypeStatus,
   CredentialStatus,
   CredentialDisplayStatus,
   DriverCredential,

@@ -37,14 +37,15 @@ export interface CredentialForReview {
   vehicle?: Vehicle & { owner?: DriverWithUser };
 
   // Computed
-  displayStatus: ReviewStatus;
+  displayStatus: ReviewStatus | 'not_submitted' | 'grace_period' | 'missing';
   daysUntilExpiration: number | null;
   isExpiringSoon: boolean;
+  gracePeriodDueDate?: Date;
 }
 
 export interface ReviewQueueFilters {
   status: ReviewStatus | 'all' | 'needs_action' | 'not_submitted';
-  credentialTypeId?: string;
+  requirement?: 'required' | 'recommended' | 'optional';
   brokerId?: string;
   driverId?: string;
   vehicleId?: string;

@@ -1,6 +1,6 @@
 import type { BadgeProps } from '@/components/ui/badge';
 import type { CredentialDisplayStatus } from '@/types/credential';
-import type { ApplicationStatus } from '@/types/driver';
+import type { ApplicationStatus, DriverStatus } from '@/types/driver';
 import type { VehicleStatus } from '@/types/vehicle';
 
 export type BadgeVariant = BadgeProps['variant'];
@@ -39,6 +39,10 @@ export const credentialStatusConfig: CredentialStatusConfig = {
   },
   awaiting: {
     label: 'In Review',
+    variant: 'secondary',
+  },
+  awaiting_verification: {
+    label: 'Awaiting Verification',
     variant: 'secondary',
   },
   grace_period: {
@@ -103,6 +107,32 @@ export const applicationStatusConfig: ApplicationStatusConfig = {
   },
   withdrawn: {
     label: 'Withdrawn',
+    variant: 'outline',
+  },
+};
+
+export type DriverStatusConfigEntry = {
+  label: string;
+  variant: BadgeVariant;
+};
+
+export type DriverStatusConfig = Record<DriverStatus, DriverStatusConfigEntry>;
+
+export const driverStatusConfig: DriverStatusConfig = {
+  active: {
+    label: 'Active',
+    variant: 'default',
+  },
+  inactive: {
+    label: 'Inactive',
+    variant: 'secondary',
+  },
+  suspended: {
+    label: 'Suspended',
+    variant: 'destructive',
+  },
+  archived: {
+    label: 'Archived',
     variant: 'outline',
   },
 };

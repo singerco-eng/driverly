@@ -3,8 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { FileText, Eye, Calendar, Clock, ListChecks, Building2 } from 'lucide-react';
 import type { CredentialForReview, ReviewStatus } from '@/types/credentialReview';
+import type { CredentialDisplayStatus } from '@/types/credential';
 import { formatDate } from '@/lib/formatters';
-import { credentialStatusConfig, type CredentialStatusConfigEntry } from '@/lib/status-configs';
+import { credentialStatusConfig } from '@/lib/status-configs';
 
 interface CredentialReviewCardProps {
   credential: CredentialForReview;
@@ -13,15 +14,8 @@ interface CredentialReviewCardProps {
 
 type DisplayStatus = ReviewStatus | 'not_submitted';
 
-const awaitingVerificationConfig: CredentialStatusConfigEntry = {
-  label: 'Awaiting Verification',
-  variant: 'secondary',
-};
-
 const getStatusConfig = (status: DisplayStatus) =>
-  status === 'awaiting_verification'
-    ? awaitingVerificationConfig
-    : credentialStatusConfig[status] || credentialStatusConfig.not_submitted;
+  credentialStatusConfig[status as CredentialDisplayStatus] || credentialStatusConfig.not_submitted;
 
 function getSubjectLine(credential: CredentialForReview) {
   if (credential.driver?.user?.full_name) {
@@ -86,6 +80,14 @@ export function CredentialReviewCard({
 
         {/* Metadata Section */}
         <div className="border-t pt-3 space-y-2 text-sm">
+          {/* Due Date */}
+          {credential.gracePeriodDueDate && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Calendar className="h-4 w-4 shrink-0" />
+              <span>Due by {formatDate(credential.gracePeriodDueDate)}</span>
+            </div>
+          )}
+
           {/* Submitted Date */}
           {submittedDate && (
             <div className="flex items-center gap-2 text-muted-foreground">

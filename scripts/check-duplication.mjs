@@ -24,6 +24,15 @@ const ANTI_PATTERNS = [
     allowedFiles: ['src/lib/status-configs.ts', 'src/lib/status-styles.ts'],
     message: 'Use imports from "@/lib/status-configs" instead of defining locally',
   },
+  {
+    name: 'Local awaitingVerificationConfig',
+    pattern: 'const awaitingVerificationConfig',
+    allowedFiles: [],
+    message: 'Use `credentialStatusConfig.awaiting_verification` from "@/lib/status-configs"',
+  },
+  // NOTE: We allow domain-specific statusLabels (e.g., CredentialHistoryTimeline, BrokerDetail)
+  // because those have different semantics than the shared configs. Only catch if the pattern
+  // matches known types that SHOULD use shared configs.
 ];
 
 let hasErrors = false;

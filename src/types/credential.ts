@@ -13,6 +13,7 @@ export type SubmissionType =
   | 'admin_verified'
   | 'date_entry';
 export type ExpirationType = 'never' | 'fixed_interval' | 'driver_specified';
+export type CredentialTypeStatus = 'draft' | 'scheduled' | 'active' | 'inactive';
 export type CredentialStatus =
   | 'not_submitted'
   | 'pending_review'
@@ -23,7 +24,10 @@ export type CredentialStatus =
 export type CredentialDisplayStatus =
   | CredentialStatus
   | 'expiring'
-  | 'awaiting';
+  | 'awaiting'
+  | 'awaiting_verification'
+  | 'grace_period'
+  | 'missing';
 
 export interface CredentialType {
   id: string;
@@ -40,6 +44,10 @@ export interface CredentialType {
   employment_type: EmploymentType;
   requirement: RequirementLevel;
   vehicle_types: string[] | null;
+  status: CredentialTypeStatus;
+  effective_date: string | null;
+  published_at: string | null;
+  published_by: string | null;
   // DEPRECATED: Legacy field for backwards compatibility
   submission_type?: SubmissionType | null;
   form_schema: FormSchema | null;
@@ -219,6 +227,7 @@ export interface CredentialWithDisplayStatus {
   isExpiringSoon: boolean;
   daysUntilExpiration: number | null;
   canSubmit: boolean;
+  gracePeriodDueDate?: Date;
 }
 
 /**

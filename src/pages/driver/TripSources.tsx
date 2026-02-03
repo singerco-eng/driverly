@@ -32,6 +32,7 @@ import { JoinBrokerModal } from '@/components/features/driver/JoinBrokerModal';
 import { CancelRequestModal } from '@/components/features/driver/CancelRequestModal';
 import { cn } from '@/lib/utils';
 import { cardVariants } from '@/lib/design-system';
+import { isCredentialLiveForDrivers } from '@/lib/credentialRequirements';
 
 type JoinMode = 'auto_signup' | 'request' | 'admin_only' | 'not_eligible';
 
@@ -152,7 +153,12 @@ export default function TripSources() {
   const credentialCountByBroker = useMemo(() => {
     const map = new Map<string, number>();
     credentialTypes.forEach((type) => {
-      if (type.scope !== 'broker' || !type.broker_id || type.requirement !== 'required' || !type.is_active) {
+      if (
+        type.scope !== 'broker' ||
+        !type.broker_id ||
+        type.requirement !== 'required' ||
+        !isCredentialLiveForDrivers(type)
+      ) {
         return;
       }
       map.set(type.broker_id, (map.get(type.broker_id) || 0) + 1);
@@ -186,7 +192,7 @@ export default function TripSources() {
           cred.credentialType.scope === 'global' &&
           cred.credentialType.category === 'driver' &&
           cred.credentialType.requirement === 'required' &&
-          cred.credentialType.is_active &&
+          isCredentialLiveForDrivers(cred.credentialType) &&
           matchesEmploymentType(cred.credentialType.employment_type),
       );
       const missingGlobal = globalDriverCreds.filter((cred) => cred.displayStatus !== 'approved');
@@ -200,7 +206,7 @@ export default function TripSources() {
           cred.credentialType.broker?.id === broker.id &&
           cred.credentialType.category === 'driver' &&
           cred.credentialType.requirement === 'required' &&
-          cred.credentialType.is_active &&
+          isCredentialLiveForDrivers(cred.credentialType) &&
           matchesEmploymentType(cred.credentialType.employment_type),
       );
       const missingBroker = brokerDriverCreds.filter((cred) => cred.displayStatus !== 'approved');
@@ -212,7 +218,7 @@ export default function TripSources() {
         (type) =>
           type.category === 'vehicle' &&
           type.requirement === 'required' &&
-          type.is_active &&
+          isCredentialLiveForDrivers(type) &&
           (type.employment_type === 'both' ||
             (type.employment_type === 'w2_only' && driver.employment_type === 'w2') ||
             (type.employment_type === '1099_only' && driver.employment_type === '1099')) &&
@@ -264,7 +270,7 @@ export default function TripSources() {
       cred.credentialType.scope === 'global' &&
       cred.credentialType.category === 'driver' &&
       cred.credentialType.requirement === 'required' &&
-      cred.credentialType.is_active
+      isCredentialLiveForDrivers(cred.credentialType)
   );
   
   const pendingReviewCreds = globalDriverCreds.filter(

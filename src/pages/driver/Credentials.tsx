@@ -92,6 +92,8 @@ export default function DriverCredentials() {
   const brokers = useMemo(() => {
     const brokerMap = new Map<string, { id: string; name: string }>();
     allCredentials.forEach((c) => {
+      // Skip credentials with missing credential type (orphaned data)
+      if (!c.credentialType) return;
       if (c.credentialType.scope === 'broker' && c.credentialType.broker) {
         brokerMap.set(c.credentialType.broker.id, c.credentialType.broker);
       }
@@ -104,6 +106,9 @@ export default function DriverCredentials() {
     if (!allCredentials.length) return [];
 
     return allCredentials.filter((item) => {
+      // Skip credentials with missing credential type (orphaned data)
+      if (!item.credentialType) return false;
+
       // If filtering by specific broker
       if (activeBrokerId && item.credentialType.broker?.id !== activeBrokerId) {
         return false;
@@ -159,6 +164,8 @@ export default function DriverCredentials() {
   // Counts for badges
   const counts = useMemo(() => {
     const scoped = allCredentials.filter((item) => {
+      // Skip credentials with missing credential type (orphaned data)
+      if (!item.credentialType) return false;
       if (activeBrokerId && item.credentialType.broker?.id !== activeBrokerId) return false;
       if (filters.category && filters.category !== 'all' && item.credentialType.category !== filters.category) {
         return false;
@@ -371,13 +378,14 @@ export default function DriverCredentials() {
 
             {/* Table view */}
             <TabsContent value="table" className="mt-0">
-              <EnhancedTable loading={credentialsLoading} skeletonRows={5} skeletonColumns={6}>
+              <EnhancedTable loading={credentialsLoading} skeletonRows={5} skeletonColumns={7}>
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Credential</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Scope</TableHead>
+                      <TableHead>Due Date</TableHead>
                       <TableHead>Submitted</TableHead>
                       <TableHead>Expires</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
@@ -386,7 +394,7 @@ export default function DriverCredentials() {
                   <TableBody>
                     {credentialsWithId.length === 0 && !credentialsLoading ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="h-24 text-center">
+                        <TableCell colSpan={7} className="h-24 text-center">
                           <div className="flex flex-col items-center gap-2">
                             <FileText className="w-8 h-8 text-muted-foreground" />
                             <p className="text-muted-foreground">No credentials found</p>
@@ -407,10 +415,6 @@ export default function DriverCredentials() {
                           'missing',
                         ].includes(item.displayStatus);
                         const isAdminOnly = isAdminOnlyCredential(item.credentialType);
-                        const statusLabel =
-                          item.displayStatus === 'grace_period' && item.gracePeriodDueDate
-                            ? `Due by ${item.gracePeriodDueDate.toLocaleDateString()}`
-                            : status.label;
 
                         return (
                           <TableRow key={item.id} className="hover:bg-muted/50">
@@ -423,15 +427,8 @@ export default function DriverCredentials() {
                               </div>
                             </TableCell>
                             <TableCell>
-                              <Badge
-                                variant={status.variant}
-                                className={
-                                  item.displayStatus === 'grace_period'
-                                    ? 'bg-amber-50 text-amber-700 border-amber-200'
-                                    : undefined
-                                }
-                              >
-                                {statusLabel}
+                              <Badge variant={status.variant}>
+                                {status.label}
                               </Badge>
                             </TableCell>
                             <TableCell>
@@ -442,6 +439,11 @@ export default function DriverCredentials() {
                                   {item.credentialType.broker?.name || 'Broker'}
                                 </span>
                               )}
+                            </TableCell>
+                            <TableCell>
+                              {item.gracePeriodDueDate
+                                ? formatDate(item.gracePeriodDueDate)
+                                : '—'}
                             </TableCell>
                             <TableCell>{formatDate(item.credential?.submitted_at)}</TableCell>
                             <TableCell>

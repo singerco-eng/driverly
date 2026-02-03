@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { getCompanyScope } from '@/services/authScope';
 import type {
   Vehicle,
   VehicleWithAssignments,
@@ -10,6 +11,8 @@ import type {
 export async function getVehicles(
   filters?: VehicleFilters
 ): Promise<VehicleWithAssignments[]> {
+  const { companyId, isSuperAdmin } = await getCompanyScope();
+
   let query = supabase
     .from('vehicles')
     .select(
@@ -32,6 +35,10 @@ export async function getVehicles(
     )
     .order('ownership')
     .order('created_at', { ascending: false });
+
+  if (companyId && !isSuperAdmin) {
+    query = query.eq('company_id', companyId);
+  }
 
   if (filters?.status && filters.status !== 'all') {
     query = query.eq('status', filters.status);

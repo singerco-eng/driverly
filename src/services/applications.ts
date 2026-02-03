@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { getCompanyScope } from '@/services/authScope';
 import type { ApplicationStatus, DriverWithDetails, DriverWithUser, EmploymentType } from '@/types/driver';
 import type { ApplicationFormData, ApplicationSubmission } from '@/types/application';
 
@@ -9,6 +10,8 @@ export interface ApplicationFilters {
 }
 
 export async function getApplications(filters?: ApplicationFilters): Promise<DriverWithUser[]> {
+  const { companyId, isSuperAdmin } = await getCompanyScope();
+
   let query = supabase
     .from('drivers')
     .select(
@@ -20,6 +23,10 @@ export async function getApplications(filters?: ApplicationFilters): Promise<Dri
     .not('application_status', 'is', null)
     .neq('application_status', 'draft')
     .order('application_submitted_at', { ascending: false });
+
+  if (companyId && !isSuperAdmin) {
+    query = query.eq('company_id', companyId);
+  }
 
   if (filters?.status && filters.status !== 'all') {
     query = query.eq('application_status', filters.status);

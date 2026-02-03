@@ -24,10 +24,10 @@ Enable the AI builder to generate Document blocks (with extraction fields) when 
 
 ### Known Document Types
 
-The AI automatically configures these document types with standard fields:
+For these document types, the AI shows a **field selection form** with default fields pre-checked. Users can customize which fields to include:
 
-| Document Type | Trigger Phrases | Default Fields |
-|---------------|-----------------|----------------|
+| Document Type | Trigger Phrases | Default Fields (Pre-checked) |
+|---------------|-----------------|------------------------------|
 | Auto Insurance Card | "insurance", "insurance card", "proof of insurance" | Policy Number*, Carrier, Expiration Date* |
 | Driver's License | "license", "driver's license", "DL" | License Number*, State, Expiration Date*, Class |
 | Vehicle Registration | "registration", "vehicle registration" | Plate Number*, VIN, Expiration Date* |
@@ -36,6 +36,25 @@ The AI automatically configures these document types with standard fields:
 | Training Certificate | "training certificate", "completion certificate" | Certificate Number, Completion Date*, Expiration Date |
 
 *Required fields
+
+**Example - Known Document:**
+```
+User: "I need an insurance card upload"
+
+AI: "I'll set up an Insurance Card upload. Select the fields you want to extract:
+
+     ┌─────────────────────────────────────────────────────────────┐
+     │  ☑ Policy Number                                           │
+     │  ☑ Insurance Carrier                                       │
+     │  ☑ Expiration Date                                         │
+     │  ☐ Other: [                                    ]           │
+     │           Type any additional fields you need              │
+     │                                                            │
+     │                                        [Confirm]           │
+     └─────────────────────────────────────────────────────────────┘"
+```
+
+Users can uncheck fields they don't need, or add custom fields via the "Other" input.
 
 ---
 
@@ -466,29 +485,33 @@ export function FieldSelectionForm({
 
 ## User Stories
 
-### Story 1: Known Document Generation
+### Story 1: Known Document - Field Selection
 
 **As an** admin using the AI builder  
-**I want** to say "add insurance upload" and get a Document block with standard fields  
-**So that** I don't have to manually configure extraction
+**I want** to say "add insurance upload" and see a field selection form with defaults  
+**So that** I can customize which fields to extract before creating the Document block
 
 #### Acceptance Criteria
 - [ ] AI recognizes "insurance", "insurance card", "proof of insurance" as auto insurance
-- [ ] AI generates Document block with Policy Number, Carrier, Expiration fields
-- [ ] Policy Number and Expiration are marked required
-- [ ] Response shows the configured document with field list
-- [ ] Generate button shows "Update Credential" after AI responds
+- [ ] AI shows FieldSelectionForm with default fields pre-checked
+- [ ] User can uncheck fields they don't need
+- [ ] User can add custom fields via "Other" input
+- [ ] After confirming, Document block is created with selected fields
+- [ ] Preview updates immediately with the Document block
 
 #### Test Scenarios
 ```
 User: "Add an insurance card upload"
-Expected: Document block with Policy Number*, Carrier, Expiration*
+Expected: Shows FieldSelectionForm with Policy Number ☑, Carrier ☑, Expiration ☑ pre-checked
+
+User: unchecks "Carrier", clicks Confirm
+Expected: Document block created with Policy Number, Expiration only
 
 User: "Create credential for driver's license"
-Expected: Document block with License Number*, State, Expiration*, Class
+Expected: Shows FieldSelectionForm with License Number ☑, State ☑, Expiration ☑, Class ☑
 
-User: "I need them to upload their DOT physical"
-Expected: Document block with Certificate Number*, Examiner Name, Expiration*
+User: adds "CDL Endorsements" in Other field, clicks Confirm
+Expected: Document block with default fields + CDL Endorsements
 ```
 
 ---
@@ -520,11 +543,11 @@ Expected: AI confirms FileUpload block created
 
 ---
 
-### Story 3: Unknown Document - Field Selection
+### Story 3: Field Selection (Known and Unknown Documents)
 
-**As an** admin selecting fields for an unknown document  
+**As an** admin selecting fields for any document type  
 **I want** checkboxes with suggested fields and an "Other" text input  
-**So that** I can easily configure what to extract
+**So that** I can customize which fields to extract
 
 #### Acceptance Criteria
 - [ ] FieldSelectionForm shows suggested fields as checkboxes

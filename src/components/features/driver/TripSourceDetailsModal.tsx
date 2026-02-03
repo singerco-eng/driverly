@@ -14,6 +14,7 @@ import type { CredentialType, CredentialWithDisplayStatus } from '@/types/creden
 import type { DriverVehicle } from '@/types/driverVehicle';
 import { getSourceTypeLabel } from '@/types/broker';
 import { credentialStatusVariant } from '@/lib/status-styles';
+import { isCredentialLiveForDrivers } from '@/lib/credentialRequirements';
 
 type EmploymentType = 'w2' | '1099';
 
@@ -78,7 +79,7 @@ export function TripSourceDetailsModal({
       (credential) =>
         credential.credentialType.category === 'driver' &&
         credential.credentialType.requirement === 'required' &&
-        credential.credentialType.is_active &&
+        isCredentialLiveForDrivers(credential.credentialType) &&
         matchesEmploymentType(credential.credentialType.employment_type) &&
         (credential.credentialType.scope === 'global' ||
           credential.credentialType.broker?.id === broker.id),
@@ -91,7 +92,7 @@ export function TripSourceDetailsModal({
       (type) =>
         type.category === 'vehicle' &&
         type.requirement === 'required' &&
-        type.is_active &&
+        isCredentialLiveForDrivers(type) &&
         matchesEmploymentType(type.employment_type) &&
         (type.scope === 'global' || type.broker_id === broker.id),
     );
@@ -102,7 +103,7 @@ export function TripSourceDetailsModal({
     return credentialTypes.filter(
       (type) =>
         type.requirement === 'required' &&
-        type.is_active &&
+        isCredentialLiveForDrivers(type) &&
         matchesEmploymentType(type.employment_type) &&
         type.scope === 'broker' &&
         type.broker_id === broker.id,

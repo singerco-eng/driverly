@@ -16,7 +16,7 @@ import {
   User,
 } from 'lucide-react';
 import type { CredentialWithDisplayStatus, CredentialDisplayStatus } from '@/types/credential';
-import { credentialStatusVariant } from '@/lib/status-styles';
+import { credentialStatusConfig } from '@/lib/status-configs';
 import { isAdminOnlyCredential } from '@/lib/credentialRequirements';
 import { formatDate } from '@/lib/formatters';
 
@@ -24,18 +24,6 @@ interface DriverCredentialCardProps {
   credential: CredentialWithDisplayStatus;
   onView: (credential: CredentialWithDisplayStatus) => void;
 }
-
-const credentialStatusLabels: Record<CredentialDisplayStatus, string> = {
-  approved: 'Complete',
-  rejected: 'Rejected',
-  pending_review: 'Pending Review',
-  not_submitted: 'Not Started',
-  expired: 'Expired',
-  expiring: 'Expiring Soon',
-  awaiting: 'In Review',
-  grace_period: 'Due Soon',
-  missing: 'Missing',
-};
 
 const credentialStatusIcons: Record<CredentialDisplayStatus, React.ElementType> = {
   approved: CheckCircle2,
@@ -45,6 +33,7 @@ const credentialStatusIcons: Record<CredentialDisplayStatus, React.ElementType> 
   expired: AlertCircle,
   expiring: Clock,
   awaiting: Clock,
+  awaiting_verification: Clock,
   grace_period: Calendar,
   missing: AlertCircle,
 };
@@ -61,10 +50,10 @@ export function DriverCredentialCard({
   credential,
   onView,
 }: DriverCredentialCardProps) {
-  const statusLabelFallback = credentialStatusLabels.not_submitted;
-  const statusLabel = credentialStatusLabels[credential.displayStatus] ?? statusLabelFallback;
+  const statusConfig = credentialStatusConfig[credential.displayStatus] || credentialStatusConfig.not_submitted;
+  const statusLabel = statusConfig.label;
   const StatusIcon = credentialStatusIcons[credential.displayStatus] ?? FileText;
-  const badgeVariant = credentialStatusVariant[credential.displayStatus] || 'outline';
+  const badgeVariant = statusConfig.variant;
   const stepCount = credential.credentialType.instruction_config?.steps?.length || 0;
   const completedSteps = credential.credential?.progress?.completedSteps?.length || 0;
   const progressPercent = stepCount > 0 ? Math.round((completedSteps / stepCount) * 100) : 0;
@@ -81,10 +70,6 @@ export function DriverCredentialCard({
   const isComplete = credential.displayStatus === 'approved';
   const isPending = ['pending_review', 'awaiting'].includes(credential.displayStatus);
   const isInProgress = credential.displayStatus === 'not_submitted' && completedSteps > 0;
-  const statusLabelText =
-    credential.displayStatus === 'grace_period' && credential.gracePeriodDueDate
-      ? `Due by ${credential.gracePeriodDueDate.toLocaleDateString()}`
-      : statusLabel;
   
   const CategoryIcon = credential.credentialType.category === 'vehicle' ? Car : User;
   const vehicleLabel =
@@ -100,16 +85,9 @@ export function DriverCredentialCard({
       <CardContent className="p-4 space-y-3 flex-1 flex flex-col">
         {/* Header row with badge */}
         <div className="flex items-center justify-between">
-          <Badge
-            variant={badgeVariant}
-            className={
-              credential.displayStatus === 'grace_period'
-                ? 'bg-amber-50 text-amber-700 border-amber-200'
-                : undefined
-            }
-          >
+          <Badge variant={badgeVariant}>
             <StatusIcon className="h-3 w-3 mr-1" />
-            {statusLabelText}
+            {statusLabel}
           </Badge>
         </div>
 
@@ -166,6 +144,14 @@ export function DriverCredentialCard({
 
         {/* Metadata Section */}
         <div className="border-t pt-3 space-y-2 text-sm">
+          {/* Due Date */}
+          {credential.gracePeriodDueDate && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Calendar className="h-4 w-4 shrink-0" />
+              <span>Due by {formatDate(credential.gracePeriodDueDate)}</span>
+            </div>
+          )}
+
           {/* Submitted Date */}
           {credential.credential?.submitted_at && (
             <div className="flex items-center gap-2 text-muted-foreground">

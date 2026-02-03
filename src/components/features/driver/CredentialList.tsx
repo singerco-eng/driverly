@@ -41,7 +41,9 @@ export function CredentialList({
 
       if (filter === 'all') return true;
       if (filter === 'action') {
-        return ['not_submitted', 'rejected', 'expired', 'expiring'].includes(item.displayStatus);
+        return ['not_submitted', 'rejected', 'expired', 'expiring', 'grace_period', 'missing'].includes(
+          item.displayStatus,
+        );
       }
       if (filter === 'pending') {
         return ['pending_review', 'awaiting'].includes(item.displayStatus);
@@ -78,7 +80,9 @@ export function CredentialList({
   }, [sorted]);
 
   const totalAction = credentials.filter((item) =>
-    ['not_submitted', 'rejected', 'expired', 'expiring'].includes(item.displayStatus),
+    ['not_submitted', 'rejected', 'expired', 'expiring', 'grace_period', 'missing'].includes(
+      item.displayStatus,
+    ),
   ).length;
   const totalPending = credentials.filter((item) =>
     ['pending_review', 'awaiting'].includes(item.displayStatus),

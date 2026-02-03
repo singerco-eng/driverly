@@ -33,16 +33,9 @@ import { SuspendDriverModal } from '@/components/features/admin/SuspendDriverMod
 import { UpgradeModal } from '@/components/features/admin/UpgradeModal';
 import { useAuth } from '@/contexts/AuthContext';
 import type { DriverStatus } from '@/types/driver';
-import { driverStatusVariant } from '@/lib/status-styles';
+import { driverStatusConfig } from '@/lib/status-configs';
 import { checkCanAddOperator } from '@/services/billing';
 import { useToast } from '@/hooks/use-toast';
-
-const statusLabels: Record<DriverStatus, string> = {
-  active: 'Active',
-  inactive: 'Inactive',
-  suspended: 'Suspended',
-  archived: 'Archived',
-};
 
 export default function DriverDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -122,8 +115,8 @@ export default function DriverDetailPage() {
   // Build badges
   // Single status badge
   const badges = (
-    <Badge variant={driverStatusVariant[driver.status]}>
-      {statusLabels[driver.status]}
+    <Badge variant={driverStatusConfig[driver.status].variant}>
+      {driverStatusConfig[driver.status].label}
     </Badge>
   );
 

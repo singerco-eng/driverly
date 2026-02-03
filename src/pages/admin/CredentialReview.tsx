@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { EnhancedTable, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { FileCheck2, LayoutGrid, List } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useCredentialTypes, useBrokers } from '@/hooks/useCredentialTypes';
+import { useBrokers } from '@/hooks/useCredentialTypes';
 import {
   useDriverCredentialsForReview,
   useVehicleCredentialsForReview,
@@ -17,19 +17,13 @@ import type { CredentialForReview, ReviewQueueFilters, ReviewStatus } from '@/ty
 import { CredentialReviewCard } from '@/components/features/admin/CredentialReviewCard';
 import { ReviewHistoryTab } from '@/components/features/admin/ReviewHistoryTab';
 import { formatDate } from '@/lib/formatters';
-import { credentialStatusConfig, type CredentialStatusConfigEntry } from '@/lib/status-configs';
+import { credentialStatusConfig } from '@/lib/status-configs';
+import type { CredentialDisplayStatus } from '@/types/credential';
 
 type DisplayStatus = ReviewStatus | 'not_submitted';
 
-const awaitingVerificationConfig: CredentialStatusConfigEntry = {
-  label: 'Awaiting Verification',
-  variant: 'secondary',
-};
-
 const getStatusConfig = (status: DisplayStatus) =>
-  status === 'awaiting_verification'
-    ? awaitingVerificationConfig
-    : credentialStatusConfig[status] || credentialStatusConfig.not_submitted;
+  credentialStatusConfig[status as CredentialDisplayStatus] || credentialStatusConfig.not_submitted;
 
 const statusOptions: Array<{ value: ReviewQueueFilters['status']; label: string }> = [
   { value: 'needs_action', label: 'Needs Action' },
@@ -83,7 +77,6 @@ export default function CredentialReviewPage() {
     companyId,
     fetchFilters,
   );
-  const { data: credentialTypes } = useCredentialTypes(companyId);
   const { data: brokers } = useBrokers(companyId);
 
 
@@ -92,27 +85,31 @@ export default function CredentialReviewPage() {
       // Filter out inactive credential types
       if (!credential.credentialType.is_active) return false;
       
-      if (filters.status === 'expiring' && credential.displayStatus !== 'expiring') return false;
-      if (filters.status === 'expired' && credential.displayStatus !== 'expired') return false;
-      if (filters.status === 'not_submitted' && credential.displayStatus !== 'not_submitted') return false;
-      if (
-        filters.status === 'awaiting_verification' &&
-        credential.displayStatus !== 'awaiting_verification'
-      )
-        return false;
+      // Status filter
       if (filters.status === 'needs_action') {
-        return ['pending_review', 'awaiting_verification'].includes(credential.displayStatus);
+        if (!['pending_review', 'awaiting_verification'].includes(credential.displayStatus)) return false;
+      } else if (filters.status === 'expiring') {
+        if (credential.displayStatus !== 'expiring') return false;
+      } else if (filters.status === 'expired') {
+        if (credential.displayStatus !== 'expired') return false;
+      } else if (filters.status === 'not_submitted') {
+        if (credential.displayStatus !== 'not_submitted') return false;
+      } else if (filters.status === 'awaiting_verification') {
+        if (credential.displayStatus !== 'awaiting_verification') return false;
       }
-      if (filters.status !== 'all' && normalizedStatus === 'all') {
-        // already filtered above
-      }
+      // 'all' passes through without filtering
 
-      if (filters.credentialTypeId && credential.credentialType.id !== filters.credentialTypeId) {
+      // Requirement filter
+      if (filters.requirement && credential.credentialType.requirement !== filters.requirement) {
         return false;
       }
+      
+      // Trip source filter
       if (filters.brokerId && credential.credentialType.broker?.id !== filters.brokerId) {
         return false;
       }
+      
+      // Search filter
       if (filters.search) {
         const query = filters.search.toLowerCase();
         const haystack = [
@@ -126,6 +123,7 @@ export default function CredentialReviewPage() {
           .toLowerCase();
         if (!haystack.includes(query)) return false;
       }
+      
       return true;
     });
   }, [driverCredentials, filters, normalizedStatus]);
@@ -135,24 +133,31 @@ export default function CredentialReviewPage() {
       // Filter out inactive credential types
       if (!credential.credentialType.is_active) return false;
       
-      if (filters.status === 'expiring' && credential.displayStatus !== 'expiring') return false;
-      if (filters.status === 'expired' && credential.displayStatus !== 'expired') return false;
-      if (filters.status === 'not_submitted' && credential.displayStatus !== 'not_submitted') return false;
-      if (
-        filters.status === 'awaiting_verification' &&
-        credential.displayStatus !== 'awaiting_verification'
-      )
-        return false;
+      // Status filter
       if (filters.status === 'needs_action') {
-        return ['pending_review', 'awaiting_verification'].includes(credential.displayStatus);
+        if (!['pending_review', 'awaiting_verification'].includes(credential.displayStatus)) return false;
+      } else if (filters.status === 'expiring') {
+        if (credential.displayStatus !== 'expiring') return false;
+      } else if (filters.status === 'expired') {
+        if (credential.displayStatus !== 'expired') return false;
+      } else if (filters.status === 'not_submitted') {
+        if (credential.displayStatus !== 'not_submitted') return false;
+      } else if (filters.status === 'awaiting_verification') {
+        if (credential.displayStatus !== 'awaiting_verification') return false;
       }
+      // 'all' passes through without filtering
 
-      if (filters.credentialTypeId && credential.credentialType.id !== filters.credentialTypeId) {
+      // Requirement filter
+      if (filters.requirement && credential.credentialType.requirement !== filters.requirement) {
         return false;
       }
+      
+      // Trip source filter
       if (filters.brokerId && credential.credentialType.broker?.id !== filters.brokerId) {
         return false;
       }
+      
+      // Search filter
       if (filters.search) {
         const query = filters.search.toLowerCase();
         const haystack = [
@@ -167,6 +172,7 @@ export default function CredentialReviewPage() {
           .toLowerCase();
         if (!haystack.includes(query)) return false;
       }
+      
       return true;
     });
   }, [vehicleCredentials, filters]);
@@ -191,17 +197,19 @@ export default function CredentialReviewPage() {
       options: statusOptions,
     },
     {
-      value: filters.credentialTypeId || 'all',
+      value: filters.requirement || 'all',
       onValueChange: (value: string) =>
         setFilters((prev) => ({
           ...prev,
-          credentialTypeId: value === 'all' ? undefined : value,
+          requirement: value === 'all' ? undefined : value as 'required' | 'recommended' | 'optional',
         })),
-      label: 'Type',
-      placeholder: 'All Types',
+      label: 'Requirement',
+      placeholder: 'All Requirements',
       options: [
-        { value: 'all', label: 'All Types' },
-        ...(credentialTypes || []).filter(type => type.is_active).map((type) => ({ value: type.id, label: type.name })),
+        { value: 'all', label: 'All Requirements' },
+        { value: 'required', label: 'Required' },
+        { value: 'recommended', label: 'Recommended' },
+        { value: 'optional', label: 'Optional' },
       ],
     },
     {
@@ -241,13 +249,14 @@ export default function CredentialReviewPage() {
   );
 
   const renderCredentialTable = (credentials: CredentialForReview[], loading: boolean, type: 'driver' | 'vehicle') => (
-    <EnhancedTable loading={loading} skeletonRows={5} skeletonColumns={5}>
+    <EnhancedTable loading={loading} skeletonRows={5} skeletonColumns={6}>
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead>Credential</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>{type === 'driver' ? 'Driver' : 'Vehicle'}</TableHead>
+            <TableHead>Due Date</TableHead>
             <TableHead>Submitted</TableHead>
             <TableHead>Actions</TableHead>
           </TableRow>
@@ -255,7 +264,7 @@ export default function CredentialReviewPage() {
         <TableBody>
           {credentials.length === 0 && !loading ? (
             <TableRow>
-              <TableCell colSpan={5} className="h-24 text-center">
+              <TableCell colSpan={6} className="h-24 text-center">
                 <div className="flex flex-col items-center gap-2">
                   <FileCheck2 className="w-8 h-8 text-muted-foreground" />
                   <p className="text-muted-foreground">No credentials found</p>
@@ -280,6 +289,11 @@ export default function CredentialReviewPage() {
                     </Badge>
                   </TableCell>
                   <TableCell>{getSubjectLabel(credential)}</TableCell>
+                  <TableCell>
+                    {credential.gracePeriodDueDate
+                      ? formatDate(credential.gracePeriodDueDate)
+                      : '—'}
+                  </TableCell>
                   <TableCell>{formatDate(credential.submittedAt)}</TableCell>
                   <TableCell>
                     <span className="text-sm text-muted-foreground group-hover:text-foreground">

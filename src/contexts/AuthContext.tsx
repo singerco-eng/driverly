@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { clearSentryUser, setSentryUser } from '@/lib/sentry';
 
 type UserRole = 'super_admin' | 'admin' | 'coordinator' | 'driver';
 
@@ -97,6 +98,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       subscription.unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      setSentryUser({
+        id: user.id,
+        email: user.email ?? undefined,
+        role: profile?.role,
+      });
+    } else {
+      clearSentryUser();
+    }
+  }, [user, profile?.role]);
 
   // Non-blocking profile fetch (updates profile in background)
   async function fetchProfileAsync(userId: string) {

@@ -15,7 +15,7 @@ export function CredentialAlertBanner({
   onViewAll,
 }: CredentialAlertBannerProps) {
   const attention = [...driverCredentials, ...vehicleCredentials].filter((cred) =>
-    ['rejected', 'expiring', 'expired'].includes(cred.displayStatus),
+    ['rejected', 'expiring', 'expired', 'grace_period', 'missing'].includes(cred.displayStatus),
   );
 
   if (!attention.length) return null;

@@ -1,36 +1,44 @@
+/**
+ * Status styles - re-exports variant-only maps from status-configs.ts
+ * 
+ * For new code, prefer importing the full config from @/lib/status-configs
+ * which includes both variant and label.
+ * 
+ * These exports are kept for backwards compatibility.
+ */
 import type { BadgeProps } from '@/components/ui/badge';
+import {
+  credentialStatusConfig,
+  vehicleStatusConfig,
+  applicationStatusConfig,
+  driverStatusConfig,
+  type CredentialStatusConfig,
+  type VehicleStatusConfig,
+  type ApplicationStatusConfig,
+  type DriverStatusConfig,
+} from '@/lib/status-configs';
 import type { CredentialDisplayStatus } from '@/types/credential';
 import type { VehicleStatus } from '@/types/vehicle';
-import type { ApplicationStatus } from '@/types/driver';
+import type { ApplicationStatus, DriverStatus } from '@/types/driver';
 
-export const vehicleStatusVariant: Record<VehicleStatus, BadgeProps['variant']> = {
-  active: 'default',
-  inactive: 'secondary',
-  retired: 'outline',
-};
+// Helper to extract just variants from a config
+function extractVariants<K extends string, V extends { variant: BadgeProps['variant'] }>(
+  config: Record<K, V>
+): Record<K, BadgeProps['variant']> {
+  return Object.fromEntries(
+    Object.entries(config).map(([key, value]) => [key, (value as V).variant])
+  ) as Record<K, BadgeProps['variant']>;
+}
 
-export const driverStatusVariant = {
-  active: 'default',
-  inactive: 'secondary',
-  suspended: 'destructive',
-  archived: 'outline',
-} as const satisfies Record<string, BadgeProps['variant']>;
+// Re-export variant-only maps derived from the canonical configs
+export const credentialStatusVariant: Record<CredentialDisplayStatus, BadgeProps['variant']> =
+  extractVariants<CredentialDisplayStatus, CredentialStatusConfig[CredentialDisplayStatus]>(credentialStatusConfig);
 
-export const applicationStatusVariant: Record<ApplicationStatus, BadgeProps['variant']> = {
-  draft: 'outline',
-  pending: 'secondary',
-  under_review: 'secondary',
-  approved: 'default',
-  rejected: 'destructive',
-  withdrawn: 'outline',
-};
+export const vehicleStatusVariant: Record<VehicleStatus, BadgeProps['variant']> =
+  extractVariants<VehicleStatus, VehicleStatusConfig[VehicleStatus]>(vehicleStatusConfig);
 
-export const credentialStatusVariant: Record<CredentialDisplayStatus, BadgeProps['variant']> = {
-  approved: 'default',
-  rejected: 'destructive',
-  pending_review: 'secondary',
-  not_submitted: 'outline',
-  expired: 'destructive',
-  expiring: 'outline', // "Expiring Soon" uses outline per design system
-  awaiting: 'secondary',
-};
+export const applicationStatusVariant: Record<ApplicationStatus, BadgeProps['variant']> =
+  extractVariants<ApplicationStatus, ApplicationStatusConfig[ApplicationStatus]>(applicationStatusConfig);
+
+export const driverStatusVariant: Record<DriverStatus, BadgeProps['variant']> =
+  extractVariants<DriverStatus, DriverStatusConfig[DriverStatus]>(driverStatusConfig);

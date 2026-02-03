@@ -73,6 +73,25 @@ export function isAdminOnlyCredential(credentialType: CredentialType): boolean {
 }
 
 /**
+ * Check if credential should be visible to drivers based on status/effective date.
+ */
+export function isCredentialLiveForDrivers(credentialType: CredentialType): boolean {
+  const effectiveDate = credentialType.effective_date
+    ? new Date(credentialType.effective_date)
+    : null;
+
+  if (credentialType.status === 'active') {
+    return !effectiveDate || effectiveDate <= new Date();
+  }
+
+  if (credentialType.status === 'scheduled') {
+    return !!effectiveDate && effectiveDate <= new Date();
+  }
+
+  return false;
+}
+
+/**
  * Get legacy submission type display (for backwards compatibility)
  */
 export function getLegacyRequirements(

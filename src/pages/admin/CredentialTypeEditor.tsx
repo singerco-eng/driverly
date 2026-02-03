@@ -24,6 +24,10 @@ import {
   useCredentialTypeById,
   useUpdateCredentialType,
   useUpdateInstructionConfig,
+  usePublishCredentialType,
+  useUnpublishCredentialType,
+  useDeactivateCredentialType,
+  useReactivateCredentialType,
 } from '@/hooks/useCredentialTypes';
 import { InstructionBuilder } from '@/components/features/admin/credential-builder/InstructionBuilder';
 import { RequirementsSection } from '@/components/features/admin/credential-builder/RequirementsSection';
@@ -31,7 +35,9 @@ import { ExpirationSection } from '@/components/features/admin/credential-builde
 import { SettingsSection } from '@/components/features/admin/credential-builder/SettingsSection';
 import { FullPagePreview } from '@/components/features/admin/credential-builder/FullPagePreview';
 import { AIBuilderTwoPanel, type ChatMessage } from '@/components/features/admin/credential-builder/AIBuilderTwoPanel';
-import type { CredentialType, CredentialTypeEdits } from '@/types/credential';
+import { PublishDialog } from '@/components/features/admin/credential-builder/PublishDialog';
+import { useAIBuilderDraft } from '@/hooks/useAIBuilderDraft';
+import type { CredentialType, CredentialTypeEdits, CredentialTypeStatus } from '@/types/credential';
 import type { CredentialTypeInstructions } from '@/types/instructionBuilder';
 import { createEmptyInstructions } from '@/types/instructionBuilder';
 
@@ -46,12 +52,20 @@ export default function CredentialTypeEditor() {
   const { data: credentialType, isLoading, error } = useCredentialTypeById(id);
   const updateConfig = useUpdateInstructionConfig();
   const updateCredentialType = useUpdateCredentialType();
+  const publishCredentialType = usePublishCredentialType();
+  const unpublishCredentialType = useUnpublishCredentialType();
+  const deactivateCredentialType = useDeactivateCredentialType();
+  const reactivateCredentialType = useReactivateCredentialType();
 
   const [instructionConfig, setInstructionConfig] = useState<CredentialTypeInstructions | null>(
     null,
   );
   const [hasInstructionChanges, setHasInstructionChanges] = useState(false);
   const [edits, setEdits] = useState<CredentialTypeEdits>({});
+  const [publishDialogOpen, setPublishDialogOpen] = useState(false);
+  const [publishAction, setPublishAction] = useState<'publish' | 'editSchedule' | 'reactivate'>(
+    'publish',
+  );
   
   // Editor mode state - null means not yet determined
   const [mode, setMode] = useState<EditorMode | null>(null);
@@ -59,6 +73,10 @@ export default function CredentialTypeEditor() {
   
   // Chat history persists across AI <-> Edit mode switches
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
+  
+  // Draft persistence
+  const { loadDraft, clearDraft } = useAIBuilderDraft(id);
+  const [draftChecked, setDraftChecked] = useState(false);
 
   // Determine if credential has existing instructions with actual content
   const hasExistingInstructions = useMemo(() => {
@@ -94,6 +112,21 @@ export default function CredentialTypeEditor() {
     setEdits({});
   }, [credentialType]);
 
+  // Check for draft on initial load and restore if found
+  useEffect(() => {
+    if (draftChecked || !credentialType || !id) return;
+    
+    const draft = loadDraft();
+    if (draft && draft.config.steps.length > 0) {
+      // Found a draft with content - restore it
+      console.log('Restoring draft from localStorage:', draft.savedAt);
+      setInstructionConfig(draft.config);
+      setChatHistory(draft.chatHistory);
+      setHasInstructionChanges(true);
+    }
+    setDraftChecked(true);
+  }, [credentialType, id, loadDraft, draftChecked]);
+
   const handleConfigChange = useCallback((config: CredentialTypeInstructions) => {
     setInstructionConfig(config);
     setHasInstructionChanges(true);
@@ -103,6 +136,19 @@ export default function CredentialTypeEditor() {
   const handleChatHistoryChange = useCallback((messages: ChatMessage[]) => {
     setChatHistory(messages);
   }, []);
+
+  // Save handler for AI builder (saves to DB and clears localStorage draft)
+  const handleAISave = useCallback(async () => {
+    if (!id || !instructionConfig) return;
+    
+    await updateConfig.mutateAsync({
+      credentialTypeId: id,
+      config: instructionConfig,
+    });
+    
+    setHasInstructionChanges(false);
+    clearDraft();
+  }, [id, instructionConfig, updateConfig, clearDraft]);
 
   const handleSave = async () => {
     if (!id) return;
@@ -127,6 +173,20 @@ export default function CredentialTypeEditor() {
     } catch {
       // Error handled by mutation
     }
+  };
+
+  const handleOpenPublishDialog = (action: 'publish' | 'editSchedule' | 'reactivate') => {
+    setPublishAction(action);
+    setPublishDialogOpen(true);
+  };
+
+  const handlePublish = async (effectiveDate?: Date) => {
+    if (!id) return;
+    if (publishAction === 'reactivate') {
+      await reactivateCredentialType.mutateAsync({ id, effectiveDate });
+      return;
+    }
+    await publishCredentialType.mutateAsync({ id, effectiveDate });
   };
 
   const handleEditChange = (updates: Partial<CredentialTypeEdits>) => {
@@ -192,18 +252,64 @@ export default function CredentialTypeEditor() {
     );
   }
 
+  const status = credentialType.status as CredentialTypeStatus;
+  const publishDialog = (
+    <PublishDialog
+      open={publishDialogOpen}
+      onOpenChange={setPublishDialogOpen}
+      credentialType={credentialType}
+      onPublish={handlePublish}
+      title={
+        publishAction === 'reactivate'
+          ? 'Reactivate Credential'
+          : publishAction === 'editSchedule'
+            ? 'Edit Schedule'
+            : 'Publish Credential'
+      }
+      confirmLabel={
+        publishAction === 'reactivate'
+          ? 'Reactivate'
+          : publishAction === 'editSchedule'
+            ? 'Save Schedule'
+            : 'Publish'
+      }
+    />
+  );
+
   // AI Builder Two-Panel Mode (chat + live preview)
   if (mode === 'ai') {
     return (
       <div className="fixed inset-0 z-50 bg-background">
+        {publishDialog}
         <AIBuilderTwoPanel
+          credentialId={id}
           credentialName={credentialType.name}
           initialConfig={instructionConfig || createEmptyInstructions()}
           onConfigChange={handleConfigChange}
+          onSave={handleAISave}
           onSwitchToManual={() => setMode('edit')}
           onBack={() => navigate('/admin/settings/credentials')}
           initialChatHistory={chatHistory}
           onChatHistoryChange={handleChatHistoryChange}
+          credentialStatus={status}
+          secondaryActionLabel={
+            status === 'draft'
+              ? 'Publish...'
+              : status === 'scheduled'
+                ? 'Edit Schedule...'
+                : status === 'inactive'
+                  ? 'Reactivate...'
+                  : undefined
+          }
+          onSecondaryAction={
+            status === 'draft'
+              ? () => handleOpenPublishDialog('publish')
+              : status === 'scheduled'
+                ? () => handleOpenPublishDialog('editSchedule')
+                : status === 'inactive'
+                  ? () => handleOpenPublishDialog('reactivate')
+                  : undefined
+          }
         />
       </div>
     );
@@ -225,16 +331,30 @@ export default function CredentialTypeEditor() {
   const isSaving = updateConfig.isPending || updateCredentialType.isPending;
 
   // Build badges
+  const statusBadge = (() => {
+    if (status === 'scheduled') {
+      const dateLabel = credentialType.effective_date
+        ? new Date(credentialType.effective_date).toLocaleDateString()
+        : 'Scheduled';
+      return (
+        <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
+          Scheduled · {dateLabel}
+        </Badge>
+      );
+    }
+    if (status === 'active') {
+      return <Badge variant="default">Active</Badge>;
+    }
+    if (status === 'inactive') {
+      return <Badge variant="destructive">Inactive</Badge>;
+    }
+    return <Badge variant="secondary">Draft</Badge>;
+  })();
+
   const badges = (
     <>
-      <Badge variant={credentialType.is_active ? 'default' : 'secondary'}>
-        {credentialType.is_active ? 'Active' : 'Inactive'}
-      </Badge>
-      {hasChanges && (
-        <Badge variant="secondary">
-          Unsaved
-        </Badge>
-      )}
+      {statusBadge}
+      {hasChanges && <Badge variant="secondary">Unsaved</Badge>}
     </>
   );
 
@@ -257,10 +377,25 @@ export default function CredentialTypeEditor() {
         ) : (
           <>
             <Save className="w-4 h-4 mr-2" />
-            Save Changes
+            {status === 'draft' ? 'Save Draft' : 'Save Changes'}
           </>
         )}
       </Button>
+      {status === 'draft' && (
+        <Button variant="outline" onClick={() => handleOpenPublishDialog('publish')}>
+          Publish...
+        </Button>
+      )}
+      {status === 'scheduled' && (
+        <Button variant="outline" onClick={() => handleOpenPublishDialog('editSchedule')}>
+          Edit Schedule...
+        </Button>
+      )}
+      {status === 'inactive' && (
+        <Button variant="outline" onClick={() => handleOpenPublishDialog('reactivate')}>
+          Reactivate...
+        </Button>
+      )}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" size="icon">
@@ -271,21 +406,34 @@ export default function CredentialTypeEditor() {
           <DropdownMenuItem>Rename</DropdownMenuItem>
           <DropdownMenuItem>Duplicate</DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem
-            className={credentialType.is_active ? 'text-destructive' : ''}
-            onClick={async () => {
-              try {
-                await updateCredentialType.mutateAsync({
-                  id: credentialType.id,
-                  is_active: !credentialType.is_active,
-                });
-              } catch {
-                // Error handled by mutation
-              }
-            }}
-          >
-            {credentialType.is_active ? 'Deactivate' : 'Activate'}
-          </DropdownMenuItem>
+          {status === 'scheduled' && (
+            <DropdownMenuItem
+              className="text-destructive"
+              onClick={async () => {
+                try {
+                  await unpublishCredentialType.mutateAsync(credentialType.id);
+                } catch {
+                  // Error handled by mutation
+                }
+              }}
+            >
+              Cancel Schedule
+            </DropdownMenuItem>
+          )}
+          {status === 'active' && (
+            <DropdownMenuItem
+              className="text-destructive"
+              onClick={async () => {
+                try {
+                  await deactivateCredentialType.mutateAsync(credentialType.id);
+                } catch {
+                  // Error handled by mutation
+                }
+              }}
+            >
+              Deactivate
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
     </>
@@ -303,6 +451,7 @@ export default function CredentialTypeEditor() {
 
   return (
     <div className="min-h-screen bg-background">
+      {publishDialog}
       <Tabs defaultValue="instructions">
         {/* Full-width header with centered tabs */}
         <DetailPageHeader
