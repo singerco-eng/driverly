@@ -15,8 +15,7 @@ import { BrokerCard } from '@/components/features/admin/BrokerCard';
 import type { BrokerWithStats, BrokerStatus, BrokerAssignmentMode, TripSourceType } from '@/types/broker';
 import { getBrokerAssignmentMode, getAssignmentModeLabel, getSourceTypeLabel } from '@/types/broker';
 
-/** Status config using native Badge variants per design system */
-const statusConfig: Record<BrokerStatus, { 
+const brokerStatusMeta: Record<BrokerStatus, { 
   label: string;
   badgeVariant: 'default' | 'secondary' | 'destructive' | 'outline';
 }> = {
@@ -216,8 +215,8 @@ export default function Brokers() {
                               </div>
                             </TableCell>
                             <TableCell>
-                              <Badge variant={statusConfig[source.status].badgeVariant}>
-                                {statusConfig[source.status].label}
+                              <Badge variant={brokerStatusMeta[source.status].badgeVariant}>
+                                {brokerStatusMeta[source.status].label}
                               </Badge>
                             </TableCell>
                             <TableCell>

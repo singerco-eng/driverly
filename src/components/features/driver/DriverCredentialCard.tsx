@@ -25,47 +25,28 @@ interface DriverCredentialCardProps {
   onView: (credential: CredentialWithDisplayStatus) => void;
 }
 
-/** Status config - labels and icons only, variants from status-styles.ts */
-const statusConfig: Record<CredentialDisplayStatus, {
-  label: string;
-  icon: React.ElementType;
-}> = {
-  approved: {
-    label: 'Complete',
-    icon: CheckCircle2,
-  },
-  rejected: {
-    label: 'Rejected',
-    icon: AlertCircle,
-  },
-  pending_review: {
-    label: 'Pending Review',
-    icon: Clock,
-  },
-  not_submitted: {
-    label: 'Not Started',
-    icon: FileText,
-  },
-  expired: {
-    label: 'Expired',
-    icon: AlertCircle,
-  },
-  expiring: {
-    label: 'Expiring Soon',
-    icon: Clock,
-  },
-  awaiting: {
-    label: 'In Review',
-    icon: Clock,
-  },
-  grace_period: {
-    label: 'Due Soon',
-    icon: Calendar,
-  },
-  missing: {
-    label: 'Missing',
-    icon: AlertCircle,
-  },
+const credentialStatusLabels: Record<CredentialDisplayStatus, string> = {
+  approved: 'Complete',
+  rejected: 'Rejected',
+  pending_review: 'Pending Review',
+  not_submitted: 'Not Started',
+  expired: 'Expired',
+  expiring: 'Expiring Soon',
+  awaiting: 'In Review',
+  grace_period: 'Due Soon',
+  missing: 'Missing',
+};
+
+const credentialStatusIcons: Record<CredentialDisplayStatus, React.ElementType> = {
+  approved: CheckCircle2,
+  rejected: AlertCircle,
+  pending_review: Clock,
+  not_submitted: FileText,
+  expired: AlertCircle,
+  expiring: Clock,
+  awaiting: Clock,
+  grace_period: Calendar,
+  missing: AlertCircle,
 };
 
 function formatVehicleLabel(
@@ -80,8 +61,9 @@ export function DriverCredentialCard({
   credential,
   onView,
 }: DriverCredentialCardProps) {
-  const status = statusConfig[credential.displayStatus] || statusConfig.not_submitted;
-  const StatusIcon = status.icon;
+  const statusLabelFallback = credentialStatusLabels.not_submitted;
+  const statusLabel = credentialStatusLabels[credential.displayStatus] ?? statusLabelFallback;
+  const StatusIcon = credentialStatusIcons[credential.displayStatus] ?? FileText;
   const badgeVariant = credentialStatusVariant[credential.displayStatus] || 'outline';
   const stepCount = credential.credentialType.instruction_config?.steps?.length || 0;
   const completedSteps = credential.credential?.progress?.completedSteps?.length || 0;
@@ -99,10 +81,10 @@ export function DriverCredentialCard({
   const isComplete = credential.displayStatus === 'approved';
   const isPending = ['pending_review', 'awaiting'].includes(credential.displayStatus);
   const isInProgress = credential.displayStatus === 'not_submitted' && completedSteps > 0;
-  const statusLabel =
+  const statusLabelText =
     credential.displayStatus === 'grace_period' && credential.gracePeriodDueDate
       ? `Due by ${credential.gracePeriodDueDate.toLocaleDateString()}`
-      : status.label;
+      : statusLabel;
   
   const CategoryIcon = credential.credentialType.category === 'vehicle' ? Car : User;
   const vehicleLabel =
@@ -127,7 +109,7 @@ export function DriverCredentialCard({
             }
           >
             <StatusIcon className="h-3 w-3 mr-1" />
-            {statusLabel}
+            {statusLabelText}
           </Badge>
         </div>
 

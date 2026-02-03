@@ -41,7 +41,7 @@ interface CompanyInvitationsTabProps {
   companyName: string;
 }
 
-const statusConfig: Record<
+const invitationStatusMeta: Record<
   InvitationStatus,
   { variant: 'default' | 'secondary' | 'destructive' | 'outline'; label: string }
 > = {
@@ -150,8 +150,8 @@ export default function CompanyInvitationsTab({ companyId, companyName }: Compan
                     <TableCell className="font-medium">{invitation.full_name}</TableCell>
                     <TableCell>{invitation.email}</TableCell>
                     <TableCell>
-                      <Badge variant={statusConfig[invitation.status].variant}>
-                        {statusConfig[invitation.status].label}
+                      <Badge variant={invitationStatusMeta[invitation.status].variant}>
+                        {invitationStatusMeta[invitation.status].label}
                       </Badge>
                       {invitation.resent_count > 0 && (
                         <span className="text-xs text-muted-foreground ml-2">

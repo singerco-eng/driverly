@@ -12,36 +12,28 @@ import {
   XCircle,
 } from 'lucide-react';
 
-// Status configuration - using DS semantic colors
-const statusConfig: Record<CredentialDisplayStatus, { label: string; icon: React.ElementType }> = {
-  approved: {
-    label: 'Complete',
-    icon: CheckCircle,
-  },
-  rejected: {
-    label: 'Rejected',
-    icon: XCircle,
-  },
-  pending_review: {
-    label: 'Pending',
-    icon: Clock,
-  },
-  not_submitted: {
-    label: 'To Do',
-    icon: Circle,
-  },
-  expired: {
-    label: 'Expired',
-    icon: XCircle,
-  },
-  expiring: {
-    label: 'Expiring',
-    icon: AlertTriangle,
-  },
-  awaiting: {
-    label: 'In Review',
-    icon: PauseCircle,
-  },
+const credentialStatusLabels: Record<CredentialDisplayStatus, string> = {
+  approved: 'Complete',
+  rejected: 'Rejected',
+  pending_review: 'Pending',
+  not_submitted: 'To Do',
+  expired: 'Expired',
+  expiring: 'Expiring',
+  awaiting: 'In Review',
+  grace_period: 'Due Soon',
+  missing: 'Missing',
+};
+
+const credentialStatusIcons: Record<CredentialDisplayStatus, React.ElementType> = {
+  approved: CheckCircle,
+  rejected: XCircle,
+  pending_review: Clock,
+  not_submitted: Circle,
+  expired: XCircle,
+  expiring: AlertTriangle,
+  awaiting: PauseCircle,
+  grace_period: Clock,
+  missing: AlertTriangle,
 };
 
 interface CredentialCardProps {
@@ -52,10 +44,20 @@ interface CredentialCardProps {
 
 export function CredentialCard({ credential, onSubmit, onView }: CredentialCardProps) {
   const { credentialType, displayStatus, credential: instance } = credential;
-  const status = statusConfig[displayStatus];
-  const StatusIcon = status?.icon ?? Circle;
+  const StatusIcon = credentialStatusIcons[displayStatus] ?? Circle;
+  const statusLabel =
+    displayStatus === 'grace_period' && credential.gracePeriodDueDate
+      ? `Due by ${credential.gracePeriodDueDate.toLocaleDateString()}`
+      : credentialStatusLabels[displayStatus] ?? displayStatus;
 
-  const needsAction = ['not_submitted', 'rejected', 'expired', 'expiring'].includes(displayStatus);
+  const needsAction = [
+    'not_submitted',
+    'rejected',
+    'expired',
+    'expiring',
+    'grace_period',
+    'missing',
+  ].includes(displayStatus);
 
   const handleClick = () => {
     if (needsAction) {
@@ -84,9 +86,16 @@ export function CredentialCard({ credential, onSubmit, onView }: CredentialCardP
               />
             </div>
           </div>
-          <Badge variant={credentialStatusVariant[displayStatus]} className="gap-1">
+          <Badge
+            variant={credentialStatusVariant[displayStatus]}
+            className={
+              displayStatus === 'grace_period'
+                ? 'gap-1 bg-amber-50 text-amber-700 border-amber-200'
+                : 'gap-1'
+            }
+          >
             <StatusIcon className="w-3 h-3" />
-            {status?.label ?? displayStatus}
+            {statusLabel}
           </Badge>
         </div>
       </CardHeader>

@@ -76,7 +76,7 @@ interface HistoryEntryProps {
 function HistoryEntry({ entry, isLatest }: HistoryEntryProps) {
   const [expanded, setExpanded] = useState(false);
 
-  const statusConfig = {
+  const historyStatusMeta = {
     submitted: {
       icon: Clock,
       label: 'Pending Review',
@@ -115,7 +115,8 @@ function HistoryEntry({ entry, isLatest }: HistoryEntryProps) {
     },
   };
 
-  const config = statusConfig[entry.status as keyof typeof statusConfig] || statusConfig.submitted;
+  const config =
+    historyStatusMeta[entry.status as keyof typeof historyStatusMeta] || historyStatusMeta.submitted;
   const StatusIcon = config.icon;
 
   // Extract document URLs from submission data

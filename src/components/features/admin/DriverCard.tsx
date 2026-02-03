@@ -80,7 +80,7 @@ export function AdminDriverCard({ driver, onAction }: AdminDriverCardProps): JSX
     };
   }, [driver.user.avatar_url]);
 
-  const statusConfig = statusStyles[driver.status];
+  const statusStyle = statusStyles[driver.status];
   const initials = driver.user.full_name
     .split(' ')
     .map((n) => n.charAt(0).toUpperCase())
@@ -104,8 +104,8 @@ export function AdminDriverCard({ driver, onAction }: AdminDriverCardProps): JSX
       <CardContent className="p-4 space-y-3 flex-1 flex flex-col">
         {/* Header row with badge and actions */}
         <div className="flex items-center justify-between">
-          <Badge variant={statusConfig.badgeVariant}>
-            {statusConfig.label}
+          <Badge variant={statusStyle.badgeVariant}>
+            {statusStyle.label}
           </Badge>
           {/* Actions Menu */}
           <DropdownMenu>

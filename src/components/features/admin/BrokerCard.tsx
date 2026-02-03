@@ -23,8 +23,7 @@ interface BrokerCardProps {
   broker: BrokerWithStats;
 }
 
-/** Status config using native Badge variants per design system */
-const statusConfig: Record<BrokerStatus, { 
+const brokerStatusMeta: Record<BrokerStatus, { 
   label: string;
   badgeVariant: 'default' | 'secondary' | 'destructive' | 'outline';
 }> = {
@@ -49,7 +48,7 @@ const sourceTypeIcons: Record<TripSourceType, React.ElementType> = {
 
 export function BrokerCard({ broker }: BrokerCardProps) {
   const navigate = useNavigate();
-  const status = statusConfig[broker.status];
+  const status = brokerStatusMeta[broker.status];
   const assignmentMode = getBrokerAssignmentMode(broker);
   const AssignmentIcon = assignmentModeIcons[assignmentMode];
   const SourceIcon = sourceTypeIcons[broker.source_type] || Building2;

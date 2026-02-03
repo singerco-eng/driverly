@@ -78,7 +78,7 @@ export function AdminVehicleCard({ vehicle, onAction }: AdminVehicleCardProps): 
     };
   }, [vehicle.exterior_photo_url]);
 
-  const statusConfig = statusStyles[vehicle.status];
+  const statusStyle = statusStyles[vehicle.status];
   const ownerName = vehicle.owner?.user?.full_name;
   const activeAssignment = vehicle.assignments?.find((a) => !a.ended_at);
   const assignedDriverName = activeAssignment?.driver?.user?.full_name;
@@ -92,8 +92,8 @@ export function AdminVehicleCard({ vehicle, onAction }: AdminVehicleCardProps): 
       <CardContent className="p-4 space-y-3 flex-1 flex flex-col">
         {/* Header row with badge and actions */}
         <div className="flex items-center justify-between">
-          <Badge variant={statusConfig.badgeVariant}>
-            {statusConfig.label}
+          <Badge variant={statusStyle.badgeVariant}>
+            {statusStyle.label}
           </Badge>
           {/* Actions Menu */}
           <DropdownMenu>
