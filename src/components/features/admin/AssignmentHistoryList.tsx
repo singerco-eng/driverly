@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import type { AssignmentHistory } from '@/types/vehicleAssignment';
+import { formatDate } from '@/lib/formatters';
 
 interface AssignmentHistoryListProps {
   history: AssignmentHistory[];
@@ -15,11 +16,6 @@ const actionLabels: Record<string, string> = {
   extended: 'Extended',
   ended_early: 'Ended Early',
 };
-
-function formatDate(value?: string | null) {
-  if (!value) return '—';
-  return new Date(value).toLocaleDateString();
-}
 
 function formatRange(startedAt?: string | null, endedAt?: string | null) {
   if (!startedAt && !endedAt) return '—';

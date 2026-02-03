@@ -24,6 +24,7 @@ import { useDriverCredentials } from '@/hooks/useCredentials';
 import * as credentialService from '@/services/credentials';
 import type { CredentialWithDisplayStatus, CredentialDisplayStatus } from '@/types/credential';
 import { isAdminOnlyCredential } from '@/lib/credentialRequirements';
+import { formatDate } from '@/lib/formatters';
 
 /** Status config using native Badge variants per design system */
 const statusConfig: Record<CredentialDisplayStatus, { 
@@ -58,6 +59,14 @@ const statusConfig: Record<CredentialDisplayStatus, {
     label: 'In Review',
     badgeVariant: 'secondary',
   },
+  grace_period: {
+    label: 'Due Soon',
+    badgeVariant: 'secondary',
+  },
+  missing: {
+    label: 'Missing',
+    badgeVariant: 'destructive',
+  },
 };
 
 interface CredentialFilters {
@@ -71,11 +80,6 @@ interface CredentialFilters {
 // Extend for EnhancedDataView compatibility
 interface CredentialWithId extends CredentialWithDisplayStatus {
   id: string;
-}
-
-function formatDate(value: string | null | undefined) {
-  if (!value) return '—';
-  return new Date(value).toLocaleDateString();
 }
 
 export default function DriverCredentials() {
@@ -159,7 +163,14 @@ export default function DriverCredentials() {
       // Status filter
       let matchesStatus = true;
       if (filters.status === 'action') {
-        matchesStatus = ['not_submitted', 'rejected', 'expired', 'expiring'].includes(item.displayStatus);
+        matchesStatus = [
+          'not_submitted',
+          'rejected',
+          'expired',
+          'expiring',
+          'grace_period',
+          'missing',
+        ].includes(item.displayStatus);
       } else if (filters.status === 'pending') {
         matchesStatus = ['pending_review', 'awaiting'].includes(item.displayStatus);
       } else if (filters.status === 'complete') {
@@ -202,7 +213,9 @@ export default function DriverCredentials() {
 
     return {
       action: scoped.filter((item) =>
-        ['not_submitted', 'rejected', 'expired', 'expiring'].includes(item.displayStatus)
+        ['not_submitted', 'rejected', 'expired', 'expiring', 'grace_period', 'missing'].includes(
+          item.displayStatus,
+        ),
       ).length,
       pending: scoped.filter((item) =>
         ['pending_review', 'awaiting'].includes(item.displayStatus)
@@ -427,8 +440,19 @@ export default function DriverCredentials() {
                         const status = statusConfig[item.displayStatus] || statusConfig.not_submitted;
                         const stepCount = item.credentialType.instruction_config?.steps?.length || 0;
                         const isGlobal = item.credentialType.scope === 'global';
-                        const needsAction = ['not_submitted', 'rejected', 'expired', 'expiring'].includes(item.displayStatus);
+                        const needsAction = [
+                          'not_submitted',
+                          'rejected',
+                          'expired',
+                          'expiring',
+                          'grace_period',
+                          'missing',
+                        ].includes(item.displayStatus);
                         const isAdminOnly = isAdminOnlyCredential(item.credentialType);
+                        const statusLabel =
+                          item.displayStatus === 'grace_period' && item.gracePeriodDueDate
+                            ? `Due by ${item.gracePeriodDueDate.toLocaleDateString()}`
+                            : status.label;
 
                         return (
                           <TableRow key={item.id} className="hover:bg-muted/50">
@@ -441,8 +465,15 @@ export default function DriverCredentials() {
                               </div>
                             </TableCell>
                             <TableCell>
-                              <Badge variant={status.badgeVariant}>
-                                {status.label}
+                              <Badge
+                                variant={status.badgeVariant}
+                                className={
+                                  item.displayStatus === 'grace_period'
+                                    ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                    : undefined
+                                }
+                              >
+                                {statusLabel}
                               </Badge>
                             </TableCell>
                             <TableCell>

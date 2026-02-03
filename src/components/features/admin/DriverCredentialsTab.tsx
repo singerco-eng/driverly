@@ -13,6 +13,7 @@ import { useDriverCredentialsForAdmin } from '@/hooks/useCredentialReview';
 import { useAdminEnsureDriverCredential } from '@/hooks/useCredentials';
 import type { CredentialForReview, ReviewStatus } from '@/types/credentialReview';
 import { isAdminOnlyCredential } from '@/lib/credentialRequirements';
+import { formatDate } from '@/lib/formatters';
 
 interface DriverCredentialsTabProps {
   companyId: string;
@@ -55,11 +56,6 @@ const statusConfig: Record<DisplayStatus, {
     badgeVariant: 'outline',
   },
 };
-
-function formatDate(value: string | null) {
-  if (!value) return '—';
-  return new Date(value).toLocaleDateString();
-}
 
 export function DriverCredentialsTab({ companyId, driverId }: DriverCredentialsTabProps) {
   const navigate = useNavigate();

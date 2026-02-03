@@ -18,6 +18,7 @@ import {
 import type { CredentialWithDisplayStatus, CredentialDisplayStatus } from '@/types/credential';
 import { credentialStatusVariant } from '@/lib/status-styles';
 import { isAdminOnlyCredential } from '@/lib/credentialRequirements';
+import { formatDate } from '@/lib/formatters';
 
 interface DriverCredentialCardProps {
   credential: CredentialWithDisplayStatus;
@@ -57,12 +58,15 @@ const statusConfig: Record<CredentialDisplayStatus, {
     label: 'In Review',
     icon: Clock,
   },
+  grace_period: {
+    label: 'Due Soon',
+    icon: Calendar,
+  },
+  missing: {
+    label: 'Missing',
+    icon: AlertCircle,
+  },
 };
-
-function formatDate(value: string | null | undefined) {
-  if (!value) return null;
-  return new Date(value).toLocaleDateString();
-}
 
 function formatVehicleLabel(
   vehicle?: { year?: number | null; make?: string | null; model?: string | null } | null,
@@ -83,11 +87,22 @@ export function DriverCredentialCard({
   const completedSteps = credential.credential?.progress?.completedSteps?.length || 0;
   const progressPercent = stepCount > 0 ? Math.round((completedSteps / stepCount) * 100) : 0;
   
-  const needsAction = ['not_submitted', 'rejected', 'expired', 'expiring'].includes(credential.displayStatus);
+  const needsAction = [
+    'not_submitted',
+    'rejected',
+    'expired',
+    'expiring',
+    'grace_period',
+    'missing',
+  ].includes(credential.displayStatus);
   const isAdminOnly = isAdminOnlyCredential(credential.credentialType);
   const isComplete = credential.displayStatus === 'approved';
   const isPending = ['pending_review', 'awaiting'].includes(credential.displayStatus);
   const isInProgress = credential.displayStatus === 'not_submitted' && completedSteps > 0;
+  const statusLabel =
+    credential.displayStatus === 'grace_period' && credential.gracePeriodDueDate
+      ? `Due by ${credential.gracePeriodDueDate.toLocaleDateString()}`
+      : status.label;
   
   const CategoryIcon = credential.credentialType.category === 'vehicle' ? Car : User;
   const vehicleLabel =
@@ -103,9 +118,16 @@ export function DriverCredentialCard({
       <CardContent className="p-4 space-y-3 flex-1 flex flex-col">
         {/* Header row with badge */}
         <div className="flex items-center justify-between">
-          <Badge variant={badgeVariant}>
+          <Badge
+            variant={badgeVariant}
+            className={
+              credential.displayStatus === 'grace_period'
+                ? 'bg-amber-50 text-amber-700 border-amber-200'
+                : undefined
+            }
+          >
             <StatusIcon className="h-3 w-3 mr-1" />
-            {status.label}
+            {statusLabel}
           </Badge>
         </div>
 

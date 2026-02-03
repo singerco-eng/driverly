@@ -16,6 +16,7 @@ import {
 import type { CredentialForReview, ReviewQueueFilters, ReviewStatus } from '@/types/credentialReview';
 import { CredentialReviewCard } from '@/components/features/admin/CredentialReviewCard';
 import { ReviewHistoryTab } from '@/components/features/admin/ReviewHistoryTab';
+import { formatDate } from '@/lib/formatters';
 
 type DisplayStatus = ReviewStatus | 'not_submitted';
 
@@ -65,11 +66,6 @@ const statusOptions: Array<{ value: ReviewQueueFilters['status']; label: string 
   { value: 'expired', label: 'Expired' },
   { value: 'all', label: 'All Statuses' },
 ];
-
-function formatDate(value: string | null) {
-  if (!value) return '—';
-  return new Date(value).toLocaleDateString();
-}
 
 function getSubjectLabel(credential: CredentialForReview) {
   if (credential.driver?.user?.full_name) {

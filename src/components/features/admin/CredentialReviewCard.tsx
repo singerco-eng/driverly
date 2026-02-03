@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { FileText, Eye, Calendar, Clock, ListChecks, Building2 } from 'lucide-react';
 import type { CredentialForReview, ReviewStatus } from '@/types/credentialReview';
+import { formatDate } from '@/lib/formatters';
 
 interface CredentialReviewCardProps {
   credential: CredentialForReview;
@@ -46,11 +47,6 @@ const statusConfig: Record<DisplayStatus, {
   },
 };
 
-function formatDate(value: string | null) {
-  if (!value) return null;
-  return new Date(value).toLocaleDateString();
-}
-
 function getSubjectLine(credential: CredentialForReview) {
   if (credential.driver?.user?.full_name) {
     return credential.driver.user.full_name;
@@ -67,8 +63,8 @@ export function CredentialReviewCard({
 }: CredentialReviewCardProps) {
   const status = statusConfig[credential.displayStatus as DisplayStatus] || statusConfig.not_submitted;
   const subjectLine = getSubjectLine(credential);
-  const submittedDate = formatDate(credential.submittedAt);
-  const expiresDate = formatDate(credential.expiresAt);
+  const submittedDate = credential.submittedAt ? formatDate(credential.submittedAt) : null;
+  const expiresDate = credential.expiresAt ? formatDate(credential.expiresAt) : null;
   const stepCount = credential.credentialType.instruction_config?.steps?.length || 0;
   const isComplete = credential.displayStatus === 'approved';
 

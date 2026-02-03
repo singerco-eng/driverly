@@ -12,11 +12,7 @@ import { AssignDriverToVehicleModal } from '@/components/features/admin/AssignDr
 import { TransferVehicleModal } from '@/components/features/admin/TransferVehicleModal';
 import { UnassignVehicleModal } from '@/components/features/admin/UnassignVehicleModal';
 import { AssignmentHistoryList } from '@/components/features/admin/AssignmentHistoryList';
-
-function formatDate(value?: string | null) {
-  if (!value) return '—';
-  return new Date(value).toLocaleDateString();
-}
+import { formatDate } from '@/lib/formatters';
 
 interface VehicleAssignmentsTabProps {
   vehicle: VehicleWithAssignments;

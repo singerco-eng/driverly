@@ -18,6 +18,7 @@ import { FilterBar } from '@/components/ui/filter-bar';
 import { CredentialReviewCard } from '@/components/features/admin/CredentialReviewCard';
 import { CredentialDetailHeader } from '@/components/features/credentials/CredentialDetail/CredentialDetailHeader';
 import { InstructionRenderer } from '@/components/features/credentials/InstructionRenderer';
+import { formatDate } from '@/lib/formatters';
 
 // Import REAL types
 import type { CredentialForReview, ReviewStatus } from '@/types/credentialReview';
@@ -127,8 +128,32 @@ const mockInstructionConfig: CredentialTypeInstructions = {
   },
 };
 
+const baseCredentialType = {
+  scope: 'global' as const,
+  requirement: 'required' as const,
+  employment_type: 'both' as const,
+  requires_driver_action: true,
+  vehicle_types: null,
+  submission_type: null,
+  form_schema: null,
+  signature_document_url: null,
+  expiration_type: 'fixed_interval' as const,
+  expiration_interval_days: null,
+  expiration_warning_days: 30,
+  grace_period_days: 30,
+  display_order: 1,
+  is_active: true,
+  is_seeded: false,
+  status: 'active' as const,
+  effective_date: new Date().toISOString(),
+  published_at: new Date().toISOString(),
+  published_by: null,
+  created_by: null,
+};
+
 // GLOBAL credential types (no broker - applies to all drivers)
 const globalBackgroundCheck: CredentialType = {
+  ...baseCredentialType,
   id: 'ct-1',
   company_id: 'demo-company',
   broker_id: null, // Global - no broker
@@ -138,6 +163,7 @@ const globalBackgroundCheck: CredentialType = {
   is_required: true,
   is_active: true,
   expiration_months: 12,
+  expiration_interval_days: 365,
   instruction_config: mockInstructionConfig,
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
@@ -145,6 +171,7 @@ const globalBackgroundCheck: CredentialType = {
 };
 
 const globalDrugScreening: CredentialType = {
+  ...baseCredentialType,
   id: 'ct-2',
   company_id: 'demo-company',
   broker_id: null, // Global
@@ -154,6 +181,7 @@ const globalDrugScreening: CredentialType = {
   is_required: true,
   is_active: true,
   expiration_months: 6,
+  expiration_interval_days: 180,
   instruction_config: {
     version: 2,
     steps: [
@@ -204,6 +232,7 @@ const globalDrugScreening: CredentialType = {
 };
 
 const globalDriversLicense: CredentialType = {
+  ...baseCredentialType,
   id: 'ct-3',
   company_id: 'demo-company',
   broker_id: null, // Global
@@ -213,6 +242,8 @@ const globalDriversLicense: CredentialType = {
   is_required: true,
   is_active: true,
   expiration_months: null,
+  expiration_type: 'never',
+  expiration_interval_days: null,
   instruction_config: {
     version: 2,
     steps: [
@@ -252,6 +283,7 @@ const globalDriversLicense: CredentialType = {
 
 // VEHICLE credential types (global - applies to all vehicles)
 const vehicleInsurance: CredentialType = {
+  ...baseCredentialType,
   id: 'ct-v1',
   company_id: 'demo-company',
   broker_id: null, // Global
@@ -261,6 +293,7 @@ const vehicleInsurance: CredentialType = {
   is_required: true,
   is_active: true,
   expiration_months: 6,
+  expiration_interval_days: 180,
   instruction_config: {
     version: 2,
     steps: [
@@ -299,6 +332,7 @@ const vehicleInsurance: CredentialType = {
 };
 
 const vehicleRegistration: CredentialType = {
+  ...baseCredentialType,
   id: 'ct-v2',
   company_id: 'demo-company',
   broker_id: null,
@@ -308,6 +342,7 @@ const vehicleRegistration: CredentialType = {
   is_required: true,
   is_active: true,
   expiration_months: 12,
+  expiration_interval_days: 365,
   instruction_config: {
     version: 2,
     steps: [
@@ -332,6 +367,7 @@ const vehicleRegistration: CredentialType = {
 };
 
 const vehicleInspection: CredentialType = {
+  ...baseCredentialType,
   id: 'ct-v3',
   company_id: 'demo-company',
   broker_id: null,
@@ -341,6 +377,7 @@ const vehicleInspection: CredentialType = {
   is_required: true,
   is_active: true,
   expiration_months: 12,
+  expiration_interval_days: 365,
   instruction_config: {
     version: 2,
     steps: [
@@ -664,11 +701,6 @@ const statusConfig: Record<DisplayStatus, { label: string; badgeVariant: 'defaul
   rejected: { label: 'Rejected', badgeVariant: 'destructive' },
   not_submitted: { label: 'Not Submitted', badgeVariant: 'outline' },
 };
-
-function formatDate(value: string | null) {
-  if (!value) return '—';
-  return new Date(value).toLocaleDateString();
-}
 
 function getSubjectLabel(credential: CredentialForReview) {
   if (credential.driver?.user?.full_name) {

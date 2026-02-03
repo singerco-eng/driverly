@@ -11,6 +11,7 @@ import type { CredentialWithDisplayStatus, CredentialDisplayStatus } from '@/typ
 import { DriverCredentialCard } from '@/components/features/driver/DriverCredentialCard';
 import { credentialStatusVariant } from '@/lib/status-styles';
 import { isAdminOnlyCredential } from '@/lib/credentialRequirements';
+import { formatDate } from '@/lib/formatters';
 
 interface VehicleCredentialsTabProps {
   companyId: string;
@@ -26,12 +27,9 @@ const statusLabels: Record<CredentialDisplayStatus, string> = {
   expired: 'Expired',
   expiring: 'Expiring Soon',
   awaiting: 'In Review',
+  grace_period: 'Due Soon',
+  missing: 'Missing',
 };
-
-function formatDate(value: string | null | undefined) {
-  if (!value) return '—';
-  return new Date(value).toLocaleDateString();
-}
 
 // Extended type with placeholder tracking for unsubmitted credentials
 interface CredentialWithPlaceholder extends CredentialWithDisplayStatus {
@@ -127,6 +125,8 @@ export function VehicleCredentialsTab({ companyId, vehicleId }: VehicleCredentia
               { value: 'awaiting', label: 'In Review' },
               { value: 'approved', label: 'Complete' },
               { value: 'rejected', label: 'Rejected' },
+              { value: 'grace_period', label: 'Due Soon' },
+              { value: 'missing', label: 'Missing' },
               { value: 'expiring', label: 'Expiring Soon' },
               { value: 'expired', label: 'Expired' },
             ],
@@ -162,8 +162,18 @@ export function VehicleCredentialsTab({ companyId, vehicleId }: VehicleCredentia
                 ) : (
                   filteredCredentials.map((credential) => {
                     const badgeVariant = credentialStatusVariant[credential.displayStatus] || 'outline';
-                    const statusLabel = statusLabels[credential.displayStatus] || 'Unknown';
-                    const needsAction = ['not_submitted', 'rejected', 'expired', 'expiring'].includes(credential.displayStatus);
+                    const statusLabel =
+                      credential.displayStatus === 'grace_period' && credential.gracePeriodDueDate
+                        ? `Due by ${credential.gracePeriodDueDate.toLocaleDateString()}`
+                        : statusLabels[credential.displayStatus] || 'Unknown';
+                    const needsAction = [
+                      'not_submitted',
+                      'rejected',
+                      'expired',
+                      'expiring',
+                      'grace_period',
+                      'missing',
+                    ].includes(credential.displayStatus);
                     const isAdminOnly = isAdminOnlyCredential(credential.credentialType);
                     const stepCount = credential.credentialType.instruction_config?.steps?.length || 0;
 
@@ -178,7 +188,14 @@ export function VehicleCredentialsTab({ companyId, vehicleId }: VehicleCredentia
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={badgeVariant}>
+                          <Badge
+                            variant={badgeVariant}
+                            className={
+                              credential.displayStatus === 'grace_period'
+                                ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                : undefined
+                            }
+                          >
                             {statusLabel}
                           </Badge>
                         </TableCell>

@@ -15,14 +15,10 @@ import { UnassignVehicleModal } from '@/components/features/admin/UnassignVehicl
 import { ExtendAssignmentModal } from '@/components/features/admin/ExtendAssignmentModal';
 import { EndAssignmentEarlyModal } from '@/components/features/admin/EndAssignmentEarlyModal';
 import { AssignmentHistoryList } from '@/components/features/admin/AssignmentHistoryList';
+import { formatDate } from '@/lib/formatters';
 
 interface DriverVehiclesTabProps {
   driver: DriverWithDetails;
-}
-
-function formatDate(value?: string | null) {
-  if (!value) return '—';
-  return new Date(value).toLocaleDateString();
 }
 
 export function DriverVehiclesTab({ driver }: DriverVehiclesTabProps) {
