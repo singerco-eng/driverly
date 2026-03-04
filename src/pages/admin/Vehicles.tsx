@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueries } from '@tanstack/react-query';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -10,11 +11,60 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Car, Eye, Plus, LayoutGrid, List } from 'lucide-react';
 import { useVehicles } from '@/hooks/useVehicles';
 import { useAuth } from '@/contexts/AuthContext';
-import { vehicleStatusConfig } from '@/lib/status-configs';
+import { vehicleStatusConfig, credentialStatusConfig } from '@/lib/status-configs';
+import * as credentialService from '@/services/credentials';
 import type { VehicleFilters, VehicleOwnership, VehicleStatus, VehicleType, VehicleWithAssignments } from '@/types/vehicle';
 import { CreateVehicleModal } from '@/components/features/admin/CreateVehicleModal';
 import { AdminVehicleCard, AdminVehicleCardAction } from '@/components/features/admin/VehicleCard';
 import { EditVehicleModal } from '@/components/features/admin/EditVehicleModal';
+
+// Compute global credential status for a vehicle
+// Priority: expired > expiring > missing > grace_period (due soon) > pending > valid
+function computeGlobalCredentialStatus(credentials: Awaited<ReturnType<typeof credentialService.getVehicleCredentials>>) {
+  const requiredGlobal = credentials.filter(
+    (c) =>
+      c.credentialType &&
+      c.credentialType.requirement === 'required' &&
+      c.credentialType.scope === 'global',
+  );
+  
+  if (requiredGlobal.length === 0) {
+    return { status: 'valid' as const, missing: 0, total: 0 };
+  }
+
+  const expired = requiredGlobal.filter((c) => c.displayStatus === 'expired');
+  const expiring = requiredGlobal.filter((c) => c.displayStatus === 'expiring');
+  const missing = requiredGlobal.filter((c) => 
+    ['not_submitted', 'rejected', 'missing'].includes(c.displayStatus)
+  );
+  const gracePeriod = requiredGlobal.filter((c) => c.displayStatus === 'grace_period');
+  const pending = requiredGlobal.filter((c) => 
+    ['pending_review', 'awaiting', 'awaiting_verification'].includes(c.displayStatus)
+  );
+
+  if (expired.length > 0) {
+    return { status: 'expired' as const, missing: expired.length, total: requiredGlobal.length };
+  }
+  if (expiring.length > 0) {
+    return { status: 'expiring' as const, missing: 0, total: requiredGlobal.length };
+  }
+  if (missing.length > 0) {
+    return { status: 'missing' as const, missing: missing.length, total: requiredGlobal.length };
+  }
+  if (gracePeriod.length > 0) {
+    return { status: 'grace_period' as const, missing: gracePeriod.length, total: requiredGlobal.length };
+  }
+  if (pending.length > 0) {
+    return { status: 'pending' as const, missing: 0, total: requiredGlobal.length };
+  }
+  return { status: 'valid' as const, missing: 0, total: requiredGlobal.length };
+}
+
+type VehicleCredentialStatus = ReturnType<typeof computeGlobalCredentialStatus>;
+
+interface VehicleWithCredentialStatus extends VehicleWithAssignments {
+  credentialStatus?: VehicleCredentialStatus;
+}
 
 export default function VehiclesPage() {
   const navigate = useNavigate();
@@ -23,6 +73,27 @@ export default function VehiclesPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<VehicleWithAssignments | null>(null);
   const { data: vehicles, isLoading } = useVehicles(filters);
+
+  // Fetch credentials for all vehicles in parallel
+  const credentialQueries = useQueries({
+    queries: (vehicles || []).map((vehicle) => ({
+      queryKey: ['vehicle-credentials', vehicle.id],
+      queryFn: () => credentialService.getVehicleCredentials(vehicle.id),
+      enabled: !!vehicle.id,
+    })),
+  });
+
+  // Combine vehicles with their credential status
+  const vehiclesWithStatus = useMemo<VehicleWithCredentialStatus[]>(() => {
+    return (vehicles || []).map((vehicle, index) => {
+      const credentials = credentialQueries[index]?.data || [];
+      const credentialStatus = computeGlobalCredentialStatus(credentials);
+      return {
+        ...vehicle,
+        credentialStatus,
+      };
+    });
+  }, [vehicles, credentialQueries]);
 
   const handleCardAction = (action: AdminVehicleCardAction, vehicle: VehicleWithAssignments) => {
     if (action === 'view') {
@@ -39,8 +110,8 @@ export default function VehiclesPage() {
   const ownershipFilter = (filters.ownership ?? 'all') as VehicleOwnership | 'all';
 
   const sortedVehicles = useMemo(() => {
-    return [...(vehicles ?? [])].sort((a, b) => a.ownership.localeCompare(b.ownership));
-  }, [vehicles]);
+    return [...vehiclesWithStatus].sort((a, b) => a.ownership.localeCompare(b.ownership));
+  }, [vehiclesWithStatus]);
 
   const vehicleCount = vehicles?.length ?? 0;
 
@@ -147,12 +218,13 @@ export default function VehiclesPage() {
 
               {/* Table view */}
               <TabsContent value="table" className="mt-0">
-                <EnhancedTable loading={isLoading} skeletonRows={5} skeletonColumns={5}>
+                <EnhancedTable loading={isLoading} skeletonRows={5} skeletonColumns={6}>
                   <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>Vehicle</TableHead>
                         <TableHead>Status</TableHead>
+                        <TableHead>Credentials</TableHead>
                         <TableHead>Type</TableHead>
                         <TableHead>Ownership</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
@@ -161,7 +233,7 @@ export default function VehiclesPage() {
                     <TableBody>
                       {sortedVehicles.length === 0 && !isLoading ? (
                         <TableRow>
-                          <TableCell colSpan={5} className="h-24 text-center">
+                          <TableCell colSpan={6} className="h-24 text-center">
                             <div className="flex flex-col items-center gap-2">
                               <Car className="w-8 h-8 text-muted-foreground" />
                               <p className="text-muted-foreground">No vehicles found</p>
@@ -169,7 +241,12 @@ export default function VehiclesPage() {
                           </TableCell>
                         </TableRow>
                       ) : (
-                        sortedVehicles.map((vehicle) => (
+                        sortedVehicles.map((vehicle, index) => {
+                          const credentialQuery = credentialQueries[index];
+                          const isCredentialLoading = credentialQuery?.isLoading;
+                          const credStatus = vehicle.credentialStatus;
+                          
+                          return (
                           <TableRow key={vehicle.id} className="cursor-pointer hover:bg-muted/50">
                             <TableCell onClick={() => navigate(`/admin/vehicles/${vehicle.id}`)}>
                               <div className="font-medium">
@@ -184,6 +261,25 @@ export default function VehiclesPage() {
                               <Badge variant={vehicleStatusConfig[vehicle.status].variant}>
                                 {vehicleStatusConfig[vehicle.status].label}
                               </Badge>
+                            </TableCell>
+                            <TableCell onClick={() => navigate(`/admin/vehicles/${vehicle.id}`)}>
+                              {isCredentialLoading ? (
+                                <Skeleton className="h-5 w-20" />
+                              ) : !credStatus || credStatus.total === 0 ? (
+                                <span className="text-sm text-muted-foreground">—</span>
+                              ) : credStatus.status === 'valid' ? (
+                                <Badge variant={credentialStatusConfig.approved.variant}>{credentialStatusConfig.approved.label}</Badge>
+                              ) : credStatus.status === 'expiring' ? (
+                                <Badge variant={credentialStatusConfig.expiring.variant}>{credentialStatusConfig.expiring.label}</Badge>
+                              ) : credStatus.status === 'expired' ? (
+                                <Badge variant={credentialStatusConfig.expired.variant}>{credentialStatusConfig.expired.label}</Badge>
+                              ) : credStatus.status === 'missing' ? (
+                                <Badge variant={credentialStatusConfig.missing.variant}>{credentialStatusConfig.missing.label}</Badge>
+                              ) : credStatus.status === 'grace_period' ? (
+                                <Badge variant={credentialStatusConfig.grace_period.variant}>{credentialStatusConfig.grace_period.label}</Badge>
+                              ) : (
+                                <Badge variant={credentialStatusConfig.pending_review.variant}>{credentialStatusConfig.pending_review.label}</Badge>
+                              )}
                             </TableCell>
                             <TableCell className="capitalize" onClick={() => navigate(`/admin/vehicles/${vehicle.id}`)}>
                               {vehicle.vehicle_type.replace('_', ' ')}
@@ -202,7 +298,8 @@ export default function VehiclesPage() {
                               </Button>
                             </TableCell>
                           </TableRow>
-                        ))
+                          );
+                        })
                       )}
                     </TableBody>
                   </Table>

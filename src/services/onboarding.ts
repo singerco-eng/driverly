@@ -13,7 +13,26 @@ import type { Driver } from '@/types/driver';
 export async function getOnboardingStatus(driverId: string): Promise<OnboardingStatus> {
   const { data: driver, error: driverError } = await supabase
     .from('drivers')
-    .select('*')
+    .select(
+      [
+        'id',
+        'user_id',
+        'company_id',
+        'employment_type',
+        'date_of_birth',
+        'address_line1',
+        'city',
+        'state',
+        'zip',
+        'license_number',
+        'license_state',
+        'license_expiration',
+        'emergency_contact_name',
+        'emergency_contact_phone',
+        'has_availability',
+        'has_payment_info',
+      ].join(', ')
+    )
     .eq('id', driverId)
     .single();
 
@@ -34,12 +53,12 @@ export async function getOnboardingStatus(driverId: string): Promise<OnboardingS
 
   const { data: progress } = await supabase
     .from('driver_onboarding_progress')
-    .select('*')
+    .select('item_key, completed, completed_at, skipped')
     .eq('driver_id', driverId);
 
   const { count: vehicleCount } = await supabase
     .from('driver_vehicle_assignments')
-    .select('*', { count: 'exact', head: true })
+    .select('id', { count: 'exact', head: true })
     .eq('driver_id', driverId)
     .is('ended_at', null);
 
@@ -53,9 +72,10 @@ export async function getOnboardingStatus(driverId: string): Promise<OnboardingS
 
   const { data: credentials } = await supabase
     .from('driver_credentials')
-    .select('*')
+    .select('id, status')
     .eq('driver_id', driverId);
 
+  // Use publish status: only count active/scheduled credentials that are effective
   const { data: requiredCredentials } = await supabase
     .from('credential_types')
     .select('id')
@@ -63,7 +83,8 @@ export async function getOnboardingStatus(driverId: string): Promise<OnboardingS
     .eq('category', 'driver')
     .eq('scope', 'global')
     .eq('requirement', 'required')
-    .eq('is_active', true);
+    .in('status', ['active', 'scheduled'])
+    .or('effective_date.is.null,effective_date.lte.now()');
 
   const { data: requiredVehicleCredentials, error: requiredVehicleError } = await supabase
     .from('credential_types')
@@ -72,7 +93,8 @@ export async function getOnboardingStatus(driverId: string): Promise<OnboardingS
     .eq('category', 'vehicle')
     .eq('scope', 'global')
     .eq('requirement', 'required')
-    .eq('is_active', true);
+    .in('status', ['active', 'scheduled'])
+    .or('effective_date.is.null,effective_date.lte.now()');
 
   if (requiredVehicleError) throw requiredVehicleError;
 
@@ -242,7 +264,19 @@ export async function toggleDriverActive(
 export async function getDriverAvailability(driverId: string): Promise<DriverAvailability[]> {
   const { data, error } = await supabase
     .from('driver_availability')
-    .select('*')
+    .select(
+      [
+        'id',
+        'driver_id',
+        'company_id',
+        'day_of_week',
+        'start_time',
+        'end_time',
+        'is_active',
+        'created_at',
+        'updated_at',
+      ].join(', ')
+    )
     .eq('driver_id', driverId)
     .order('day_of_week');
 
@@ -275,7 +309,27 @@ export async function saveDriverAvailability(
 export async function getDriverPaymentInfo(driverId: string): Promise<DriverPaymentInfo | null> {
   const { data, error } = await supabase
     .from('driver_payment_info')
-    .select('*')
+    .select(
+      [
+        'id',
+        'driver_id',
+        'company_id',
+        'payment_method',
+        'bank_name',
+        'account_type',
+        'routing_number_last4',
+        'account_number_last4',
+        'check_address_line1',
+        'check_address_line2',
+        'check_city',
+        'check_state',
+        'check_zip',
+        'is_verified',
+        'verified_at',
+        'created_at',
+        'updated_at',
+      ].join(', ')
+    )
     .eq('driver_id', driverId)
     .maybeSingle();
 
@@ -306,7 +360,27 @@ export async function saveDriverPaymentInfo(
   const { data, error } = await supabase
     .from('driver_payment_info')
     .upsert(payload, { onConflict: 'driver_id' })
-    .select()
+    .select(
+      [
+        'id',
+        'driver_id',
+        'company_id',
+        'payment_method',
+        'bank_name',
+        'account_type',
+        'routing_number_last4',
+        'account_number_last4',
+        'check_address_line1',
+        'check_address_line2',
+        'check_city',
+        'check_state',
+        'check_zip',
+        'is_verified',
+        'verified_at',
+        'created_at',
+        'updated_at',
+      ].join(', ')
+    )
     .single();
 
   if (error) throw error;

@@ -23,12 +23,23 @@ import {
   User,
   Building2,
   Users,
+  MapPin,
+  FileCheck,
+  AlertTriangle,
+  XCircle,
+  Clock,
 } from 'lucide-react';
 
 export type AdminVehicleCardAction = 'view' | 'edit' | 'assign';
 
+type CredentialStatus = {
+  status: 'valid' | 'expiring' | 'expired' | 'missing' | 'grace_period' | 'pending';
+  missing: number;
+  total: number;
+};
+
 interface AdminVehicleCardProps {
-  vehicle: VehicleWithAssignments;
+  vehicle: VehicleWithAssignments & { credentialStatus?: CredentialStatus };
   onAction?: (action: AdminVehicleCardAction, vehicle: VehicleWithAssignments) => void;
 }
 
@@ -159,6 +170,48 @@ export function AdminVehicleCard({ vehicle, onAction }: AdminVehicleCardProps): 
 
         {/* Metadata Section */}
         <div className="border-t pt-3 space-y-2 text-sm">
+          {/* Credential Status */}
+          {vehicle.credentialStatus && vehicle.credentialStatus.total > 0 && (
+            <div className={`flex items-center gap-2 ${
+              vehicle.credentialStatus.status === 'valid' ? 'text-primary' :
+              vehicle.credentialStatus.status === 'expired' || vehicle.credentialStatus.status === 'missing' ? 'text-destructive' :
+              vehicle.credentialStatus.status === 'expiring' || vehicle.credentialStatus.status === 'grace_period' ? 'text-amber-600 dark:text-amber-500' :
+              'text-muted-foreground'
+            }`}>
+              {vehicle.credentialStatus.status === 'valid' ? (
+                <>
+                  <FileCheck className="h-4 w-4 flex-shrink-0" />
+                  <span>Credentials complete</span>
+                </>
+              ) : vehicle.credentialStatus.status === 'expiring' ? (
+                <>
+                  <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                  <span>{vehicle.credentialStatus.missing || 'Some'} credentials expiring</span>
+                </>
+              ) : vehicle.credentialStatus.status === 'expired' ? (
+                <>
+                  <XCircle className="h-4 w-4 flex-shrink-0" />
+                  <span>{vehicle.credentialStatus.missing} credentials expired</span>
+                </>
+              ) : vehicle.credentialStatus.status === 'missing' ? (
+                <>
+                  <XCircle className="h-4 w-4 flex-shrink-0" />
+                  <span>{vehicle.credentialStatus.missing} credentials missing</span>
+                </>
+              ) : vehicle.credentialStatus.status === 'grace_period' ? (
+                <>
+                  <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                  <span>{vehicle.credentialStatus.missing} credentials due soon</span>
+                </>
+              ) : vehicle.credentialStatus.status === 'pending' ? (
+                <>
+                  <Clock className="h-4 w-4 flex-shrink-0" />
+                  <span>Credentials pending review</span>
+                </>
+              ) : null}
+            </div>
+          )}
+
           {/* Ownership */}
           <div className="flex items-center gap-2 text-muted-foreground">
             {vehicle.ownership === 'company' ? (
@@ -181,6 +234,14 @@ export function AdminVehicleCard({ vehicle, onAction }: AdminVehicleCardProps): 
               {assignedDriverName ? `Assigned: ${assignedDriverName}` : 'Not assigned'}
             </span>
           </div>
+
+          {/* Location Assignment */}
+          {vehicle.location && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <MapPin className="h-4 w-4 flex-shrink-0" />
+              <span>{vehicle.location.name}</span>
+            </div>
+          )}
 
           {/* Capacity Info */}
           <div className="flex items-center gap-2 text-muted-foreground">

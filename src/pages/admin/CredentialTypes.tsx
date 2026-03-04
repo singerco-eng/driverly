@@ -9,7 +9,7 @@ import { FilterBar } from '@/components/ui/filter-bar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { EnhancedTable, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, FileText, Users, Car, LayoutGrid, List } from 'lucide-react';
+import { Plus, FileText, Users, Car, Building2, LayoutGrid, List } from 'lucide-react';
 import type { CredentialType, CredentialCategory, CredentialScope } from '@/types/credential';
 import CreateCredentialTypeSimpleModal from '@/components/features/admin/CreateCredentialTypeSimpleModal';
 import { CredentialTypeCard } from '@/components/features/admin/CredentialTypeCard';
@@ -29,11 +29,13 @@ const requirementConfig: Record<string, {
   optional: { label: 'Optional', badgeVariant: 'outline' },
 };
 
+type PublishStatus = 'draft' | 'scheduled' | 'active' | 'inactive';
+
 interface CredentialFilters {
   search?: string;
   category?: CredentialCategory | 'all';
   scope?: CredentialScope | 'all';
-  status?: 'active' | 'inactive' | 'all';
+  status?: PublishStatus | 'all';
 }
 
 export default function CredentialTypes() {
@@ -61,8 +63,7 @@ export default function CredentialTypes() {
         ct.name.toLowerCase().includes(filters.search.toLowerCase());
       const matchesCategory = filters.category === 'all' || ct.category === filters.category;
       const matchesScope = filters.scope === 'all' || ct.scope === filters.scope;
-      const matchesStatus = filters.status === 'all' || 
-        (filters.status === 'active' ? ct.is_active : !ct.is_active);
+      const matchesStatus = filters.status === 'all' || ct.status === filters.status;
       return matchesSearch && matchesCategory && matchesScope && matchesStatus;
     });
   }, [credentialTypes, filters]);
@@ -173,6 +174,7 @@ export default function CredentialTypes() {
                       { value: 'all', label: 'All Categories' },
                       { value: 'driver', label: 'Driver' },
                       { value: 'vehicle', label: 'Vehicle' },
+                      { value: 'location', label: 'Location' },
                     ],
                   },
                   {
@@ -190,12 +192,14 @@ export default function CredentialTypes() {
                   {
                     value: statusFilter,
                     onValueChange: (value) =>
-                      setFilters((prev) => ({ ...prev, status: value as 'active' | 'inactive' | 'all' })),
+                      setFilters((prev) => ({ ...prev, status: value as PublishStatus | 'all' })),
                     label: 'Status',
                     placeholder: 'All Status',
                     options: [
                       { value: 'all', label: 'All Status' },
                       { value: 'active', label: 'Active' },
+                      { value: 'scheduled', label: 'Scheduled' },
+                      { value: 'draft', label: 'Draft' },
                       { value: 'inactive', label: 'Inactive' },
                     ],
                   },
@@ -226,18 +230,25 @@ export default function CredentialTypes() {
                           </TableCell>
                         </TableRow>
                       ) : (
-                        filteredTypes.map((ct) => (
+                        filteredTypes.map((ct) => {
+                          const isDimmed = ct.status === 'draft' || ct.status === 'inactive';
+                          const statusLabel = ct.status === 'draft' ? 'Draft' 
+                            : ct.status === 'scheduled' ? 'Scheduled'
+                            : ct.status === 'inactive' ? 'Inactive' 
+                            : null;
+                          
+                          return (
                           <TableRow
                             key={ct.id}
-                            className={`cursor-pointer hover:bg-muted/50 ${!ct.is_active ? 'opacity-60' : ''}`}
+                            className={`cursor-pointer hover:bg-muted/50 ${isDimmed ? 'opacity-60' : ''}`}
                             onClick={() => navigate(`/admin/settings/credentials/${ct.id}`)}
                           >
                             <TableCell>
                               <div className="flex items-center gap-3">
                                 <div>
                                   <div className="font-medium">{ct.name}</div>
-                                  {!ct.is_active && (
-                                    <span className="text-xs text-muted-foreground">Inactive</span>
+                                  {statusLabel && (
+                                    <span className="text-xs text-muted-foreground">{statusLabel}</span>
                                   )}
                                 </div>
                               </div>
@@ -246,6 +257,8 @@ export default function CredentialTypes() {
                               <div className="flex items-center gap-1.5">
                                 {ct.category === 'driver' ? (
                                   <Users className="w-3.5 h-3.5 text-muted-foreground" />
+                                ) : ct.category === 'location' ? (
+                                  <Building2 className="w-3.5 h-3.5 text-muted-foreground" />
                                 ) : (
                                   <Car className="w-3.5 h-3.5 text-muted-foreground" />
                                 )}
@@ -268,7 +281,8 @@ export default function CredentialTypes() {
                                   : 'Driver Specifies'}
                             </TableCell>
                           </TableRow>
-                        ))
+                        );
+                        })
                       )}
                     </TableBody>
                   </Table>

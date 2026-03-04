@@ -19,6 +19,8 @@ import DriversPage from '@/pages/admin/Drivers';
 import DriverDetailPage from '@/pages/admin/DriverDetail';
 import VehiclesPage from '@/pages/admin/Vehicles';
 import VehicleDetailPage from '@/pages/admin/VehicleDetail';
+import LocationsPage from '@/pages/admin/Locations';
+import LocationDetailPage from '@/pages/admin/LocationDetail';
 import AdminSettings from '@/pages/admin/Settings';
 import ApplicationsPage from '@/pages/admin/Applications';
 import ApplicationReviewPage from '@/pages/admin/ApplicationReview';
@@ -112,6 +114,8 @@ function App() {
                 <Route path="drivers/:driverId/credentials/:credentialId" element={<DriverCredentialDetail />} />
                 <Route path="vehicles" element={<VehiclesPage />} />
                 <Route path="vehicles/:id" element={<VehicleDetailPage />} />
+                <Route path="locations" element={<LocationsPage />} />
+                <Route path="locations/:id" element={<LocationDetailPage />} />
                 <Route path="vehicles/:vehicleId/credentials/:credentialId" element={<VehicleCredentialDetail />} />
                 <Route path="applications" element={<ApplicationsPage />} />
                 <Route path="applications/:id" element={<ApplicationReviewPage />} />

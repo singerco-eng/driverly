@@ -54,8 +54,9 @@ import {
   Calendar,
   Briefcase as BriefcaseIcon,
 } from 'lucide-react';
-import AssignDriversModal from '@/components/features/admin/AssignDriversModal';
+import { UnifiedAssignmentModal } from '@/components/features/shared/assignment';
 import BrokerFormModal from '@/components/features/admin/BrokerFormModal';
+import type { BrokerContext } from '@/components/features/shared/assignment';
 import type { AssignmentStatus, BrokerStatus, DriverBrokerAssignment, VehicleType, BrokerAssignmentMode, TripSourceType } from '@/types/broker';
 import { getBrokerAssignmentMode, getAssignmentModeLabel, getSourceTypeLabel, SOURCE_TYPE_CONFIG } from '@/types/broker';
 import { Hospital, Shield, User, Briefcase } from 'lucide-react';
@@ -121,7 +122,7 @@ export default function BrokerDetail() {
   const denyAssignment = useDenyAssignment();
   const removeAssignment = useRemoveDriverFromBroker();
 
-  const [assignOpen, setAssignOpen] = useState(false);
+  const [assignDriversOpen, setAssignDriversOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
 
   // Drivers tab filters
@@ -181,6 +182,11 @@ export default function BrokerDetail() {
     );
   }
 
+  const brokerContext: BrokerContext = {
+    type: 'broker',
+    broker,
+  };
+
   // Build avatar/logo for header
   const avatar = (
     <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center shrink-0">
@@ -210,7 +216,7 @@ export default function BrokerDetail() {
         <Pencil className="w-4 h-4 mr-2" />
         Edit
       </Button>
-      <Button onClick={() => setAssignOpen(true)}>Assign Drivers</Button>
+      <Button onClick={() => setAssignDriversOpen(true)}>Assign Drivers</Button>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" size="icon" disabled={!isAdmin}>
@@ -231,7 +237,7 @@ export default function BrokerDetail() {
             </DropdownMenuItem>
           )}
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => setAssignOpen(true)}>
+          <DropdownMenuItem onClick={() => setAssignDriversOpen(true)}>
             <Users className="w-4 h-4 mr-2" />
             Assign Drivers
           </DropdownMenuItem>
@@ -657,7 +663,12 @@ export default function BrokerDetail() {
         </div>
       </Tabs>
 
-      <AssignDriversModal broker={broker} open={assignOpen} onOpenChange={setAssignOpen} />
+      <UnifiedAssignmentModal
+        open={assignDriversOpen}
+        onOpenChange={setAssignDriversOpen}
+        mode="assign-drivers-to-broker"
+        context={brokerContext}
+      />
       
       {profile?.company_id && (
         <BrokerFormModal

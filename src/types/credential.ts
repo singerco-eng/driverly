@@ -1,7 +1,7 @@
 import type { Vehicle } from '@/types/vehicle';
 import type { CredentialTypeInstructions } from '@/types/instructionBuilder';
 
-export type CredentialCategory = 'driver' | 'vehicle';
+export type CredentialCategory = 'driver' | 'vehicle' | 'location';
 export type CredentialScope = 'global' | 'broker';
 export type EmploymentType = 'both' | 'w2_only' | '1099_only';
 export type RequirementLevel = 'required' | 'optional' | 'recommended';

@@ -1,6 +1,7 @@
 import type { BadgeProps } from '@/components/ui/badge';
 import type { CredentialDisplayStatus } from '@/types/credential';
 import type { ApplicationStatus, DriverStatus } from '@/types/driver';
+import type { LocationStatus } from '@/types/location';
 import type { VehicleStatus } from '@/types/vehicle';
 
 export type BadgeVariant = BadgeProps['variant'];
@@ -74,6 +75,28 @@ export const vehicleStatusConfig: VehicleStatusConfig = {
   retired: {
     label: 'Retired',
     variant: 'destructive',
+  },
+};
+
+export type LocationStatusConfigEntry = {
+  label: string;
+  variant: BadgeVariant;
+};
+
+export type LocationStatusConfig = Record<LocationStatus, LocationStatusConfigEntry>;
+
+export const locationStatusConfig: LocationStatusConfig = {
+  active: {
+    label: 'Active',
+    variant: 'default',
+  },
+  inactive: {
+    label: 'Inactive',
+    variant: 'secondary',
+  },
+  archived: {
+    label: 'Archived',
+    variant: 'outline',
   },
 };
 

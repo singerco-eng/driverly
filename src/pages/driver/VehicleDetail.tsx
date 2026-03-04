@@ -27,14 +27,13 @@ import { useDriverVehicle, useSetPrimaryVehicle, useSetVehicleActive } from '@/h
 import { useVehicleCredentials } from '@/hooks/useCredentials';
 import { vehicleStatusConfig } from '@/lib/status-configs';
 import { resolveVehiclePhotoUrl } from '@/lib/vehiclePhoto';
-import { VehicleOverviewTab } from '@/components/features/driver/VehicleOverviewTab';
-import { VehicleDetailsTab } from '@/components/features/driver/VehicleDetailsTab';
 import { VehicleCredentialsTab } from '@/components/features/driver/VehicleCredentialsTab';
 import EditVehicleModal from '@/components/features/driver/EditVehicleModal';
 import UpdatePhotosModal from '@/components/features/driver/UpdatePhotosModal';
 import SetInactiveModal from '@/components/features/driver/SetInactiveModal';
 import RetireVehicleModal from '@/components/features/driver/RetireVehicleModal';
 import { CannotActivateVehicleModal } from '@/components/features/driver/CannotActivateVehicleModal';
+import { VehicleSummaryTab } from '@/components/features/shared/VehicleSummaryTab';
 
 export default function DriverVehicleDetail() {
   const { vehicleId } = useParams<{ vehicleId: string }>();
@@ -59,13 +58,13 @@ export default function DriverVehicleDetail() {
   const setPrimary = useSetPrimaryVehicle();
   const setActive = useSetVehicleActive();
 
-  // Calculate missing required global credentials
+  // Calculate missing required global credentials (only truly missing, not pending)
   const missingCredentials = useMemo(() => {
     const requiredGlobal = credentials.filter(
       (c) => c.credentialType.requirement === 'required' && c.credentialType.scope === 'global'
     );
     return requiredGlobal
-      .filter((c) => c.displayStatus !== 'approved')
+      .filter((c) => ['not_submitted', 'rejected', 'expired', 'missing'].includes(c.displayStatus))
       .map((c) => ({
         name: c.credentialType.name,
         credentialTypeId: c.credentialType.id,
@@ -84,7 +83,9 @@ export default function DriverVehicleDetail() {
   };
 
   // Default tab from URL param
-  const defaultTab = searchParams.get('tab') || 'overview';
+  const requestedTab = searchParams.get('tab');
+  const defaultTab =
+    requestedTab && ['summary', 'credentials'].includes(requestedTab) ? requestedTab : 'summary';
 
   // Resolve hero photo
   useEffect(() => {
@@ -189,8 +190,7 @@ export default function DriverVehicleDetail() {
   // Tab list for header
   const tabsList = (
     <TabsList>
-      <TabsTrigger value="overview">Overview</TabsTrigger>
-      <TabsTrigger value="details">Details</TabsTrigger>
+      <TabsTrigger value="summary">Summary</TabsTrigger>
       <TabsTrigger value="credentials">Credentials</TabsTrigger>
     </TabsList>
   );
@@ -237,17 +237,15 @@ export default function DriverVehicleDetail() {
             {heroImage}
 
             {/* Tab content */}
-            <TabsContent value="overview" className="mt-0">
-              <VehicleOverviewTab
+            <TabsContent value="summary" className="mt-0">
+              <VehicleSummaryTab
                 vehicle={vehicle}
+                companyId={profile?.company_id ?? vehicle.company_id}
                 driver={driver}
-                companyId={profile?.company_id}
+                canEdit={is1099}
+                isDriverView={true}
                 onUpdatePhotos={() => setPhotosOpen(true)}
-                is1099={is1099}
               />
-            </TabsContent>
-            <TabsContent value="details" className="mt-0">
-              <VehicleDetailsTab vehicle={vehicle} />
             </TabsContent>
             <TabsContent value="credentials" className="mt-0">
               {profile?.company_id && (

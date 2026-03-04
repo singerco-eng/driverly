@@ -22,12 +22,22 @@ import {
   Pencil,
   Phone,
   Car,
+  FileCheck,
+  AlertTriangle,
+  XCircle,
+  Clock,
 } from 'lucide-react';
 
 export type AdminDriverCardAction = 'view' | 'edit' | 'vehicles';
 
+type CredentialStatus = {
+  status: 'valid' | 'expiring' | 'expired' | 'missing' | 'grace_period' | 'pending';
+  missing: number;
+  total: number;
+};
+
 interface AdminDriverCardProps {
-  driver: DriverWithUser;
+  driver: DriverWithUser & { credentialStatus?: CredentialStatus };
   onAction?: (action: AdminDriverCardAction, driver: DriverWithUser) => void;
 }
 
@@ -168,6 +178,48 @@ export function AdminDriverCard({ driver, onAction }: AdminDriverCardProps): JSX
 
         {/* Metadata Section */}
         <div className="border-t pt-3 space-y-2 text-sm">
+          {/* Credential Status */}
+          {driver.credentialStatus && driver.credentialStatus.total > 0 && (
+            <div className={`flex items-center gap-2 ${
+              driver.credentialStatus.status === 'valid' ? 'text-primary' :
+              driver.credentialStatus.status === 'expired' || driver.credentialStatus.status === 'missing' ? 'text-destructive' :
+              driver.credentialStatus.status === 'expiring' || driver.credentialStatus.status === 'grace_period' ? 'text-amber-600 dark:text-amber-500' :
+              'text-muted-foreground'
+            }`}>
+              {driver.credentialStatus.status === 'valid' ? (
+                <>
+                  <FileCheck className="h-4 w-4 flex-shrink-0" />
+                  <span>Credentials complete</span>
+                </>
+              ) : driver.credentialStatus.status === 'expiring' ? (
+                <>
+                  <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                  <span>{driver.credentialStatus.missing || 'Some'} credentials expiring</span>
+                </>
+              ) : driver.credentialStatus.status === 'expired' ? (
+                <>
+                  <XCircle className="h-4 w-4 flex-shrink-0" />
+                  <span>{driver.credentialStatus.missing} credentials expired</span>
+                </>
+              ) : driver.credentialStatus.status === 'missing' ? (
+                <>
+                  <XCircle className="h-4 w-4 flex-shrink-0" />
+                  <span>{driver.credentialStatus.missing} credentials missing</span>
+                </>
+              ) : driver.credentialStatus.status === 'grace_period' ? (
+                <>
+                  <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                  <span>{driver.credentialStatus.missing} credentials due soon</span>
+                </>
+              ) : driver.credentialStatus.status === 'pending' ? (
+                <>
+                  <Clock className="h-4 w-4 flex-shrink-0" />
+                  <span>Credentials pending review</span>
+                </>
+              ) : null}
+            </div>
+          )}
+
           {/* Employment Type */}
           <div className="flex items-center gap-2 text-muted-foreground">
             <Briefcase className="h-4 w-4 flex-shrink-0" />
@@ -179,6 +231,14 @@ export function AdminDriverCard({ driver, onAction }: AdminDriverCardProps): JSX
             <Phone className="h-4 w-4 flex-shrink-0" />
             <span>{driver.user.phone || 'No phone'}</span>
           </div>
+
+          {/* Location Assignment */}
+          {driver.location && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <MapPin className="h-4 w-4 flex-shrink-0" />
+              <span>{driver.location.name}</span>
+            </div>
+          )}
 
           {/* Location */}
           {location && (

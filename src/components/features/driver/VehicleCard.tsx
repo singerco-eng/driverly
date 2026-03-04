@@ -21,6 +21,9 @@ import {
   Star,
   Image as ImageIcon,
   Pencil,
+  FileCheck,
+  AlertTriangle,
+  XCircle,
 } from 'lucide-react';
 
 export type VehicleCardAction =
@@ -72,7 +75,7 @@ export default function VehicleCard({ vehicle, readOnly, onAction }: VehicleCard
   return (
     <Card className="h-full flex flex-col hover:shadow-soft transition-all">
       <CardContent className="p-4 space-y-3 flex-1 flex flex-col">
-        {/* Header row with single status badge and actions */}
+        {/* Header row with badge and actions */}
         <div className="flex items-center justify-between">
           <Badge variant={vehicleStatus.variant}>
             {vehicleStatus.label}
@@ -157,6 +160,48 @@ export default function VehicleCard({ vehicle, readOnly, onAction }: VehicleCard
 
         {/* Metadata Section */}
         <div className="border-t pt-3 space-y-2 text-sm">
+          {/* Credential Status */}
+          {vehicle.credentialStatus && (
+            <div className={`flex items-center gap-2 ${
+              vehicle.credentialStatus === 'valid' ? 'text-primary' :
+              vehicle.credentialStatus === 'expired' || vehicle.credentialStatus === 'missing' ? 'text-destructive' :
+              vehicle.credentialStatus === 'expiring' || vehicle.credentialStatus === 'grace_period' ? 'text-amber-600 dark:text-amber-500' :
+              'text-muted-foreground'
+            }`}>
+              {vehicle.credentialStatus === 'valid' ? (
+                <>
+                  <FileCheck className="h-4 w-4 flex-shrink-0" />
+                  <span>Credentials complete</span>
+                </>
+              ) : vehicle.credentialStatus === 'expiring' ? (
+                <>
+                  <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                  <span>Credentials expiring soon</span>
+                </>
+              ) : vehicle.credentialStatus === 'expired' ? (
+                <>
+                  <XCircle className="h-4 w-4 flex-shrink-0" />
+                  <span>Credentials expired</span>
+                </>
+              ) : vehicle.credentialStatus === 'grace_period' ? (
+                <>
+                  <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                  <span>Credentials due soon</span>
+                </>
+              ) : vehicle.credentialStatus === 'pending' ? (
+                <>
+                  <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                  <span>Credentials pending review</span>
+                </>
+              ) : vehicle.credentialStatus === 'missing' ? (
+                <>
+                  <XCircle className="h-4 w-4 flex-shrink-0" />
+                  <span>Credentials incomplete</span>
+                </>
+              ) : null}
+            </div>
+          )}
+
           {/* Capacity Info */}
           <div className="flex items-center gap-2 text-muted-foreground">
             <Car className="h-4 w-4 flex-shrink-0" />

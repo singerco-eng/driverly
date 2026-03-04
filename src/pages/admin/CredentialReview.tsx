@@ -82,8 +82,9 @@ export default function CredentialReviewPage() {
 
   const filteredDriver = useMemo(() => {
     return (driverCredentials || []).filter((credential) => {
-      // Filter out inactive credential types
-      if (!credential.credentialType.is_active) return false;
+      // Filter out draft/inactive credential types (use status field from publish feature)
+      const status = credential.credentialType.status;
+      if (status !== 'active' && status !== 'scheduled') return false;
       
       // Status filter
       if (filters.status === 'needs_action') {
@@ -130,8 +131,9 @@ export default function CredentialReviewPage() {
 
   const filteredVehicle = useMemo(() => {
     return (vehicleCredentials || []).filter((credential) => {
-      // Filter out inactive credential types
-      if (!credential.credentialType.is_active) return false;
+      // Filter out draft/inactive credential types (use status field from publish feature)
+      const status = credential.credentialType.status;
+      if (status !== 'active' && status !== 'scheduled') return false;
       
       // Status filter
       if (filters.status === 'needs_action') {

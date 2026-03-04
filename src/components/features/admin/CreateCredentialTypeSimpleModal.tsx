@@ -33,7 +33,7 @@ import {
 
 const schema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
-  category: z.enum(['driver', 'vehicle']),
+  category: z.enum(['driver', 'vehicle', 'location']),
   scope: z.enum(['global', 'broker']),
   broker_id: z.string().nullable(),
   template_id: z.string().nullable(),
@@ -138,8 +138,10 @@ export default function CreateCredentialTypeSimpleModal({
             <Label>Category *</Label>
             <RadioGroup
               value={watch('category')}
-              onValueChange={(value) => setValue('category', value as 'driver' | 'vehicle')}
-              className="flex gap-4"
+              onValueChange={(value) =>
+                setValue('category', value as 'driver' | 'vehicle' | 'location')
+              }
+              className="flex flex-wrap gap-4"
             >
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="driver" id="cat-driver" />
@@ -148,6 +150,10 @@ export default function CreateCredentialTypeSimpleModal({
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="vehicle" id="cat-vehicle" />
                 <Label htmlFor="cat-vehicle">Vehicle Credential</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="location" id="cat-location" />
+                <Label htmlFor="cat-location">Location Credential</Label>
               </div>
             </RadioGroup>
           </div>

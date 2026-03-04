@@ -7,6 +7,64 @@ import type {
   CompanyWithStats,
 } from '@/types/company';
 
+const COMPANY_LIST_COLUMNS = `
+  id,
+  name,
+  slug,
+  status,
+  primary_color,
+  created_at
+`;
+
+const COMPANY_PROFILE_COLUMNS = `
+  id,
+  name,
+  slug,
+  email,
+  phone,
+  address_line1,
+  address_line2,
+  city,
+  state,
+  zip,
+  logo_url,
+  primary_color,
+  status,
+  ein,
+  timezone,
+  created_at,
+  updated_at
+`;
+
+const COMPANY_DETAIL_COLUMNS = `
+  id,
+  name,
+  slug,
+  email,
+  phone,
+  address_line1,
+  address_line2,
+  city,
+  state,
+  zip,
+  logo_url,
+  primary_color,
+  status,
+  ein,
+  timezone,
+  deactivation_reason,
+  deactivated_at,
+  deactivated_by,
+  created_at,
+  updated_at
+`;
+
+const COMPANY_PUBLIC_COLUMNS = `
+  id,
+  name,
+  slug
+`;
+
 function generateSlug(name: string): string {
   return name
     .toLowerCase()
@@ -17,7 +75,7 @@ function generateSlug(name: string): string {
 export async function getCompanies(): Promise<CompanyWithStats[]> {
   const { data, error } = await supabase
     .from('companies')
-    .select('*')
+    .select(COMPANY_LIST_COLUMNS)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
@@ -27,7 +85,7 @@ export async function getCompanies(): Promise<CompanyWithStats[]> {
 export async function getCompany(id: string): Promise<Company> {
   const { data, error } = await supabase
     .from('companies')
-    .select('*')
+    .select(COMPANY_PROFILE_COLUMNS)
     .eq('id', id)
     .single();
 
@@ -38,7 +96,7 @@ export async function getCompany(id: string): Promise<Company> {
 export async function getCompanyBySlug(slug: string): Promise<Company> {
   const { data, error } = await supabase
     .from('companies')
-    .select('*')
+    .select(COMPANY_PUBLIC_COLUMNS)
     .eq('slug', slug)
     .single();
 
@@ -49,7 +107,7 @@ export async function getCompanyBySlug(slug: string): Promise<Company> {
 export async function getCompanyDetail(id: string): Promise<CompanyDetail> {
   const { data: company, error: companyError } = await supabase
     .from('companies')
-    .select('*')
+    .select(COMPANY_DETAIL_COLUMNS)
     .eq('id', id)
     .single();
 
@@ -117,7 +175,7 @@ export async function createCompany(formData: CompanyFormData): Promise<Company>
       timezone: formData.timezone || 'America/New_York',
       status: 'active',
     })
-    .select()
+    .select(COMPANY_DETAIL_COLUMNS)
     .single();
 
   if (error) throw error;
@@ -135,7 +193,7 @@ export async function updateCompany(
       updated_at: new Date().toISOString(),
     })
     .eq('id', id)
-    .select()
+    .select(COMPANY_DETAIL_COLUMNS)
     .single();
 
   if (error) throw error;
@@ -154,7 +212,7 @@ export async function deactivateCompany(id: string, reason: string): Promise<Com
       deactivated_by: user?.id,
     })
     .eq('id', id)
-    .select()
+    .select(COMPANY_DETAIL_COLUMNS)
     .single();
 
   if (error) throw error;
@@ -173,7 +231,7 @@ export async function suspendCompany(id: string, reason: string): Promise<Compan
       deactivated_by: user?.id,
     })
     .eq('id', id)
-    .select()
+    .select(COMPANY_DETAIL_COLUMNS)
     .single();
 
   if (error) throw error;
@@ -190,7 +248,7 @@ export async function reactivateCompany(id: string): Promise<Company> {
       deactivated_by: null,
     })
     .eq('id', id)
-    .select()
+    .select(COMPANY_DETAIL_COLUMNS)
     .single();
 
   if (error) throw error;

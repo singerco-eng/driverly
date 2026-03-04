@@ -195,9 +195,17 @@ export default function TripSources() {
           isCredentialLiveForDrivers(cred.credentialType) &&
           matchesEmploymentType(cred.credentialType.employment_type),
       );
-      const missingGlobal = globalDriverCreds.filter((cred) => cred.displayStatus !== 'approved');
+      const missingGlobal = globalDriverCreds.filter((cred) => 
+        ['not_submitted', 'rejected', 'expired', 'missing'].includes(cred.displayStatus)
+      );
+      const pendingGlobal = globalDriverCreds.filter((cred) => 
+        ['pending_review', 'awaiting', 'awaiting_verification'].includes(cred.displayStatus)
+      );
       if (missingGlobal.length > 0) {
         issues.push(`${missingGlobal.length} global credential${missingGlobal.length === 1 ? '' : 's'} missing`);
+      }
+      if (pendingGlobal.length > 0) {
+        issues.push(`${pendingGlobal.length} global credential${pendingGlobal.length === 1 ? '' : 's'} pending review`);
       }
 
       const brokerDriverCreds = driverCredentials.filter(
@@ -209,9 +217,17 @@ export default function TripSources() {
           isCredentialLiveForDrivers(cred.credentialType) &&
           matchesEmploymentType(cred.credentialType.employment_type),
       );
-      const missingBroker = brokerDriverCreds.filter((cred) => cred.displayStatus !== 'approved');
+      const missingBroker = brokerDriverCreds.filter((cred) => 
+        ['not_submitted', 'rejected', 'expired', 'missing'].includes(cred.displayStatus)
+      );
+      const pendingBroker = brokerDriverCreds.filter((cred) => 
+        ['pending_review', 'awaiting', 'awaiting_verification'].includes(cred.displayStatus)
+      );
       if (missingBroker.length > 0) {
         issues.push(`${missingBroker.length} ${broker.name} credential${missingBroker.length === 1 ? '' : 's'} missing`);
+      }
+      if (pendingBroker.length > 0) {
+        issues.push(`${pendingBroker.length} ${broker.name} credential${pendingBroker.length === 1 ? '' : 's'} pending review`);
       }
 
       const requiredVehicleTypes = credentialTypes.filter(
@@ -234,7 +250,8 @@ export default function TripSources() {
             return false;
           }
           const match = vehicleCreds.find((cred) => cred.credentialType.id === type.id);
-          return !match || match.displayStatus !== 'approved';
+          // Only count as missing if not approved AND not pending review
+          return !match || ['not_submitted', 'rejected', 'expired', 'missing'].includes(match.displayStatus);
         });
         return missingVehicleCreds.length === 0;
       });

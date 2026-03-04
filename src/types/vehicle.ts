@@ -5,6 +5,12 @@ export type VehicleStatus = 'active' | 'inactive' | 'retired';
 export interface Vehicle {
   id: string;
   company_id: string;
+  location_id: string | null;
+  location?: {
+    id: string;
+    name: string;
+    code: string | null;
+  } | null;
 
   // Basic Info
   make: string;

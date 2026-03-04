@@ -13,6 +13,7 @@ import {
   Building2,
   FileCheck2,
   CreditCard,
+  MapPin,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -56,6 +57,7 @@ export default function AdminLayout() {
     { path: '/admin/applications', label: 'Applicants', icon: FileText },
     { path: '/admin/drivers', label: 'Drivers', icon: Users },
     { path: '/admin/vehicles', label: 'Vehicles', icon: Car },
+    { path: '/admin/locations', label: 'Locations', icon: MapPin },
     { path: '/admin/brokers', label: 'Trip Sources', icon: Building2 },
     { path: '/admin/settings/credentials', label: 'Credential Builder', icon: FileText },
     { path: '/admin/credentials', label: 'Credential Review', icon: FileCheck2, showBadge: true },

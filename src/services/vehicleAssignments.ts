@@ -40,7 +40,7 @@ export async function getVehicleAssignment(
         id,
         employment_type,
         status,
-        user:users(full_name, email)
+        user:users!user_id(full_name, email)
       )
     `,
     )
@@ -68,7 +68,7 @@ export async function getAvailableVehicles(companyId?: string | null): Promise<a
         ended_at,
         driver:drivers(
           id,
-          user:users(full_name)
+          user:users!user_id(full_name)
         )
       )
     `,
@@ -102,7 +102,7 @@ export async function getAvailableDrivers(companyId?: string | null): Promise<an
     .select(
       `
       *,
-      user:users(full_name, email),
+      user:users!user_id(full_name, email),
       assignments:driver_vehicle_assignments(
         id,
         vehicle_id,
@@ -406,9 +406,9 @@ export async function getVehicleAssignmentHistory(
     .select(
       `
       *,
-      driver:drivers(id, user:users(full_name)),
+      driver:drivers(id, user:users!user_id(full_name)),
       performed_by_user:users!vehicle_assignment_history_performed_by_fkey(full_name),
-      transferred_to_driver:drivers!vehicle_assignment_history_transferred_to_driver_id_fkey(id, user:users(full_name))
+      transferred_to_driver:drivers!vehicle_assignment_history_transferred_to_driver_id_fkey(id, user:users!user_id(full_name))
     `,
     )
     .eq('vehicle_id', vehicleId)

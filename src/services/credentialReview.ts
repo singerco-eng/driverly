@@ -26,7 +26,8 @@ export async function getDriverCredentialsForReview(
       driver:drivers!driver_credentials_driver_id_fkey(*, user:users!drivers_user_id_fkey(id, full_name, email, phone, avatar_url))
     `,
     )
-    .eq('company_id', companyId);
+    .eq('company_id', companyId)
+    .eq('credential_type.category', 'driver');
 
   if (filters.status === 'needs_action') {
     query = query.in('status', ['pending_review', 'not_submitted']);
@@ -68,7 +69,8 @@ export async function getVehicleCredentialsForReview(
       vehicle:vehicles(*, owner:drivers!owner_driver_id(*, user:users!drivers_user_id_fkey(id, full_name)))
     `,
     )
-    .eq('company_id', companyId);
+    .eq('company_id', companyId)
+    .eq('credential_type.category', 'vehicle');
 
   if (filters.status === 'needs_action') {
     query = query.in('status', ['pending_review', 'not_submitted']);
@@ -98,27 +100,30 @@ export async function getVehicleCredentialsForReview(
 }
 
 export async function getReviewQueueStats(companyId: string): Promise<ReviewQueueStats> {
-  // Only count credentials where the credential type is active
+  // Only count credentials where the credential type is published (active or scheduled)
   const { count: driverPending } = await supabase
     .from('driver_credentials')
     .select('*, credential_type:credential_types!inner(*)', { count: 'exact', head: true })
     .eq('company_id', companyId)
     .eq('status', 'pending_review')
-    .eq('credential_type.is_active', true);
+    .eq('credential_type.category', 'driver')
+    .in('credential_type.status', ['active', 'scheduled']);
 
   const { count: vehiclePending } = await supabase
     .from('vehicle_credentials')
     .select('*, credential_type:credential_types!inner(*)', { count: 'exact', head: true })
     .eq('company_id', companyId)
     .eq('status', 'pending_review')
-    .eq('credential_type.is_active', true);
+    .eq('credential_type.category', 'vehicle')
+    .in('credential_type.status', ['active', 'scheduled']);
 
   const { count: awaiting } = await supabase
     .from('driver_credentials')
     .select('*, credential_type:credential_types!inner(*)', { count: 'exact', head: true })
     .eq('company_id', companyId)
     .eq('status', 'not_submitted')
-    .eq('credential_type.is_active', true)
+    .eq('credential_type.category', 'driver')
+    .in('credential_type.status', ['active', 'scheduled'])
     .eq('credential_type.requires_driver_action', false);
 
   const thirtyDays = new Date();
@@ -129,7 +134,8 @@ export async function getReviewQueueStats(companyId: string): Promise<ReviewQueu
     .select('*, credential_type:credential_types!inner(*)', { count: 'exact', head: true })
     .eq('company_id', companyId)
     .eq('status', 'approved')
-    .eq('credential_type.is_active', true)
+    .eq('credential_type.category', 'driver')
+    .in('credential_type.status', ['active', 'scheduled'])
     .lte('expires_at', thirtyDays.toISOString())
     .gte('expires_at', new Date().toISOString());
 
@@ -347,12 +353,14 @@ export async function getVehicleCredentialsForAdmin(
   vehicleId: string,
 ): Promise<CredentialForReview[]> {
   // Get all vehicle credential types for this company (global and broker-scoped)
+  // Use publish status field: only show active/scheduled credentials that are effective
   const { data: credentialTypes, error: typesError } = await supabase
     .from('credential_types')
     .select('*, broker:brokers(id, name)')
     .eq('company_id', companyId)
     .eq('category', 'vehicle')
-    .eq('is_active', true)
+    .in('status', ['active', 'scheduled'])
+    .or('effective_date.is.null,effective_date.lte.now()')
     .order('display_order');
 
   if (typesError) throw typesError;
@@ -462,12 +470,14 @@ export async function getDriverCredentialsForAdmin(
   driverId: string,
 ): Promise<CredentialForReview[]> {
   // Get all driver credential types for this company (global and broker-scoped)
+  // Use publish status field: only show active/scheduled credentials that are effective
   const { data: credentialTypes, error: typesError } = await supabase
     .from('credential_types')
     .select('*, broker:brokers(id, name)')
     .eq('company_id', companyId)
     .eq('category', 'driver')
-    .eq('is_active', true)
+    .in('status', ['active', 'scheduled'])
+    .or('effective_date.is.null,effective_date.lte.now()')
     .order('display_order');
 
   if (typesError) throw typesError;

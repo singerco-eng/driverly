@@ -1040,7 +1040,7 @@ export function AIBuilderTwoPanel({
                                 })
                               }
                             />
-                          ) : (
+                          ) : msg.component.type === 'field_selection' && Array.isArray(msg.component.suggestedFields) ? (
                             <FieldSelectionForm
                               documentName={msg.component.documentName}
                               suggestedFields={msg.component.suggestedFields}
@@ -1064,7 +1064,7 @@ export function AIBuilderTwoPanel({
                                 )
                               }
                             />
-                          )}
+                          ) : null}
                         </div>
                       ) : null}
                     </div>

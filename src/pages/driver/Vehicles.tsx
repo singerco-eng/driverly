@@ -33,6 +33,7 @@ interface VehiclesFilters {
   search?: string;
 }
 
+// Priority: expired > expiring > missing > grace_period (due soon) > valid
 function computeCredentialStatus(credentials: Awaited<ReturnType<typeof credentialService.getVehicleCredentials>>) {
   const required = credentials.filter((c) => c.credentialType.requirement === 'required');
   if (required.length === 0) {
@@ -42,7 +43,11 @@ function computeCredentialStatus(credentials: Awaited<ReturnType<typeof credenti
   const hasExpired = required.some((c) => c.displayStatus === 'expired');
   const hasExpiring = required.some((c) => c.displayStatus === 'expiring');
   const hasMissing = required.some((c) =>
-    ['not_submitted', 'rejected', 'pending_review', 'awaiting'].includes(c.displayStatus),
+    ['not_submitted', 'rejected', 'missing'].includes(c.displayStatus),
+  );
+  const hasGracePeriod = required.some((c) => c.displayStatus === 'grace_period');
+  const hasPending = required.some((c) =>
+    ['pending_review', 'awaiting', 'awaiting_verification'].includes(c.displayStatus),
   );
 
   if (hasExpired) {
@@ -52,8 +57,15 @@ function computeCredentialStatus(credentials: Awaited<ReturnType<typeof credenti
     return { status: 'expiring' as const, summary: 'Credentials expiring soon' };
   }
   if (hasMissing) {
-    const remaining = required.filter((c) => c.displayStatus !== 'approved').length;
-    return { status: 'missing' as const, summary: `${remaining} credential${remaining !== 1 ? 's' : ''} need attention` };
+    const remaining = required.filter((c) => ['not_submitted', 'rejected', 'missing'].includes(c.displayStatus)).length;
+    return { status: 'missing' as const, summary: `${remaining} credential${remaining !== 1 ? 's' : ''} missing` };
+  }
+  if (hasGracePeriod) {
+    const dueSoon = required.filter((c) => c.displayStatus === 'grace_period').length;
+    return { status: 'grace_period' as const, summary: `${dueSoon} credential${dueSoon !== 1 ? 's' : ''} due soon` };
+  }
+  if (hasPending) {
+    return { status: 'pending' as const, summary: 'Credentials pending review' };
   }
   return { status: 'valid' as const, summary: 'All credentials valid' };
 }
@@ -67,8 +79,9 @@ function computeGlobalCredentialMissing(
   if (requiredGlobal.length === 0) {
     return { missing: false, remaining: 0, missingCredentials: [] };
   }
+  // Only count truly missing credentials, not pending ones
   const missingCredentials = requiredGlobal
-    .filter((c) => c.displayStatus !== 'approved')
+    .filter((c) => ['not_submitted', 'rejected', 'expired', 'missing'].includes(c.displayStatus))
     .map((c) => ({
       name: c.credentialType.name,
       credentialTypeId: c.credentialType.id,
@@ -138,10 +151,19 @@ export default function DriverVehicles() {
           const brokerRequired = required.filter(
             (c) => c.credentialType.scope === 'global' || c.credentialType.broker_id === broker.id,
           );
-          const missing = brokerRequired.filter((c) => c.displayStatus !== 'approved');
+          const missing = brokerRequired.filter((c) => 
+            ['not_submitted', 'rejected', 'expired', 'missing'].includes(c.displayStatus)
+          );
+          const pending = brokerRequired.filter((c) => 
+            ['pending_review', 'awaiting', 'awaiting_verification'].includes(c.displayStatus)
+          );
 
           if (missing.length > 0) {
             ineligibleBrokers.push({ name: broker.name, reason: 'Missing required credentials' });
+            return;
+          }
+          if (pending.length > 0) {
+            ineligibleBrokers.push({ name: broker.name, reason: 'Credentials pending review' });
             return;
           }
 
@@ -374,8 +396,10 @@ export default function DriverVehicles() {
                                   <Badge variant={credentialStatusConfig.expiring.variant}>{credentialStatusConfig.expiring.label}</Badge>
                                 ) : vehicle.credentialStatus === 'expired' ? (
                                   <Badge variant={credentialStatusConfig.expired.variant}>{credentialStatusConfig.expired.label}</Badge>
-                                ) : vehicle.isUncredentialed ? (
-                                  <Badge variant={credentialStatusConfig.not_submitted.variant}>Incomplete</Badge>
+                                ) : vehicle.credentialStatus === 'grace_period' ? (
+                                  <Badge variant={credentialStatusConfig.grace_period.variant}>{credentialStatusConfig.grace_period.label}</Badge>
+                                ) : vehicle.credentialStatus === 'missing' ? (
+                                  <Badge variant={credentialStatusConfig.missing.variant}>{credentialStatusConfig.missing.label}</Badge>
                                 ) : (
                                   <Badge variant={credentialStatusConfig.pending_review.variant}>{credentialStatusConfig.pending_review.label}</Badge>
                                 )}

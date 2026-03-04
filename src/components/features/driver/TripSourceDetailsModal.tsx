@@ -126,18 +126,27 @@ export function TripSourceDetailsModal({
         return false;
       }
       const match = vehicleCreds.find((cred) => cred.credentialType.id === type.id);
-      return !match || match.displayStatus !== 'approved';
+      return !match || ['not_submitted', 'rejected', 'expired', 'missing'].includes(match.displayStatus);
+    });
+    const pendingVehicleCreds = requiredVehicleTypes.filter((type) => {
+      if (type.vehicle_types && type.vehicle_types.length > 0 && !type.vehicle_types.includes(vehicle.vehicle_type)) {
+        return false;
+      }
+      const match = vehicleCreds.find((cred) => cred.credentialType.id === type.id);
+      return match && ['pending_review', 'awaiting', 'awaiting_verification'].includes(match.displayStatus);
     });
     const typeAccepted = broker.accepted_vehicle_types.includes(vehicle.vehicle_type);
     const isActive = vehicle.status === 'active';
-    const eligible = typeAccepted && isActive && missingVehicleCreds.length === 0;
+    const eligible = typeAccepted && isActive && missingVehicleCreds.length === 0 && pendingVehicleCreds.length === 0;
     const reason = !typeAccepted
       ? 'Vehicle type not accepted'
       : !isActive
         ? 'Vehicle is inactive'
         : missingVehicleCreds.length
           ? `${missingVehicleCreds.length} credential${missingVehicleCreds.length === 1 ? '' : 's'} missing`
-          : 'Eligible';
+          : pendingVehicleCreds.length
+            ? `${pendingVehicleCreds.length} credential${pendingVehicleCreds.length === 1 ? '' : 's'} pending review`
+            : 'Eligible';
 
     return {
       id: vehicle.id,

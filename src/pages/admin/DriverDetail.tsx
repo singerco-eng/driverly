@@ -24,14 +24,15 @@ import {
   Archive,
   AlertTriangle,
 } from 'lucide-react';
-import { DriverOverviewTab } from '@/components/features/admin/DriverOverviewTab';
-import { DriverProfileTab } from '@/components/features/admin/DriverProfileTab';
+import { DriverSummaryTab } from '@/components/features/shared/DriverSummaryTab';
 import { DriverVehiclesTab } from '@/components/features/admin/DriverVehiclesTab';
 import { DriverCredentialsTab } from '@/components/features/admin/DriverCredentialsTab';
 import { EditDriverModal } from '@/components/features/admin/EditDriverModal';
 import { SuspendDriverModal } from '@/components/features/admin/SuspendDriverModal';
 import { UpgradeModal } from '@/components/features/admin/UpgradeModal';
+import { UnifiedAssignmentModal } from '@/components/features/shared/assignment';
 import { useAuth } from '@/contexts/AuthContext';
+import type { DriverContext } from '@/components/features/shared/assignment';
 import type { DriverStatus } from '@/types/driver';
 import { driverStatusConfig } from '@/lib/status-configs';
 import { checkCanAddOperator } from '@/services/billing';
@@ -47,6 +48,7 @@ export default function DriverDetailPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [suspendOpen, setSuspendOpen] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [assignVehicleOpen, setAssignVehicleOpen] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   // Resolve avatar URL for display
@@ -101,6 +103,13 @@ export default function DriverDetailPage() {
       </div>
     );
   }
+
+  const driverContext: DriverContext = {
+    type: 'driver',
+    driverId: driver.id,
+    driverName: driver.user.full_name,
+    employmentType: driver.employment_type,
+  };
 
   // Build avatar for header
   const avatar = (
@@ -190,8 +199,7 @@ export default function DriverDetailPage() {
   // Tab list for header
   const tabsList = (
     <TabsList>
-      <TabsTrigger value="overview">Overview</TabsTrigger>
-      <TabsTrigger value="profile">Profile</TabsTrigger>
+      <TabsTrigger value="summary">Summary</TabsTrigger>
       <TabsTrigger value="vehicles">Vehicles</TabsTrigger>
       <TabsTrigger value="credentials">Credentials</TabsTrigger>
       <TabsTrigger value="availability" disabled>
@@ -202,7 +210,7 @@ export default function DriverDetailPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Tabs defaultValue="overview">
+      <Tabs defaultValue="summary">
         {/* Full-width header with centered tabs */}
         <DetailPageHeader
           title={driver.user.full_name}
@@ -218,16 +226,19 @@ export default function DriverDetailPage() {
         {/* Content area */}
         <div className="p-6">
           <div className="max-w-5xl mx-auto">
-            <TabsContent value="overview" className="mt-0">
-              <DriverOverviewTab driver={driver} canEdit={isAdmin} />
-            </TabsContent>
-
-            <TabsContent value="profile" className="mt-0">
-              <DriverProfileTab driver={driver} />
+            <TabsContent value="summary" className="mt-0">
+              <DriverSummaryTab
+                driver={driver}
+                companyId={driver.company_id}
+                canEdit={isAdmin}
+              />
             </TabsContent>
 
             <TabsContent value="vehicles" className="mt-0">
-              <DriverVehiclesTab driver={driver} />
+              <DriverVehiclesTab
+                driver={driver}
+                onAssignVehicle={() => setAssignVehicleOpen(true)}
+              />
             </TabsContent>
 
             <TabsContent value="credentials" className="mt-0">
@@ -255,6 +266,12 @@ export default function DriverDetailPage() {
           showTrigger={false}
         />
       )}
+      <UnifiedAssignmentModal
+        open={assignVehicleOpen}
+        onOpenChange={setAssignVehicleOpen}
+        mode="assign-vehicle-to-driver"
+        context={driverContext}
+      />
     </div>
   );
 }

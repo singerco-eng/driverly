@@ -20,11 +20,10 @@ import {
   XCircle,
   Archive,
 } from 'lucide-react';
-import { VehicleOverviewTab } from '@/components/features/admin/VehicleOverviewTab';
-import { VehicleDetailsTab } from '@/components/features/admin/VehicleDetailsTab';
 import { VehicleAssignmentsTab } from '@/components/features/admin/VehicleAssignmentsTab';
 import { VehicleCredentialsTab } from '@/components/features/admin/VehicleCredentialsTab';
 import { EditVehicleModal } from '@/components/features/admin/EditVehicleModal';
+import { VehicleSummaryTab } from '@/components/features/shared/VehicleSummaryTab';
 import { useAuth } from '@/contexts/AuthContext';
 import type { VehicleStatus } from '@/types/vehicle';
 import { vehicleStatusConfig } from '@/lib/status-configs';
@@ -120,8 +119,7 @@ export default function VehicleDetailPage() {
   // Tab list for header
   const tabsList = (
     <TabsList>
-      <TabsTrigger value="overview">Overview</TabsTrigger>
-      <TabsTrigger value="details">Details</TabsTrigger>
+      <TabsTrigger value="summary">Summary</TabsTrigger>
       <TabsTrigger value="credentials">Credentials</TabsTrigger>
       <TabsTrigger value="assignments">Assignments</TabsTrigger>
     </TabsList>
@@ -129,7 +127,7 @@ export default function VehicleDetailPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Tabs defaultValue="overview">
+      <Tabs defaultValue="summary">
         {/* Full-width header with centered tabs */}
         <DetailPageHeader
           title={`${vehicle.make} ${vehicle.model} ${vehicle.year}`}
@@ -144,11 +142,14 @@ export default function VehicleDetailPage() {
         {/* Content area */}
         <div className="p-6">
           <div className="max-w-5xl mx-auto">
-            <TabsContent value="overview" className="mt-0">
-              <VehicleOverviewTab vehicle={vehicle} canEdit={isAdmin} />
-            </TabsContent>
-            <TabsContent value="details" className="mt-0">
-              <VehicleDetailsTab vehicle={vehicle} />
+            <TabsContent value="summary" className="mt-0">
+              <VehicleSummaryTab
+                vehicle={vehicle}
+                companyId={vehicle.company_id}
+                canEdit={isAdmin}
+                isDriverView={false}
+                onUpdatePhotos={() => setEditOpen(true)}
+              />
             </TabsContent>
             <TabsContent value="credentials" className="mt-0">
               <VehicleCredentialsTab companyId={vehicle.company_id} vehicleId={vehicle.id} />

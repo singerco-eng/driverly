@@ -1,6 +1,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { DriverNotesSection } from '@/components/features/admin/DriverNotesSection';
+import { useAssignDriverToLocation, useLocations } from '@/hooks/useLocations';
 import { applicationStatusVariant } from '@/lib/status-styles';
 import type { DriverWithDetails } from '@/types/driver';
 
@@ -10,9 +18,13 @@ interface DriverOverviewTabProps {
 }
 
 export function DriverOverviewTab({ driver, canEdit = true }: DriverOverviewTabProps) {
+  const { data: locations } = useLocations(driver.company_id);
+  const assignToLocation = useAssignDriverToLocation();
+  const activeLocations = (locations ?? []).filter((location) => location.status === 'active');
+
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader>
             <CardTitle className="text-sm">Application Status</CardTitle>
@@ -52,6 +64,47 @@ export function DriverOverviewTab({ driver, canEdit = true }: DriverOverviewTabP
                 : 'No recent activity'}
             </div>
             <p className="mt-2 text-xs text-muted-foreground">Last active date</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Location</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Select
+              value={driver.location_id || 'unassigned'}
+              onValueChange={(value) => {
+                assignToLocation.mutate({
+                  driverId: driver.id,
+                  locationId: value === 'unassigned' ? null : value,
+                });
+              }}
+              disabled={!canEdit}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select location" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="unassigned">Unassigned</SelectItem>
+                {activeLocations.length === 0 ? (
+                  <SelectItem value="no-locations" disabled>
+                    No active locations
+                  </SelectItem>
+                ) : (
+                  activeLocations.map((location) => (
+                    <SelectItem key={location.id} value={location.id}>
+                      {location.name} {location.code ? `(${location.code})` : ''}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+            <p className="mt-2 text-xs text-muted-foreground">
+              {driver.location?.name
+                ? `Assigned to ${driver.location.name}`
+                : 'Not assigned to any location'}
+            </p>
           </CardContent>
         </Card>
       </div>

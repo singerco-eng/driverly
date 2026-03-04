@@ -18,6 +18,7 @@ export async function getVehicles(
     .select(
       `
       *,
+      location:company_locations(id, name, code),
       owner:drivers!owner_driver_id(
         id,
         user:users!user_id(full_name)
@@ -71,6 +72,7 @@ export async function getVehicle(id: string): Promise<VehicleWithAssignments> {
     .select(
       `
       *,
+      location:company_locations(id, name, code),
       owner:drivers!owner_driver_id(
         id,
         user:users!user_id(full_name, email, phone)

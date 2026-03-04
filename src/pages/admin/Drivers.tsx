@@ -20,6 +20,7 @@ import { AdminDriverCard, AdminDriverCardAction } from '@/components/features/ad
 import { driverStatusConfig, credentialStatusConfig } from '@/lib/status-configs';
 
 // Compute global credential status for a driver
+// Priority: expired > expiring > missing > grace_period (due soon) > pending > valid
 function computeGlobalCredentialStatus(credentials: Awaited<ReturnType<typeof credentialService.getDriverCredentials>>) {
   const requiredGlobal = credentials.filter(
     (c) =>
@@ -32,12 +33,14 @@ function computeGlobalCredentialStatus(credentials: Awaited<ReturnType<typeof cr
     return { status: 'valid' as const, missing: 0, total: 0 };
   }
 
-  const approved = requiredGlobal.filter((c) => c.displayStatus === 'approved');
   const expired = requiredGlobal.filter((c) => c.displayStatus === 'expired');
   const expiring = requiredGlobal.filter((c) => c.displayStatus === 'expiring');
-  const pending = requiredGlobal.filter((c) => c.displayStatus === 'pending_review' || c.displayStatus === 'awaiting');
   const missing = requiredGlobal.filter((c) => 
-    ['not_submitted', 'rejected'].includes(c.displayStatus)
+    ['not_submitted', 'rejected', 'missing'].includes(c.displayStatus)
+  );
+  const gracePeriod = requiredGlobal.filter((c) => c.displayStatus === 'grace_period');
+  const pending = requiredGlobal.filter((c) => 
+    ['pending_review', 'awaiting', 'awaiting_verification'].includes(c.displayStatus)
   );
 
   if (expired.length > 0) {
@@ -48,6 +51,9 @@ function computeGlobalCredentialStatus(credentials: Awaited<ReturnType<typeof cr
   }
   if (missing.length > 0) {
     return { status: 'missing' as const, missing: missing.length, total: requiredGlobal.length };
+  }
+  if (gracePeriod.length > 0) {
+    return { status: 'grace_period' as const, missing: gracePeriod.length, total: requiredGlobal.length };
   }
   if (pending.length > 0) {
     return { status: 'pending' as const, missing: 0, total: requiredGlobal.length };
@@ -309,7 +315,9 @@ export default function DriversPage() {
                               ) : credStatus.status === 'expired' ? (
                                 <Badge variant={credentialStatusConfig.expired.variant}>{credentialStatusConfig.expired.label}</Badge>
                               ) : credStatus.status === 'missing' ? (
-                                <Badge variant={credentialStatusConfig.not_submitted.variant}>Incomplete</Badge>
+                                <Badge variant={credentialStatusConfig.missing.variant}>{credentialStatusConfig.missing.label}</Badge>
+                              ) : credStatus.status === 'grace_period' ? (
+                                <Badge variant={credentialStatusConfig.grace_period.variant}>{credentialStatusConfig.grace_period.label}</Badge>
                               ) : (
                                 <Badge variant={credentialStatusConfig.pending_review.variant}>{credentialStatusConfig.pending_review.label}</Badge>
                               )}

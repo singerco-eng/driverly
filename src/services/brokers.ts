@@ -11,7 +11,21 @@ import type {
 export async function getBrokers(companyId: string): Promise<Broker[]> {
   const { data, error } = await supabase
     .from('brokers')
-    .select('*')
+    .select(
+      `
+      id,
+      name,
+      code,
+      source_type,
+      logo_url,
+      contact_name,
+      contact_email,
+      status,
+      service_states,
+      allow_driver_requests,
+      allow_driver_auto_signup
+    `,
+    )
     .eq('company_id', companyId)
     .order('name');
 
@@ -28,12 +42,13 @@ export async function getBrokersWithStats(companyId: string): Promise<BrokerWith
     .select('broker_id, status')
     .eq('company_id', companyId);
 
-  // Get credential counts per broker
+  // Get credential counts per broker (only published credentials)
   const { data: credentials } = await supabase
     .from('credential_types')
     .select('broker_id')
     .eq('company_id', companyId)
-    .eq('scope', 'broker');
+    .eq('scope', 'broker')
+    .in('status', ['active', 'scheduled']);
 
   return brokers.map((broker) => {
     const brokerAssignments = assignments?.filter((a) => a.broker_id === broker.id) || [];
@@ -50,7 +65,41 @@ export async function getBrokersWithStats(companyId: string): Promise<BrokerWith
 }
 
 export async function getBroker(id: string): Promise<Broker> {
-  const { data, error } = await supabase.from('brokers').select('*').eq('id', id).single();
+  const { data, error } = await supabase
+    .from('brokers')
+    .select(
+      `
+      id,
+      company_id,
+      name,
+      code,
+      source_type,
+      logo_url,
+      contact_name,
+      contact_email,
+      contact_phone,
+      address_line1,
+      address_line2,
+      city,
+      state,
+      zip_code,
+      website,
+      contract_number,
+      notes,
+      service_states,
+      accepted_vehicle_types,
+      accepted_employment_types,
+      status,
+      is_active,
+      allow_driver_requests,
+      allow_driver_auto_signup,
+      created_at,
+      updated_at,
+      created_by
+    `,
+    )
+    .eq('id', id)
+    .single();
 
   if (error) throw error;
   return data as Broker;
@@ -64,7 +113,20 @@ export async function getDriverBrokers(
 ): Promise<{ brokers: Broker[]; assignments: DriverBrokerAssignment[] }> {
   const { data: brokers, error: brokerError } = await supabase
     .from('brokers')
-    .select('*')
+    .select(
+      `
+      id,
+      name,
+      source_type,
+      logo_url,
+      service_states,
+      accepted_vehicle_types,
+      accepted_employment_types,
+      allow_driver_requests,
+      allow_driver_auto_signup,
+      status
+    `,
+    )
     .eq('company_id', companyId)
     .eq('status', 'active')
     .order('name');
@@ -73,7 +135,7 @@ export async function getDriverBrokers(
 
   const { data: assignments, error: assignmentError } = await supabase
     .from('driver_broker_assignments')
-    .select('*')
+    .select('id, driver_id, broker_id, status, requested_at')
     .eq('driver_id', driverId)
     .in('status', ['pending', 'assigned'])
     .order('requested_at', { ascending: false });
@@ -89,7 +151,7 @@ export async function getDriverBrokers(
 export async function getDriverAssignments(driverId: string): Promise<DriverBrokerAssignment[]> {
   const { data, error } = await supabase
     .from('driver_broker_assignments')
-    .select('*')
+    .select('id, driver_id, broker_id, status, requested_at')
     .eq('driver_id', driverId)
     .in('status', ['pending', 'assigned'])
     .order('requested_at', { ascending: false });
@@ -113,7 +175,7 @@ export async function requestBrokerAssignment(
       requested_by: 'driver',
       requested_at: new Date().toISOString(),
     })
-    .select()
+    .select('id, broker_id, status, requested_at')
     .single();
 
   if (error) throw error;
@@ -136,7 +198,7 @@ export async function autoJoinBroker(
       requested_at: new Date().toISOString(),
       approved_at: new Date().toISOString(),
     })
-    .select()
+    .select('id, broker_id, status, requested_at')
     .single();
 
   if (error) throw error;
@@ -196,7 +258,7 @@ export async function createBroker(
       allow_driver_auto_signup: formData.allow_driver_auto_signup,
       created_by: userId,
     })
-    .select()
+    .select('id, name')
     .single();
 
   if (error) throw error;
@@ -214,7 +276,7 @@ export async function updateBroker(
       updated_at: new Date().toISOString(),
     })
     .eq('id', id)
-    .select()
+    .select('id, company_id')
     .single();
 
   if (error) throw error;
@@ -226,7 +288,7 @@ export async function updateBrokerStatus(id: string, status: 'active' | 'inactiv
     .from('brokers')
     .update({ status, updated_at: new Date().toISOString() })
     .eq('id', id)
-    .select()
+    .select('id, company_id')
     .single();
 
   if (error) throw error;
@@ -240,7 +302,12 @@ export async function getBrokerAssignments(brokerId: string): Promise<DriverBrok
     .from('driver_broker_assignments')
     .select(
       `
-      *,
+      id,
+      driver_id,
+      broker_id,
+      status,
+      requested_by,
+      requested_at,
       driver:drivers(
         id,
         employment_type,
@@ -277,7 +344,7 @@ export async function assignDriverToBroker(
       approved_by: requestedBy === 'admin' ? userId : null,
       approved_at: requestedBy === 'admin' ? new Date().toISOString() : null,
     })
-    .select()
+    .select('id, broker_id, status')
     .single();
 
   if (error) throw error;
@@ -296,7 +363,7 @@ export async function approveAssignment(
       approved_at: new Date().toISOString(),
     })
     .eq('id', assignmentId)
-    .select()
+    .select('id, broker_id, status')
     .single();
 
   if (error) throw error;
@@ -317,7 +384,7 @@ export async function denyAssignment(
       removal_reason: reason || 'Request denied',
     })
     .eq('id', assignmentId)
-    .select()
+    .select('id, broker_id, status')
     .single();
 
   if (error) throw error;
@@ -338,7 +405,7 @@ export async function removeDriverFromBroker(
       removal_reason: reason || 'Removed by admin',
     })
     .eq('id', assignmentId)
-    .select()
+    .select('id, broker_id, status')
     .single();
 
   if (error) throw error;
@@ -350,7 +417,7 @@ export async function removeDriverFromBroker(
 export async function getBrokerRates(brokerId: string): Promise<BrokerRate[]> {
   const { data, error } = await supabase
     .from('broker_rates')
-    .select('*')
+    .select('id, broker_id, vehicle_type, base_rate, per_mile_rate, effective_from, effective_to')
     .eq('broker_id', brokerId)
     .order('effective_from', { ascending: false });
 
@@ -361,7 +428,7 @@ export async function getBrokerRates(brokerId: string): Promise<BrokerRate[]> {
 export async function getCurrentBrokerRates(brokerId: string): Promise<BrokerRate[]> {
   const { data, error } = await supabase
     .from('broker_rates')
-    .select('*')
+    .select('id, broker_id, vehicle_type, base_rate, per_mile_rate, effective_from, effective_to')
     .eq('broker_id', brokerId)
     .is('effective_to', null)
     .order('vehicle_type');

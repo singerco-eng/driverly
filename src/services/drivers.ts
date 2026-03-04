@@ -17,7 +17,8 @@ export async function getDrivers(filters?: DriverFilters): Promise<DriverWithUse
     .select(
       `
       *,
-      user:users!user_id(id, email, full_name, phone, avatar_url)
+      user:users!user_id(id, email, full_name, phone, avatar_url),
+      location:company_locations(id, name, code)
     `
     )
     .order('created_at', { ascending: false });
@@ -58,6 +59,7 @@ export async function getDriver(id: string): Promise<DriverWithDetails> {
       `
       *,
       user:users!user_id(*),
+      location:company_locations(id, name, code),
       vehicles:driver_vehicle_assignments(
         *,
         vehicle:vehicles(*)
@@ -205,6 +207,7 @@ export async function getDriverByUserId(userId: string): Promise<DriverWithDetai
       `
       *,
       user:users!user_id(*),
+      location:company_locations(id, name, code),
       vehicles:driver_vehicle_assignments(
         *,
         vehicle:vehicles(*)

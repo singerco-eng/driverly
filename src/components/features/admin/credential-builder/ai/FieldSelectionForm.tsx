@@ -16,7 +16,7 @@ export function FieldSelectionForm({
   onConfirm,
 }: FieldSelectionFormProps) {
   const [selected, setSelected] = useState<Set<string>>(
-    new Set(suggestedFields.filter((f) => f.defaultChecked).map((f) => f.key))
+    new Set((suggestedFields ?? []).filter((f) => f.defaultChecked).map((f) => f.key))
   );
   const [otherText, setOtherText] = useState('');
   const [otherChecked, setOtherChecked] = useState(false);

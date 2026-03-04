@@ -15,6 +15,12 @@ export interface Driver {
   user_id: string;
   company_id: string;
   employment_type: EmploymentType;
+  location_id: string | null;
+  location?: {
+    id: string;
+    name: string;
+    code: string | null;
+  } | null;
 
   // Personal
   date_of_birth: string | null;

@@ -55,6 +55,20 @@ export {
 export type { Company, CompanyStatus } from './company';
 
 // ============================================
+// LOCATION
+// ============================================
+export type {
+  Location,
+  LocationStatus,
+  LocationCredentialStatus,
+  LocationWithStats,
+  LocationCredential,
+  LocationBrokerAssignment,
+  CreateLocationData,
+  UpdateLocationData,
+} from './location';
+
+// ============================================
 // CREDENTIALS
 // ============================================
 export type {

@@ -19,11 +19,29 @@ const requirementConfig: Record<string, {
   optional: { label: 'Optional', badgeVariant: 'outline' },
 };
 
+/** Status config for publish states */
+const statusConfig: Record<string, {
+  label: string;
+  badgeVariant: 'default' | 'secondary' | 'destructive' | 'outline';
+  dimmed: boolean;
+}> = {
+  draft: { label: 'Draft', badgeVariant: 'outline', dimmed: true },
+  scheduled: { label: 'Scheduled', badgeVariant: 'secondary', dimmed: false },
+  active: { label: '', badgeVariant: 'default', dimmed: false }, // No badge for active
+  inactive: { label: 'Inactive', badgeVariant: 'destructive', dimmed: true },
+};
+
 export function CredentialTypeCard({ credentialType }: CredentialTypeCardProps) {
   const navigate = useNavigate();
   const stepCount = credentialType.instruction_config?.steps?.length || 0;
   const requirement = requirementConfig[credentialType.requirement] || requirementConfig.optional;
-  const CategoryIcon = credentialType.category === 'vehicle' ? Car : User;
+  const publishStatus = statusConfig[credentialType.status] || statusConfig.draft;
+  const CategoryIcon =
+    credentialType.category === 'vehicle'
+      ? Car
+      : credentialType.category === 'location'
+        ? Building2
+        : User;
   const ScopeIcon = credentialType.scope === 'global' ? Globe : Building2;
 
   const handleClick = () => {
@@ -40,7 +58,7 @@ export function CredentialTypeCard({ credentialType }: CredentialTypeCardProps) 
 
   return (
     <Card className={`h-full flex flex-col hover:shadow-soft transition-all ${
-      !credentialType.is_active ? 'opacity-60' : ''
+      publishStatus.dimmed ? 'opacity-60' : ''
     }`}>
       <CardContent className="p-4 space-y-3 flex-1 flex flex-col">
         {/* Header row with badge */}
@@ -48,8 +66,10 @@ export function CredentialTypeCard({ credentialType }: CredentialTypeCardProps) 
           <Badge variant={requirement.badgeVariant}>
             {requirement.label}
           </Badge>
-          {!credentialType.is_active && (
-            <Badge variant="destructive">Inactive</Badge>
+          {publishStatus.label && (
+            <Badge variant={publishStatus.badgeVariant}>
+              {publishStatus.label}
+            </Badge>
           )}
         </div>
 

@@ -11,7 +11,7 @@ export interface DriverVehicle extends Vehicle {
 }
 
 export interface DriverVehicleWithStatus extends DriverVehicle {
-  credentialStatus: 'valid' | 'expiring' | 'expired' | 'missing';
+  credentialStatus: 'valid' | 'expiring' | 'expired' | 'missing' | 'grace_period' | 'pending';
   credentialSummary: string;
   eligibleBrokers: string[];
   ineligibleBrokers: { name: string; reason: string }[];

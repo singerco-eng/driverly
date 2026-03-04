@@ -54,6 +54,10 @@ export { TableActionsDropdown, type TableAction } from './table-actions-dropdown
 export { DataManagementCard } from './data-management-card'
 export { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent, ChartStyle } from './chart'
 export { StatsGrid, EnhancedStatsGrid } from './stats-grid'
+export { QuickStatsBar, type QuickStat, type QuickStatsBarProps } from './quick-stats-bar'
+export { InfoSection, type InfoSectionProps } from './info-section'
+export { PropertyGrid, type Property, type PropertyGridProps } from './property-grid'
+export { ActionAlertBanner, type ActionAlertItem, type ActionAlertBannerProps } from './action-alert-banner'
 export { List } from './list'
 
 // Real-time Components

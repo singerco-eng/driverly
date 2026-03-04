@@ -10,26 +10,33 @@ import {
   useSetPrimaryVehicle,
 } from '@/hooks/useVehicleAssignments';
 import { useToast } from '@/hooks/use-toast';
-import { AssignVehicleToDriverModal } from '@/components/features/admin/AssignVehicleToDriverModal';
-import { UnassignVehicleModal } from '@/components/features/admin/UnassignVehicleModal';
-import { ExtendAssignmentModal } from '@/components/features/admin/ExtendAssignmentModal';
-import { EndAssignmentEarlyModal } from '@/components/features/admin/EndAssignmentEarlyModal';
+import { UnifiedAssignmentModal } from '@/components/features/shared/assignment';
+import type {
+  AssignmentMode,
+  AssignmentContext,
+} from '@/components/features/shared/assignment';
 import { AssignmentHistoryList } from '@/components/features/admin/AssignmentHistoryList';
 import { formatDate } from '@/lib/formatters';
 
 interface DriverVehiclesTabProps {
   driver: DriverWithDetails;
+  onAssignVehicle: () => void;
 }
 
-export function DriverVehiclesTab({ driver }: DriverVehiclesTabProps) {
+export function DriverVehiclesTab({ driver, onAssignVehicle }: DriverVehiclesTabProps) {
   const { toast } = useToast();
   const { data: assignments = [] } = useDriverAssignments(driver.id);
   const { data: history = [] } = useDriverAssignmentHistory(driver.id);
   const setPrimary = useSetPrimaryVehicle();
-  const [assignOpen, setAssignOpen] = useState(false);
-  const [unassignTarget, setUnassignTarget] = useState<VehicleAssignment | null>(null);
-  const [extendTarget, setExtendTarget] = useState<VehicleAssignment | null>(null);
-  const [endEarlyTarget, setEndEarlyTarget] = useState<VehicleAssignment | null>(null);
+  const [modal, setModal] = useState<{
+    open: boolean;
+    mode: AssignmentMode | null;
+    context: AssignmentContext | null;
+  }>({
+    open: false,
+    mode: null,
+    context: null,
+  });
   const [showAllHistory, setShowAllHistory] = useState(false);
 
   const visibleHistory = useMemo(
@@ -50,6 +57,29 @@ export function DriverVehiclesTab({ driver }: DriverVehiclesTabProps) {
     }
   };
 
+  const getVehicleName = (assignment: VehicleAssignment) =>
+    assignment.vehicle
+      ? `${assignment.vehicle.year} ${assignment.vehicle.make} ${assignment.vehicle.model}`
+      : 'Vehicle';
+
+  const openModal = (mode: AssignmentMode, assignment: VehicleAssignment) => {
+    const context: AssignmentContext = {
+      type: 'assignment',
+      assignmentId: assignment.id,
+      vehicleId: assignment.vehicle_id,
+      vehicleName: getVehicleName(assignment),
+      currentDriverId: assignment.driver_id,
+      currentDriverName: driver.user.full_name,
+      currentEndDate: assignment.ends_at || undefined,
+      isOnlyVehicle: assignments.length <= 1,
+      isPrimary: assignment.is_primary,
+    };
+
+    setModal({ open: true, mode, context });
+  };
+
+  const closeModal = () => setModal({ open: false, mode: null, context: null });
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -59,7 +89,7 @@ export function DriverVehiclesTab({ driver }: DriverVehiclesTabProps) {
             Active assignments for this driver.
           </p>
         </div>
-        <Button onClick={() => setAssignOpen(true)}>Assign Vehicle</Button>
+        <Button onClick={onAssignVehicle}>Assign Vehicle</Button>
       </div>
 
       {assignments.length === 0 ? (
@@ -69,7 +99,7 @@ export function DriverVehiclesTab({ driver }: DriverVehiclesTabProps) {
             {driver.employment_type === 'w2' && (
               <div>This W2 driver needs a vehicle to be eligible for trips.</div>
             )}
-            <Button variant="outline" onClick={() => setAssignOpen(true)}>
+            <Button variant="outline" onClick={onAssignVehicle}>
               Assign Vehicle
             </Button>
           </CardContent>
@@ -129,19 +159,23 @@ export function DriverVehiclesTab({ driver }: DriverVehiclesTabProps) {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => setUnassignTarget(assignment)}
+                      onClick={() => openModal('unassign-vehicle', assignment)}
                     >
                       Unassign
                     </Button>
                     {isBorrowed && (
                       <>
-                        <Button size="sm" variant="outline" onClick={() => setExtendTarget(assignment)}>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openModal('extend-assignment', assignment)}
+                        >
                           Extend
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => setEndEarlyTarget(assignment)}
+                          onClick={() => openModal('end-assignment-early', assignment)}
                         >
                           End Early
                         </Button>
@@ -168,55 +202,12 @@ export function DriverVehiclesTab({ driver }: DriverVehiclesTabProps) {
       </div>
       <AssignmentHistoryList history={visibleHistory} mode="driver" />
 
-      <AssignVehicleToDriverModal
-        open={assignOpen}
-        onOpenChange={setAssignOpen}
-        driverId={driver.id}
-        driverName={driver.user.full_name}
-        employmentType={driver.employment_type}
-      />
-
-      {unassignTarget && (
-        <UnassignVehicleModal
-          open={!!unassignTarget}
-          onOpenChange={(open) => !open && setUnassignTarget(null)}
-          assignmentId={unassignTarget.id}
-          vehicleName={
-            unassignTarget.vehicle
-              ? `${unassignTarget.vehicle.year} ${unassignTarget.vehicle.make} ${unassignTarget.vehicle.model}`
-              : 'Vehicle'
-          }
-          driverName={driver.user.full_name}
-          isOnlyVehicle={assignments.length <= 1}
-          isPrimary={unassignTarget.is_primary}
-        />
-      )}
-
-      {extendTarget && extendTarget.ends_at && (
-        <ExtendAssignmentModal
-          open={!!extendTarget}
-          onOpenChange={(open) => !open && setExtendTarget(null)}
-          assignmentId={extendTarget.id}
-          currentEndDate={extendTarget.ends_at}
-          vehicleName={
-            extendTarget.vehicle
-              ? `${extendTarget.vehicle.year} ${extendTarget.vehicle.make} ${extendTarget.vehicle.model}`
-              : 'Vehicle'
-          }
-        />
-      )}
-
-      {endEarlyTarget && endEarlyTarget.ends_at && (
-        <EndAssignmentEarlyModal
-          open={!!endEarlyTarget}
-          onOpenChange={(open) => !open && setEndEarlyTarget(null)}
-          assignmentId={endEarlyTarget.id}
-          scheduledEndDate={endEarlyTarget.ends_at}
-          vehicleName={
-            endEarlyTarget.vehicle
-              ? `${endEarlyTarget.vehicle.year} ${endEarlyTarget.vehicle.make} ${endEarlyTarget.vehicle.model}`
-              : 'Vehicle'
-          }
+      {modal.mode && modal.context && (
+        <UnifiedAssignmentModal
+          open={modal.open}
+          onOpenChange={(open) => !open && closeModal()}
+          mode={modal.mode}
+          context={modal.context}
         />
       )}
     </div>
