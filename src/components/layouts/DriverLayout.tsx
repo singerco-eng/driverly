@@ -87,7 +87,7 @@ export default function DriverLayout() {
   };
 
   // Company branding
-  const primaryColor = company?.primary_color || '#22C55E';
+  const primaryColor = company?.primary_color || '#3B82F6';
   const companyName = company?.name || 'Driver Portal';
   const companyInitial = companyName.charAt(0).toUpperCase();
 
