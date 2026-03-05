@@ -1,12 +1,13 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { DEFAULT_THEME_TOKENS } from '@/lib/theme-tokens';
-import { applyThemeTokens, mergeThemeTokens, deriveTokensForMode } from '@/lib/theme-utils';
-import { getCompanyTheme, getPlatformTheme } from '@/services/theme';
-import { THEME_PRESETS, getPresetById } from '@/lib/theme-presets';
+import { applyThemeTokens, deriveTokensForMode } from '@/lib/theme-utils';
+import { getPlatformTheme } from '@/services/theme';
+import { THEME_PRESETS, getPresetById, DEFAULT_PRESET_ID, findMatchingPreset } from '@/lib/theme-presets';
 import type { ThemeTokens } from '@/types/theme';
 
-const THEME_CACHE_KEY = 'driverly-theme-cache';
+const THEME_CACHE_KEY_PREFIX = 'driverly-theme-cache-';
+const LEGACY_CACHE_KEY = 'driverly-theme-cache';
 const THEME_PRESET_KEY = 'driverly-theme-preset';
 const COLOR_MODE_KEY = 'driverly-color-mode';
 
@@ -16,9 +17,9 @@ interface ThemeContextType {
   tokens: ThemeTokens;
   setTokens: (tokens: ThemeTokens) => void;
   isThemeLoading: boolean;
-  /** Currently selected preset ID (null = use server theme) */
+  /** Currently selected preset ID (null = use default preset) */
   selectedPresetId: string | null;
-  /** Select a preset by ID (null = reset to server theme) */
+  /** Select a preset by ID (null = reset to default preset) */
   setSelectedPresetId: (presetId: string | null) => void;
   /** Current color mode (light or dark) */
   colorMode: ColorMode;
@@ -42,10 +43,11 @@ interface ThemeProviderProps {
   children: ReactNode;
 }
 
-// Get cached theme or default
-function getCachedTheme(): ThemeTokens {
+// Get cached theme for selected preset or default preset
+function getCachedTheme(presetId: string | null): ThemeTokens {
+  const effectiveId = presetId ?? DEFAULT_PRESET_ID;
   try {
-    const cached = localStorage.getItem(THEME_CACHE_KEY);
+    const cached = localStorage.getItem(THEME_CACHE_KEY_PREFIX + effectiveId);
     if (cached) {
       return JSON.parse(cached) as ThemeTokens;
     }
@@ -78,11 +80,20 @@ function getStoredColorMode(): ColorMode {
 }
 
 // Cache theme to localStorage
-function cacheTheme(tokens: ThemeTokens) {
+function cacheTheme(tokens: ThemeTokens, presetId: string | null) {
+  const effectiveId = presetId ?? DEFAULT_PRESET_ID;
   try {
-    localStorage.setItem(THEME_CACHE_KEY, JSON.stringify(tokens));
+    localStorage.setItem(THEME_CACHE_KEY_PREFIX + effectiveId, JSON.stringify(tokens));
   } catch {
     // Ignore errors (e.g., localStorage full or disabled)
+  }
+}
+
+function cleanupLegacyCache() {
+  try {
+    localStorage.removeItem(LEGACY_CACHE_KEY);
+  } catch {
+    // Ignore errors
   }
 }
 
@@ -96,24 +107,23 @@ function markThemeReady() {
 }
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
-  const { profile, isLoading } = useAuth();
-  // Base tokens from server (platform + company overrides)
-  const [serverTokens, setServerTokens] = useState<ThemeTokens>(getCachedTheme);
+  const { isLoading } = useAuth();
+  const initialPresetId = getStoredPresetId();
+  // Base tokens from server (platform theme, used as fallback only)
+  const [serverTokens, setServerTokens] = useState<ThemeTokens>(() => getCachedTheme(initialPresetId));
   // User-selected preset ID
-  const [selectedPresetId, setSelectedPresetIdState] = useState<string | null>(getStoredPresetId);
+  const [selectedPresetId, setSelectedPresetIdState] = useState<string | null>(initialPresetId);
   // Color mode (light/dark)
   const [colorMode, setColorModeState] = useState<ColorMode>(getStoredColorMode);
   const [isThemeLoading, setIsThemeLoading] = useState(true);
 
-  // Get the selected preset
-  const selectedPreset = selectedPresetId ? getPresetById(selectedPresetId) : null;
+  const effectivePresetId = selectedPresetId ?? DEFAULT_PRESET_ID;
+  const effectivePreset = getPresetById(effectivePresetId);
 
   // Compute effective tokens based on preset and color mode
-  const tokens = selectedPreset
-    ? deriveTokensForMode(selectedPreset, colorMode)
-    : colorMode === 'light'
-      ? deriveTokensForMode({ colors: { primary: '#808080', accent: '#666666', background: '#f5f5f5', destructive: '#ef4444' } } as any, 'light')
-      : serverTokens;
+  const tokens = effectivePreset
+    ? deriveTokensForMode(effectivePreset, colorMode)
+    : serverTokens;
 
   // Persist preset selection
   const setSelectedPresetId = useCallback((presetId: string | null) => {
@@ -121,6 +131,10 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     try {
       if (presetId) {
         localStorage.setItem(THEME_PRESET_KEY, presetId);
+        const preset = getPresetById(presetId);
+        if (preset) {
+          cacheTheme(preset.tokens, presetId);
+        }
       } else {
         localStorage.removeItem(THEME_PRESET_KEY);
       }
@@ -146,11 +160,13 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     setColorMode(colorMode === 'dark' ? 'light' : 'dark');
   }, [colorMode, setColorMode]);
 
-  // Wrapper for setTokens to update server tokens (used by super admin)
+  // Update server tokens and sync preset selection (used by super admin)
   const setTokens = useCallback((newTokens: ThemeTokens) => {
     setServerTokens(newTokens);
-    // Clear preset selection when manually setting tokens
-    setSelectedPresetId(null);
+    const matchingPreset = findMatchingPreset(newTokens);
+    if (matchingPreset) {
+      setSelectedPresetId(matchingPreset.id);
+    }
   }, [setSelectedPresetId]);
 
   // Apply tokens whenever they change
@@ -168,22 +184,14 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
 
       try {
         const platformTokens = await getPlatformTheme();
-
-        if (profile?.company_id && profile.role !== 'super_admin') {
-          const companyOverrides = await getCompanyTheme(profile.company_id);
-          const merged = mergeThemeTokens(platformTokens, companyOverrides);
-          if (isActive) {
-            setServerTokens(merged);
-            cacheTheme(merged);
-          }
-        } else if (isActive) {
+        if (isActive) {
           setServerTokens(platformTokens);
-          cacheTheme(platformTokens);
+          cacheTheme(platformTokens, null);
         }
       } catch {
         if (isActive) {
           setServerTokens(DEFAULT_THEME_TOKENS);
-          cacheTheme(DEFAULT_THEME_TOKENS);
+          cacheTheme(DEFAULT_THEME_TOKENS, null);
         }
       } finally {
         if (isActive) {
@@ -194,12 +202,13 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
       }
     };
 
+    cleanupLegacyCache();
     loadTheme();
 
     return () => {
       isActive = false;
     };
-  }, [isLoading, profile?.company_id, profile?.role]);
+  }, [isLoading]);
 
   // If auth is still loading but we have cached theme, show content
   useEffect(() => {

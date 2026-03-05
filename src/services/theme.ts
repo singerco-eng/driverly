@@ -58,6 +58,7 @@ export async function getPlatformTheme(): Promise<ThemeTokens> {
   return pickThemeTokens(data as PlatformThemeRow);
 }
 
+// Reserved for future white-label feature. Not currently called from the app.
 export async function getCompanyTheme(companyId: string): Promise<ThemeOverrides> {
   const { data, error } = await supabase
     .from('company_theme')
@@ -91,6 +92,7 @@ export async function upsertPlatformTheme(
   return pickThemeTokens(data as PlatformThemeRow);
 }
 
+// Reserved for future white-label feature. Not currently called from the app.
 export async function upsertCompanyTheme(
   companyId: string,
   updates: Partial<ThemeTokens>

@@ -26,7 +26,8 @@
           var colorMode = localStorage.getItem('driverly-color-mode') || 'dark';
           root.dataset.colorMode = colorMode;
           
-          var cached = localStorage.getItem('driverly-theme-cache');
+          var presetId = localStorage.getItem('driverly-theme-preset') || 'acme-cursor-dark';
+          var cached = localStorage.getItem('driverly-theme-cache-' + presetId);
           if (cached) {
             var tokens = JSON.parse(cached);
             

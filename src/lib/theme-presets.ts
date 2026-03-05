@@ -285,4 +285,4 @@ export function findMatchingPreset(tokens: ThemeTokens): ThemePreset | null {
 /**
  * Default preset ID
  */
-export const DEFAULT_PRESET_ID = 'midnight-blue';
+export const DEFAULT_PRESET_ID = 'acme-cursor-dark';
