@@ -74,8 +74,6 @@ export default function AdminLayout() {
     return location.pathname.startsWith(path);
   };
 
-  // Company branding - use company primary_color or fallback
-  const primaryColor = company?.primary_color || '#3B82F6';
   const companyName = company?.name || 'Admin';
   const companyInitial = companyName.charAt(0).toUpperCase();
 
@@ -105,10 +103,7 @@ export default function AdminLayout() {
                   </>
                 ) : (
                   <>
-                    <div
-                      className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm"
-                      style={{ backgroundColor: primaryColor }}
-                    >
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center text-primary-foreground font-bold text-sm bg-primary">
                       {companyInitial}
                     </div>
                     <span className="font-semibold text-base truncate">
@@ -167,10 +162,7 @@ export default function AdminLayout() {
                     size="lg"
                     className="hover:bg-transparent hover:text-sidebar-foreground data-[state=open]:bg-transparent data-[state=open]:text-sidebar-foreground"
                   >
-                    <div
-                      className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium shrink-0"
-                      style={{ backgroundColor: primaryColor }}
-                    >
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-primary-foreground text-sm font-medium shrink-0 bg-primary">
                       {profile?.full_name?.charAt(0) || user?.email?.charAt(0) || 'U'}
                     </div>
                     <div className="flex-1 text-left text-sm leading-tight">

@@ -86,8 +86,6 @@ export default function DriverLayout() {
     return location.pathname.startsWith(path);
   };
 
-  // Company branding
-  const primaryColor = company?.primary_color || '#3B82F6';
   const companyName = company?.name || 'Driver Portal';
   const companyInitial = companyName.charAt(0).toUpperCase();
 
@@ -121,10 +119,7 @@ export default function DriverLayout() {
                   </>
                 ) : (
                   <>
-                    <div
-                      className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm"
-                      style={{ backgroundColor: primaryColor }}
-                    >
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center text-primary-foreground font-bold text-sm bg-primary">
                       {companyInitial}
                     </div>
                     <span className="font-semibold text-base truncate">
@@ -176,10 +171,8 @@ export default function DriverLayout() {
                         {avatarUrl && (
                           <AvatarImage src={avatarUrl} alt={profile?.full_name || 'Driver'} />
                         )}
-                        <AvatarFallback
-                          className="text-white text-sm font-medium"
-                          style={{ backgroundColor: primaryColor }}
-                        >
+                        <AvatarFallback className="text-primary-foreground text-sm font-medium bg-primary">
+
                           {profile?.full_name?.charAt(0) || user?.email?.charAt(0) || 'D'}
                         </AvatarFallback>
                       </Avatar>

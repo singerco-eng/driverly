@@ -65,10 +65,8 @@ export default function AdminSettings() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <div className="flex items-center gap-3">
-                <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center text-white text-lg font-bold"
-                  style={{ backgroundColor: company.primary_color || '#3B82F6' }}
-                >
+                <div className="w-10 h-10 rounded-full flex items-center justify-center text-primary-foreground text-lg font-bold bg-primary">
+
                   {company.name.charAt(0).toUpperCase()}
                 </div>
                 <div>
