@@ -16,7 +16,9 @@ import {
 } from '@/components/ui/select';
 import { useCreateCompany } from '@/hooks/useCompanies';
 import { useToast } from '@/hooks/use-toast';
-import { Building2, MapPin, Palette } from 'lucide-react';
+import { useFeatureFlag } from '@/hooks/useFeatureFlags';
+import { THEME_PRESETS, DEFAULT_PRESET_ID } from '@/lib/theme-presets';
+import { Building2, Check, MapPin, Palette } from 'lucide-react';
 
 const US_TIMEZONES = [
   { value: 'America/New_York', label: 'Eastern Time' },
@@ -38,6 +40,7 @@ const companySchema = z.object({
   state: z.string().optional(),
   zip: z.string().optional(),
   primary_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid color format'),
+  theme_preset_id: z.string().default('acme-cursor-dark'),
   ein: z.string().optional(),
   timezone: z.string(),
 });
@@ -54,6 +57,7 @@ type TabValue = 'basic' | 'address' | 'branding';
 export default function CreateCompanyModal({ open, onOpenChange }: CreateCompanyModalProps) {
   const { toast } = useToast();
   const createCompany = useCreateCompany();
+  const whiteLabelEnabled = useFeatureFlag('white_label');
   const [activeTab, setActiveTab] = useState<TabValue>('basic');
 
   const form = useForm<CompanyFormValues>({
@@ -69,6 +73,7 @@ export default function CreateCompanyModal({ open, onOpenChange }: CreateCompany
       state: '',
       zip: '',
       primary_color: '#3B82F6',
+      theme_preset_id: DEFAULT_PRESET_ID,
       ein: '',
       timezone: 'America/New_York',
     },
@@ -276,6 +281,39 @@ export default function CreateCompanyModal({ open, onOpenChange }: CreateCompany
                   </div>
                 </div>
               </div>
+
+              {whiteLabelEnabled && (
+                <div className="space-y-2 pt-2">
+                  <Label>Theme Preset</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Default theme for this company's users.
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1">
+                    {THEME_PRESETS.map((preset) => {
+                      const isSelected = form.watch('theme_preset_id') === preset.id;
+                      return (
+                        <button
+                          key={preset.id}
+                          type="button"
+                          onClick={() => form.setValue('theme_preset_id', preset.id)}
+                          className={`relative flex items-center gap-2 rounded-lg border p-2.5 text-left text-sm transition-colors ${
+                            isSelected
+                              ? 'border-primary bg-primary/10 text-foreground'
+                              : 'border-border/50 bg-muted/20 text-muted-foreground hover:border-border hover:bg-muted/40'
+                          }`}
+                        >
+                          <div
+                            className="h-5 w-5 shrink-0 rounded-full border border-border/30"
+                            style={{ background: preset.colors.primary }}
+                          />
+                          <span className="truncate">{preset.name}</span>
+                          {isSelected && <Check className="ml-auto h-3.5 w-3.5 shrink-0 text-primary" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

@@ -5,7 +5,7 @@ export interface Invitation {
   email: string;
   full_name: string;
   phone: string | null;
-  role: 'admin' | 'coordinator';
+  role: 'admin' | 'coordinator' | 'driver';
   company_id: string;
   status: InvitationStatus;
   expires_at: string;
@@ -15,9 +15,18 @@ export interface Invitation {
   accepted_user_id: string | null;
   revoked_at: string | null;
   revoked_by: string | null;
-  invited_by: string;
+  invited_by: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface InvitationWithCompany extends Invitation {
+  company: {
+    id: string;
+    name: string;
+    logo_url: string | null;
+    primary_color: string;
+  } | null;
 }
 
 export interface InvitationWithInviter extends Invitation {

@@ -13,6 +13,7 @@ export interface Company {
   zip: string | null;
   logo_url: string | null;
   primary_color: string;
+  theme_preset_id: string;
   status: CompanyStatus;
   ein: string | null;
   timezone: string;
@@ -34,6 +35,7 @@ export interface CompanyFormData {
   state: string;
   zip: string;
   primary_color: string;
+  theme_preset_id: string;
   ein: string;
   timezone: string;
 }

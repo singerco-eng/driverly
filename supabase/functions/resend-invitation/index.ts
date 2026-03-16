@@ -3,6 +3,7 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
+import { buildBrandedEmail } from '../_shared/email-template.ts';
 
 interface ResendRequest {
   invitationId: string;
@@ -90,6 +91,7 @@ Deno.serve(async (req) => {
 
     const acceptUrl = `${appUrl}/accept-invitation?token=${newToken}`;
     const companyName = invitation.company?.name || 'Driverly';
+    const companyColor = invitation.company?.primary_color || '#d4a017';
 
     const emailResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -98,33 +100,23 @@ Deno.serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'Driverly <onboarding@resend.dev>',
+        from: 'Flowcred AI <noreply@mail.flowcred.ai>',
         to: invitation.email,
         subject: `Reminder: You're invited to join ${companyName}`,
-        html: `
-          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-            <h1 style="color: ${invitation.company?.primary_color || '#3B82F6'};">
-              Invitation Reminder
-            </h1>
+        html: buildBrandedEmail({
+          preheader: `Reminder: You're invited to join ${companyName}`,
+          heading: 'Invitation Reminder',
+          headingColor: companyColor,
+          body: `
             <p>Hello,</p>
             <p>This is a reminder that you've been invited to join <strong>${companyName}</strong> as an <strong>${invitation.role}</strong>.</p>
             <p>Click the button below to accept your invitation and create your account:</p>
-            <p style="text-align: center; margin: 30px 0;">
-              <a href="${acceptUrl}" 
-                 style="background-color: ${invitation.company?.primary_color || '#3B82F6'}; 
-                        color: white; 
-                        padding: 12px 24px; 
-                        text-decoration: none; 
-                        border-radius: 6px;
-                        display: inline-block;">
-                Accept Invitation
-              </a>
-            </p>
-            <p style="color: #666; font-size: 14px;">
-              This invitation will expire on ${expiresAt.toLocaleDateString()}.
-            </p>
-          </div>
-        `,
+          `,
+          ctaText: 'Accept Invitation',
+          ctaUrl: acceptUrl,
+          ctaColor: companyColor,
+          footerExtra: `This invitation will expire on ${expiresAt.toLocaleDateString()}.`,
+        }),
       }),
     });
 

@@ -60,7 +60,14 @@ export function useValidateInvitation(token: string | null) {
 
 export function useAcceptInvitation() {
   return useMutation({
-    mutationFn: ({ token, password }: { token: string; password: string }) =>
-      invitationsService.acceptInvitation(token, password),
+    mutationFn: ({
+      token,
+      password,
+      fullName,
+    }: {
+      token: string;
+      password: string;
+      fullName: string;
+    }) => invitationsService.acceptInvitation(token, password, fullName),
   });
 }

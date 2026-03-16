@@ -3,6 +3,7 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
+import { buildBrandedEmail } from '../_shared/email-template.ts';
 
 interface StatusEmailRequest {
   driverId: string;
@@ -74,24 +75,38 @@ Deno.serve(async (req) => {
 
     if (status === 'approved') {
       subject = `You're approved to drive for ${company?.name ?? 'Driverly'}`;
-      html = `
-        <p>Hi ${name},</p>
-        <p>Great news — your application has been approved.</p>
-        <p>You can continue to your driver portal here:</p>
-        <p><a href="${appUrl}/driver/application-status">${appUrl}/driver/application-status</a></p>
-        <p>Welcome aboard!</p>
-      `;
+      html = buildBrandedEmail({
+        preheader: 'Great news — your application has been approved',
+        heading: 'Application Approved',
+        headingColor: '#16a34a',
+        body: `
+          <p>Hi ${name},</p>
+          <p>Great news — your application has been approved.</p>
+          <p>You can continue to your driver portal below:</p>
+        `,
+        ctaText: 'Go to Driver Portal',
+        ctaUrl: `${appUrl}/driver/application-status`,
+        ctaColor: '#16a34a',
+        footerExtra: `Welcome to ${company?.name ?? 'the team'}!`,
+      });
     } else {
       subject = `Update on your driver application`;
       const rejectionReason = reason || driver.rejection_reason || 'Application not approved';
-      html = `
-        <p>Hi ${name},</p>
-        <p>Thank you for applying to drive with ${company?.name ?? 'Driverly'}.</p>
-        <p>We are unable to approve your application at this time.</p>
-        <p>Reason: ${rejectionReason}</p>
-        <p>You can check your status here:</p>
-        <p><a href="${appUrl}/driver/application-status">${appUrl}/driver/application-status</a></p>
-      `;
+      html = buildBrandedEmail({
+        preheader: 'Update on your driver application',
+        heading: 'Application Update',
+        headingColor: '#d4a017',
+        body: `
+          <p>Hi ${name},</p>
+          <p>Thank you for applying to drive with ${company?.name ?? 'Driverly'}.</p>
+          <p>We are unable to approve your application at this time.</p>
+          <p style="color: #6b6865; font-style: italic;">Reason: ${rejectionReason}</p>
+          <p>You can check your status below:</p>
+        `,
+        ctaText: 'Check Application Status',
+        ctaUrl: `${appUrl}/driver/application-status`,
+        ctaColor: '#d4a017',
+      });
     }
 
     const emailResponse = await fetch('https://api.resend.com/emails', {
@@ -101,7 +116,7 @@ Deno.serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'Driverly <onboarding@resend.dev>',
+        from: 'Flowcred AI <noreply@mail.flowcred.ai>',
         to: email,
         subject,
         html,

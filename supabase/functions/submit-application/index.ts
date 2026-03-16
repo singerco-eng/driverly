@@ -3,6 +3,7 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
+import { buildBrandedEmail } from '../_shared/email-template.ts';
 
 interface ApplicationSubmission {
   companyId: string;
@@ -275,16 +276,23 @@ Deno.serve(async (req) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          from: 'Driverly <onboarding@resend.dev>',
+          from: 'Flowcred AI <noreply@mail.flowcred.ai>',
           to: user.email,
           subject: `Application received for ${company.name}`,
-          html: `
-            <p>Hi ${personalInfo.fullName},</p>
-            <p>We received your application for <strong>${company.name}</strong>.</p>
-            <p>You can check your application status here:</p>
-            <p><a href="${appUrl}/driver/application-status">${appUrl}/driver/application-status</a></p>
-            <p>Thanks for applying!</p>
-          `,
+          html: buildBrandedEmail({
+            preheader: `We received your application for ${company.name}`,
+            heading: 'Application Received',
+            headingColor: '#d4a017',
+            body: `
+              <p>Hi ${personalInfo.fullName},</p>
+              <p>We received your application for <strong>${company.name}</strong>.</p>
+              <p>You can check your application status below:</p>
+            `,
+            ctaText: 'Check Application Status',
+            ctaUrl: `${appUrl}/driver/application-status`,
+            ctaColor: '#d4a017',
+            footerExtra: 'Thanks for applying!',
+          }),
         }),
       });
 
