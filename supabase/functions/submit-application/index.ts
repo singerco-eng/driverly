@@ -282,7 +282,6 @@ Deno.serve(async (req) => {
           html: buildBrandedEmail({
             preheader: `We received your application for ${company.name}`,
             heading: 'Application Received',
-            headingColor: '#d4a017',
             body: `
               <p>Hi ${personalInfo.fullName},</p>
               <p>We received your application for <strong>${company.name}</strong>.</p>
@@ -290,7 +289,6 @@ Deno.serve(async (req) => {
             `,
             ctaText: 'Check Application Status',
             ctaUrl: `${appUrl}/driver/application-status`,
-            ctaColor: '#d4a017',
             footerExtra: 'Thanks for applying!',
           }),
         }),

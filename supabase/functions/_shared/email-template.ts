@@ -20,7 +20,8 @@ const COLORS = {
   footerText: '#918e8a',
   footerLink: '#d4a017',
   defaultHeading: '#d4a017',
-  buttonText: '#ffffff',
+  buttonText: '#1a1917',
+  buttonDefault: '#d4a017',
 } as const;
 
 function buildButton(ctaText: string, ctaUrl: string, ctaColor: string): string {
@@ -48,7 +49,7 @@ export function buildBrandedEmail(options: EmailTemplateOptions): string {
     body,
     ctaText,
     ctaUrl,
-    ctaColor = COLORS.defaultHeading,
+    ctaColor = COLORS.buttonDefault,
     footerExtra,
   } = options;
 
@@ -100,13 +101,13 @@ export function buildBrandedEmail(options: EmailTemplateOptions): string {
           <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width: 100%; max-width: 600px;">
             <tr>
               <td bgcolor="${COLORS.headerBg}" style="background-color: ${COLORS.headerBg}; border: 1px solid ${COLORS.headerBorder}; border-bottom: 0; padding: 24px 32px 20px 32px;">
-                <img
-                  src="https://app.flowcred.ai/flowcred-logo.svg"
-                  alt="Flowcred AI"
-                  height="36"
-                  width="166"
-                  style="display: block; height: 36px; width: 166px; border: 0;"
-                />
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td style="font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 22px; font-weight: 700; color: #e8e6e0; letter-spacing: -0.02em;">
+                      Flowcred<span style="color: ${COLORS.divider};">&nbsp;AI</span>
+                    </td>
+                  </tr>
+                </table>
               </td>
             </tr>
             <tr>

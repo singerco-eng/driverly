@@ -78,7 +78,6 @@ Deno.serve(async (req) => {
       html = buildBrandedEmail({
         preheader: 'Great news — your application has been approved',
         heading: 'Application Approved',
-        headingColor: '#16a34a',
         body: `
           <p>Hi ${name},</p>
           <p>Great news — your application has been approved.</p>
@@ -86,7 +85,6 @@ Deno.serve(async (req) => {
         `,
         ctaText: 'Go to Driver Portal',
         ctaUrl: `${appUrl}/driver/application-status`,
-        ctaColor: '#16a34a',
         footerExtra: `Welcome to ${company?.name ?? 'the team'}!`,
       });
     } else {
@@ -95,7 +93,6 @@ Deno.serve(async (req) => {
       html = buildBrandedEmail({
         preheader: 'Update on your driver application',
         heading: 'Application Update',
-        headingColor: '#d4a017',
         body: `
           <p>Hi ${name},</p>
           <p>Thank you for applying to drive with ${company?.name ?? 'Driverly'}.</p>
@@ -105,7 +102,6 @@ Deno.serve(async (req) => {
         `,
         ctaText: 'Check Application Status',
         ctaUrl: `${appUrl}/driver/application-status`,
-        ctaColor: '#d4a017',
       });
     }
 

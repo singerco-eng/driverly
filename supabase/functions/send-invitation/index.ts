@@ -73,8 +73,6 @@ Deno.serve(async (req) => {
 
     const acceptUrl = `${appUrl}/accept-invitation?token=${token}`;
     const companyName = invitation.company?.name || 'Driverly';
-    const companyColor = invitation.company?.primary_color || '#d4a017';
-
     const emailResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -88,7 +86,6 @@ Deno.serve(async (req) => {
         html: buildBrandedEmail({
           preheader: `You've been invited to join ${companyName}`,
           heading: "You're Invited!",
-          headingColor: companyColor,
           body: `
             <p>Hello,</p>
             <p>You've been invited to join <strong>${companyName}</strong> as an <strong>${invitation.role}</strong>.</p>
@@ -96,7 +93,6 @@ Deno.serve(async (req) => {
           `,
           ctaText: 'Accept Invitation',
           ctaUrl: acceptUrl,
-          ctaColor: companyColor,
           footerExtra: `This invitation will expire on ${new Date(invitation.expires_at).toLocaleDateString()}.`,
         }),
       }),
