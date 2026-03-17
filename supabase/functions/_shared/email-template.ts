@@ -101,13 +101,12 @@ export function buildBrandedEmail(options: EmailTemplateOptions): string {
           <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width: 100%; max-width: 600px;">
             <tr>
               <td bgcolor="${COLORS.headerBg}" style="background-color: ${COLORS.headerBg}; border: 1px solid ${COLORS.headerBorder}; border-bottom: 0; padding: 24px 32px 20px 32px;">
-                <table role="presentation" cellpadding="0" cellspacing="0" border="0">
-                  <tr>
-                    <td style="font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 22px; font-weight: 700; color: #e8e6e0; letter-spacing: -0.02em;">
-                      Flowcred<span style="color: ${COLORS.divider};">&nbsp;AI</span>
-                    </td>
-                  </tr>
-                </table>
+                <img
+                  src="https://app.flowcred.ai/flowcred-logo.png"
+                  alt="Flowcred AI"
+                  height="40"
+                  style="display: block; height: 40px; width: auto; border: 0;"
+                />
               </td>
             </tr>
             <tr>
