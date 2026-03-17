@@ -15,8 +15,6 @@ interface Invitation {
   company_id: string;
   company?: {
     name: string;
-    logo_url: string | null;
-    primary_color: string | null;
   } | null;
 }
 
@@ -62,7 +60,7 @@ export default function AcceptInvitation() {
             company_id,
             status,
             expires_at,
-            company:companies(name, logo_url, primary_color)
+            company:companies(name)
           `)
           .eq('token_hash', tokenHash)
           .single();
@@ -181,30 +179,25 @@ export default function AcceptInvitation() {
     return null;
   }
 
-  const companyName = invitation.company?.name || 'Driverly';
-  const companyLogoUrl = invitation.company?.logo_url || null;
-  const companyColor = invitation.company?.primary_color || '#3B82F6';
+  const companyName = invitation.company?.name || 'the company';
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <div className="w-full max-w-md">
+        <div className="flex flex-col items-center mb-8">
+          <img
+            src="/flowcred-icon.svg"
+            alt="Flowcred AI"
+            className="h-12 w-auto mb-3"
+          />
+          <span className="text-xl font-semibold">
+            <span className="text-foreground">Flowcred</span>
+            <span className="text-amber-500 ml-1">AI</span>
+          </span>
+        </div>
+
       <Card className="w-full max-w-md">
         <CardHeader className="text-center space-y-4">
-          {companyLogoUrl ? (
-            <img
-              src={companyLogoUrl}
-              alt={companyName}
-              className="w-16 h-16 mx-auto rounded-lg object-cover"
-            />
-          ) : (
-            <div
-              className="w-16 h-16 mx-auto rounded-lg flex items-center justify-center"
-              style={{ backgroundColor: companyColor }}
-            >
-              <span className="text-white text-2xl font-bold">
-                {companyName.charAt(0).toUpperCase()}
-              </span>
-            </div>
-          )}
           <div>
             <CardTitle>Join {companyName}</CardTitle>
             <CardDescription>
@@ -266,7 +259,6 @@ export default function AcceptInvitation() {
               type="submit"
               className="w-full"
               disabled={submitting}
-              style={{ backgroundColor: companyColor }}
             >
               {submitting ? (
                 <>
@@ -280,6 +272,7 @@ export default function AcceptInvitation() {
           </form>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }
